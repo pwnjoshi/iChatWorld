@@ -239,7 +239,6 @@ export const App: React.FC = () => {
           onEmitLaserMove={emitLaserMove}
           onAnnotateSlide={annotatePresenterSlide}
           onClearSlideAnnotations={clearPresenterAnnotations}
-          onGetAISummary={getAISummary}
           onStartScreenShare={startScreenShare}
           onStopScreenShare={stopScreenShare}
           onRaiseHand={raiseHand}

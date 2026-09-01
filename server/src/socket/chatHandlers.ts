@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { store } from '../store/index.js';
 import { Member, Message } from '../types/index.js';
 import { aiService } from '../services/aiService.js';
+import { rateLimiter } from '../utils/rateLimiter.js';
 
 export function registerChatHandlers(io: Server, socket: Socket) {
   // Send chat message
@@ -12,6 +13,12 @@ export function registerChatHandlers(io: Server, socket: Socket) {
 
       if (!roomCode || !member) {
         return callback && callback({ success: false, error: 'Not in a room' });
+      }
+
+      // Message rate limit (25 messages per 10s per socket)
+      const msgLimit = rateLimiter.check(`msg:${socket.id}`, 25, 10000);
+      if (!msgLimit.allowed) {
+        return callback && callback({ success: false, error: 'Sending too fast. Please slow down.' });
       }
 
       const text = (data.text || '').trim();
@@ -49,6 +56,25 @@ export function registerChatHandlers(io: Server, socket: Socket) {
       if (text && text.toLowerCase().includes('@ai')) {
         const prompt = text.replace(/@ai/gi, '').trim();
         if (prompt) {
+          // AI Rate Limiter (6 queries/min per user, 40/hr per room)
+          const userAiLimit = rateLimiter.check(`ai:user:${socket.id}`, 6, 60000);
+          const roomAiLimit = rateLimiter.check(`ai:room:${roomCode}`, 40, 3600000);
+
+          if (!userAiLimit.allowed || !roomAiLimit.allowed) {
+            const retrySec = userAiLimit.retryAfterSec || roomAiLimit.retryAfterSec || 15;
+            const rateLimitMsg: Message = {
+              id: `ai-rl-${Date.now()}`,
+              senderId: 'ai',
+              senderName: '✨ iChatWorld AI',
+              isFaculty: false,
+              text: `⏳ **AI Rate Limit:** Please wait ${retrySec}s before asking another question to @ai to prevent service congestion.`,
+              timestamp: Date.now()
+            };
+            await store.addMessage(roomCode, rateLimitMsg);
+            io.to(roomCode).emit('chat:received', rateLimitMsg);
+            return;
+          }
+
           io.to(roomCode).emit('chat:user-typing', {
             socketId: 'ai-assistant',
             displayName: '✨ iChatWorld AI (Thinking...)',

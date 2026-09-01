@@ -4,7 +4,7 @@ import { Avatar } from '../common/Avatar.js';
 import { formatTime } from '../../utils/format.js';
 import { VoiceRecorder } from './VoiceRecorder.js';
 import { PollCard } from './PollCard.js';
-import { Send, Pin, VolumeX, Mic, Search, Smile, Play, Pause, X, Edit3, Trash2, Check, Ban } from 'lucide-react';
+import { Send, Pin, VolumeX, Mic, Search, Smile, Play, Pause, X, Edit3, Trash2, Check, Ban, Sparkles, HelpCircle } from 'lucide-react';
 
 interface ChatPanelProps {
   messages: Message[];
@@ -281,28 +281,43 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                       </div>
                     ) : (
                       /* Normal Message Bubble */
-                      <div
-                        onDoubleClick={() => setActiveReactionMenu(activeReactionMenu === msg.id ? null : msg.id)}
-                        className={`px-4 py-2.5 rounded-2xl text-body break-words select-text ${
-                          isOwn
-                            ? 'bg-apple-blue text-white rounded-br-sm shadow-sm'
-                            : msg.isFaculty
-                            ? 'bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border border-amber-200/70 dark:border-amber-800 rounded-bl-sm'
-                            : 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white border border-apple-border/50 dark:border-white/10 rounded-bl-sm shadow-sm'
-                        }`}
-                      >
-                        {msg.isAudio && msg.audioUrl ? (
-                          <div className="flex items-center gap-2 py-1">
-                            <audio src={msg.audioUrl} controls className="h-8 max-w-[200px]" />
+                      msg.senderId === 'ai' ? (
+                        <div
+                          onDoubleClick={() => setActiveReactionMenu(activeReactionMenu === msg.id ? null : msg.id)}
+                          className="bg-gradient-to-br from-purple-500/10 via-indigo-500/10 to-blue-500/10 dark:from-purple-950/40 dark:via-indigo-950/40 dark:to-blue-950/40 border border-purple-300/80 dark:border-purple-700/60 rounded-2xl rounded-bl-sm p-3.5 text-apple-textPrimary dark:text-white shadow-sm space-y-1.5 max-w-full select-text"
+                        >
+                          <div className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400 font-bold text-caption pb-1 border-b border-purple-200/50 dark:border-purple-800/40">
+                            <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                            <span>iChatWorld AI Assistant</span>
                           </div>
-                        ) : msg.isCode ? (
-                          <pre className="p-3 bg-black/90 text-emerald-400 rounded-xl font-mono text-xs overflow-x-auto leading-relaxed">
-                            <code>{msg.text}</code>
-                          </pre>
-                        ) : (
-                          <p className="leading-relaxed">{msg.text}</p>
-                        )}
-                      </div>
+                          <div className="text-body whitespace-pre-wrap leading-relaxed font-sans">
+                            {msg.text}
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onDoubleClick={() => setActiveReactionMenu(activeReactionMenu === msg.id ? null : msg.id)}
+                          className={`px-4 py-2.5 rounded-2xl text-body break-words select-text ${
+                            isOwn
+                              ? 'bg-apple-blue text-white rounded-br-sm shadow-sm'
+                              : msg.isFaculty
+                              ? 'bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border border-amber-200/70 dark:border-amber-800 rounded-bl-sm'
+                              : 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white border border-apple-border/50 dark:border-white/10 rounded-bl-sm shadow-sm'
+                          }`}
+                        >
+                          {msg.isAudio && msg.audioUrl ? (
+                            <div className="flex items-center gap-2 py-1">
+                              <audio src={msg.audioUrl} controls className="h-8 max-w-[200px]" />
+                            </div>
+                          ) : msg.isCode ? (
+                            <pre className="p-3 bg-black/90 text-emerald-400 rounded-xl font-mono text-xs overflow-x-auto leading-relaxed">
+                              <code>{msg.text}</code>
+                            </pre>
+                          ) : (
+                            <p className="leading-relaxed">{msg.text}</p>
+                          )}
+                        </div>
+                      )
                     )}
 
                     {/* Reactions Display Pills */}
@@ -403,6 +418,42 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Quick @ai & Feature Prompt Chips */}
+      {canSend && !isRecordingVoice && (
+        <div className="px-3 pt-2 pb-1 bg-white/70 dark:bg-black/70 backdrop-blur border-t border-apple-border/40 dark:border-white/5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setInputText('@ai explain ')}
+            className="px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
+          >
+            <Sparkles className="w-3 h-3 text-purple-500" />
+            <span>@ai explain</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputText('@ai quiz me on ')}
+            className="px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
+          >
+            <HelpCircle className="w-3 h-3 text-blue-500" />
+            <span>@ai quiz me</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputText('@ai list all features and how to use them')}
+            className="px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
+          >
+            <span>🛠️ @ai features</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputText('@ai summarize our discussion in 3 key points')}
+            className="px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
+          >
+            <span>📝 @ai summarize</span>
+          </button>
+        </div>
+      )}
 
       {/* Input or Muted Banner */}
       <div className="p-3 bg-white dark:bg-black border-t border-apple-border/70 dark:border-white/10 shrink-0">

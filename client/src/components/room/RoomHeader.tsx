@@ -20,8 +20,11 @@ import {
   Presentation,
   Clock,
   Monitor,
-  Sparkles
+  Star,
+  BookOpen
 } from 'lucide-react';
+
+import { BrandLogo } from '../common/BrandLogo.js';
 
 interface RoomHeaderProps {
   roomCode: string;
@@ -43,7 +46,7 @@ interface RoomHeaderProps {
   onOpenTimerModal: () => void;
   onOpenQAModal: () => void;
   onOpenPresenter: () => void;
-  onOpenAISummary?: () => void;
+  onOpenDocs?: () => void;
   onStartScreenShare: () => void;
   onToggleRaiseHand: () => void;
   onLeaveRoom: () => void;
@@ -71,7 +74,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
   onOpenTimerModal,
   onOpenQAModal,
   onOpenPresenter,
-  onOpenAISummary,
+  onOpenDocs,
   onStartScreenShare,
   onToggleRaiseHand,
   onLeaveRoom,
@@ -120,16 +123,18 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 dark:bg-black/95 backdrop-blur-md border-b border-apple-border/70 dark:border-white/10 px-3 py-2 transition-colors">
-      <div className="max-w-[600px] mx-auto flex flex-col gap-1.5">
+    <header className="sticky top-0 z-30 bg-white/95 dark:bg-black/95 backdrop-blur-md border-b border-apple-border/70 dark:border-white/10 px-3 md:px-6 py-2 transition-colors">
+      <div className="w-full max-w-7xl mx-auto flex flex-col gap-1.5">
         {/* Top Row: Room Code, Switcher, Timer Pill, Main Actions */}
-        <div className="flex items-center justify-between gap-1.5">
+        <div className="flex items-center justify-between gap-2">
           {/* Left: Switcher & Room Code */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <BrandLogo size="sm" />
+
             <button
               onClick={onOpenRoomSwitcher}
               title="Switch between rooms"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-apple-textPrimary dark:text-white transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-apple-textPrimary dark:text-white transition-colors shadow-2xs"
             >
               <Layers className="w-3.5 h-3.5 text-apple-blue" />
               <span className="font-mono font-bold text-headline tracking-wider text-xs md:text-sm">
@@ -148,38 +153,62 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
             <button
               onClick={onOpenQR}
               title="Show QR Code"
-              className="p-1.5 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary hover:text-apple-textPrimary transition-colors"
+              className="p-1.5 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors"
             >
               <QrCode className="w-3.5 h-3.5" />
             </button>
+
+            {/* Synchronized Timer Badge */}
+            {timerState && (
+              <button
+                onClick={onOpenTimerModal}
+                title="Classroom Timer"
+                className={`hidden sm:flex items-center gap-1 px-3 py-1 rounded-full text-caption font-mono font-bold transition-all shadow-sm ${
+                  timerSecondsLeft === 0
+                    ? 'bg-red-500 text-white animate-bounce'
+                    : timerState.isRunning
+                    ? 'bg-apple-blue text-white shadow-blue-500/30 shadow-md animate-pulse'
+                    : 'bg-apple-secondaryBg dark:bg-white/10 text-apple-textSecondary'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>{formatTimer(timerSecondsLeft)}</span>
+              </button>
+            )}
           </div>
 
-          {/* Synchronized Timer Badge */}
-          {timerState && (
-            <button
-              onClick={onOpenTimerModal}
-              title="Classroom Timer"
-              className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-caption font-mono font-bold transition-all ${
-                timerSecondsLeft === 0
-                  ? 'bg-red-500 text-white animate-bounce'
-                  : timerState.isRunning
-                  ? 'bg-apple-blue text-white shadow-sm animate-pulse'
-                  : 'bg-apple-secondaryBg text-apple-textSecondary'
-              }`}
-            >
-              <Clock className="w-3 h-3" />
-              <span>{formatTimer(timerSecondsLeft)}</span>
-            </button>
-          )}
+          {/* Right Controls: Docs, GitHub Star, Raised Hands, Theme, Members, Controls */}
+          <div className="flex items-center gap-1.5">
+            {/* Developer Docs Button */}
+            {onOpenDocs && (
+              <button
+                onClick={onOpenDocs}
+                className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-semibold text-apple-textSecondary dark:text-white/70 hover:text-apple-textPrimary dark:hover:text-white bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg transition-colors"
+                title="Platform & Developer Docs"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-apple-blue" />
+                <span>Docs</span>
+              </button>
+            )}
 
-          {/* Right Controls */}
-          <div className="flex items-center gap-1">
+            {/* GitHub Star Button */}
+            <a
+              href="https://github.com/pwnjoshi/iChatWorld"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-yellow-100 dark:hover:bg-yellow-950/40 text-apple-textPrimary dark:text-white text-[12px] font-semibold transition-all border border-apple-border/50 dark:border-white/10"
+              title="Star iChatWorld on GitHub"
+            >
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+              <span>Star on GitHub</span>
+            </a>
+
             {/* Hand Raise Trigger */}
             {isFacultyOrHost ? (
               <button
                 onClick={onOpenHandQueue}
                 title="Raised Hands Queue"
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-semibold transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-semibold transition-all ${
                   handsRaised.length > 0
                     ? 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
                     : 'bg-apple-secondaryBg dark:bg-white/10 text-apple-textSecondary'
@@ -195,14 +224,14 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                 className={`p-1.5 rounded-full transition-all ${
                   isHandRaised
                     ? 'bg-amber-400 text-amber-950 ring-2 ring-amber-300 scale-105'
-                    : 'hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-amber-600'
+                    : 'hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary hover:text-amber-600'
                 }`}
               >
                 <Hand className="w-3.5 h-3.5" />
               </button>
             )}
 
-            {/* Dark Mode */}
+            {/* Dark Mode Toggle */}
             <button
               onClick={onToggleDarkMode}
               title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
@@ -211,14 +240,14 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5" />}
             </button>
 
-            {/* Members Count */}
+            {/* Members Count Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setShowMemberList(!showMemberList)}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-footnote font-semibold"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-footnote font-semibold"
                 title="View members"
               >
-                <Users className="w-3 h-3 text-apple-textSecondary" />
+                <Users className="w-3.5 h-3.5 text-apple-textSecondary" />
                 <span className="text-apple-textPrimary dark:text-white text-xs">{members.length}</span>
               </button>
 
@@ -229,8 +258,8 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                     onClick={() => setShowMemberList(false)}
                   />
                   <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-[#1C1C1E] rounded-ios-card shadow-ios-dropdown border border-apple-border/70 dark:border-white/10 p-3 z-40 space-y-2 animate-scale-up">
-                    <div className="flex items-center justify-between pb-1.5 border-b border-apple-border/40">
-                      <span className="text-caption font-semibold uppercase text-apple-textSecondary">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-apple-border/40 dark:border-white/10">
+                      <span className="text-caption font-semibold uppercase text-apple-textSecondary dark:text-white/60">
                         Members in Room ({members.length})
                       </span>
                     </div>
@@ -247,7 +276,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                             </span>
                           </div>
                           {m.isFaculty && (
-                            <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full">
+                            <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/60 dark:text-amber-300 px-1.5 py-0.5 rounded-full">
                               Faculty
                             </span>
                           )}
@@ -309,81 +338,83 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
 
         {/* Secondary Tool Ribbon (Whiteboard, CodePad, Q&A, Slides, Timer, Poll, Screen Share) */}
         <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar py-0.5 border-t border-apple-border/40 dark:border-white/5">
-          <button
-            onClick={onOpenWhiteboard}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary hover:text-apple-blue hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
-            title="Collaborative Freeform Whiteboard"
-          >
-            <PenTool className="w-3 h-3 text-apple-blue" />
-            <span>Whiteboard</span>
-          </button>
-
-          <button
-            onClick={onOpenCodePad}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary hover:text-emerald-500 hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
-            title="Interactive Code Pad & Runner"
-          >
-            <Code2 className="w-3 h-3 text-apple-green" />
-            <span>Code Pad</span>
-          </button>
-
-          <button
-            onClick={onOpenQAModal}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary hover:text-purple-500 hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
-            title="Anonymous Q&A Queue"
-          >
-            <HelpCircle className="w-3 h-3 text-purple-500" />
-            <span>Q&A ({qaQuestions.length})</span>
-          </button>
-
-          <button
-            onClick={onOpenPresenter}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary hover:text-amber-500 hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
-            title="Synchronized Slide Deck Presenter"
-          >
-            <Presentation className="w-3 h-3 text-amber-500" />
-            <span>Slides</span>
-          </button>
-
-          <button
-            onClick={onOpenTimerModal}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary hover:text-apple-blue hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
-            title="Focus Timer"
-          >
-            <Clock className="w-3 h-3 text-apple-blue" />
-            <span>Timer</span>
-          </button>
-
-          {isFacultyOrHost && (
+          <div className="flex items-center gap-1 shrink-0">
             <button
-              onClick={onOpenPollModal}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary hover:text-apple-blue hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
-              title="Classroom Poll"
+              onClick={onOpenWhiteboard}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary dark:text-white/70 hover:text-apple-blue hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
+              title="Collaborative Freeform Whiteboard"
             >
-              <BarChart2 className="w-3 h-3 text-apple-blue" />
-              <span>Poll</span>
+              <PenTool className="w-3 h-3 text-apple-blue" />
+              <span>Whiteboard</span>
+            </button>
+
+            <button
+              onClick={onOpenCodePad}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary dark:text-white/70 hover:text-emerald-500 hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
+              title="Interactive Code Pad & Runner"
+            >
+              <Code2 className="w-3 h-3 text-apple-green" />
+              <span>Code Pad</span>
+            </button>
+
+            <button
+              onClick={onOpenQAModal}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary dark:text-white/70 hover:text-purple-500 hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
+              title="Anonymous Q&A Queue"
+            >
+              <HelpCircle className="w-3 h-3 text-purple-500" />
+              <span>Q&A ({qaQuestions.length})</span>
+            </button>
+
+            <button
+              onClick={onOpenPresenter}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary dark:text-white/70 hover:text-amber-500 hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
+              title="Synchronized Slide Deck Presenter"
+            >
+              <Presentation className="w-3 h-3 text-amber-500" />
+              <span>Slides</span>
+            </button>
+
+            <button
+              onClick={onOpenTimerModal}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary dark:text-white/70 hover:text-apple-blue hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
+              title="Focus Timer"
+            >
+              <Clock className="w-3 h-3 text-apple-blue" />
+              <span>Timer</span>
+            </button>
+
+            {isFacultyOrHost && (
+              <button
+                onClick={onOpenPollModal}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary dark:text-white/70 hover:text-apple-blue hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
+                title="Classroom Poll"
+              >
+                <BarChart2 className="w-3 h-3 text-apple-blue" />
+                <span>Poll</span>
+              </button>
+            )}
+
+            <button
+              onClick={onStartScreenShare}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary dark:text-white/70 hover:text-apple-blue hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
+              title="Share Screen"
+            >
+              <Monitor className="w-3 h-3 text-apple-blue" />
+              <span>Screen</span>
+            </button>
+          </div>
+
+          {/* Quick Docs trigger on mobile */}
+          {onOpenDocs && (
+            <button
+              onClick={onOpenDocs}
+              className="flex md:hidden items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold text-apple-blue hover:underline shrink-0"
+            >
+              <BookOpen className="w-3 h-3" />
+              <span>Docs</span>
             </button>
           )}
-
-          {onOpenAISummary && (
-            <button
-              onClick={onOpenAISummary}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors shrink-0"
-              title="Generate DeepSeek AI Summary & Digest"
-            >
-              <Sparkles className="w-3 h-3 text-purple-500" />
-              <span>AI Digest</span>
-            </button>
-          )}
-
-          <button
-            onClick={onStartScreenShare}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary hover:text-apple-blue hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
-            title="Share Screen"
-          >
-            <Monitor className="w-3 h-3 text-apple-blue" />
-            <span>Screen</span>
-          </button>
         </div>
       </div>
     </header>

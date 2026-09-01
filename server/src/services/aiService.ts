@@ -55,10 +55,21 @@ export class AIService {
   }
 
   async askAssistant(userPrompt: string, recentMessages: Message[]): Promise<string> {
-    const systemPrompt = `You are iChatWorld AI, a helpful, brilliant classroom teaching assistant and peer tutor.
-- Respond concisely with high clarity, clean formatting, bullet points, or code snippets where appropriate.
-- If asked a conceptual or math question, provide an intuitive explanation followed by step-by-step reasoning.
-- Keep the tone encouraging, academic, and calm (Apple-style simplicity).`;
+    const systemPrompt = `You are iChatWorld AI, a helpful, brilliant classroom teaching assistant, peer tutor, and expert on the iChatWorld platform.
+- You speak naturally, warmly, and concisely like a smart human peer tutor or professor.
+- You know all built-in features of iChatWorld:
+  1. Real-Time Ephemeral Chat (with @ai assistant, voice notes, code formatting, tapback reactions, and message edits)
+  2. Collaborative Freeform Whiteboard (smooth pressure-sensitive Bézier drawing, 0 spikes, Light/Dark Obsidian/Grid canvas, snapshot export)
+  3. Screen Sharing with Draggable Floating PiP
+  4. Synchronized Slide Presenter Studio (cloud relay sync, slide deletion, live pen/highlighter/laser annotations)
+  5. Synchronized Classroom Focus Timer (presets & header countdown badge)
+  6. Live Polls & Anonymous Q&A Queue (with upvoting and answer threads)
+  7. Interactive CodePad & Runner (run TypeScript/JS/Python snippets and share to chat)
+  8. Direct WebRTC P2P File Transfers (zero server storage, instant speeds) & "Share in Chat"
+  9. Faculty Moderation (chat mute, kick member, pin announcements)
+  10. Dark/Light Mode & Offline PWA support
+- If a user asks what they can do or asks about features, explain how to use them with helpful tips!
+- Keep answers formatted with clean markdown, bullet points, or code blocks where appropriate.`;
 
     const formattedHistory = recentMessages
       .filter(m => !m.isSystem && !m.isDeleted && m.text)
@@ -78,35 +89,28 @@ export class AIService {
 
   async generateLectureSummary(messages: Message[], files: FileMetadata[], questions: QAQuestion[]): Promise<any> {
     const systemPrompt = `You are an expert academic summarizer for iChatWorld.
-Analyze the classroom lecture session context (messages, shared files, student questions) and output a JSON object with:
+Analyze the classroom context and output a JSON object with:
 {
-  "title": "Lecture / Session Topic Title",
-  "summary": "2-3 paragraph concise overview of everything discussed",
-  "keyTakeaways": ["takeaway 1", "takeaway 2", "takeaway 3", "takeaway 4"],
-  "actionItems": ["assignment/task 1", "reading or deadline 2"],
-  "suggestedQuiz": [
-    {
-      "question": "Quiz question based on lecture?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctIndex": 0,
-      "explanation": "Why this option is correct"
-    }
-  ]
+  "title": "Topic Title",
+  "summary": "Brief summary",
+  "keyTakeaways": ["key takeaway 1", "key takeaway 2"],
+  "actionItems": ["action item 1"],
+  "suggestedQuiz": []
 }
-Return ONLY valid JSON without markdown wrapping or code blocks.`;
+Return ONLY valid JSON without markdown wrapping.`;
 
     const chatDigest = messages
       .filter(m => !m.isSystem && !m.isDeleted && m.text)
       .map(m => `${m.senderName}: ${m.text}`)
       .join('\n');
 
-    const fileDigest = files.map(f => `File: ${f.filename} (${(f.size / 1024).toFixed(1)} KB)`).join('\n');
-    const qaDigest = questions.map(q => `Q: ${q.text} (Answered: ${q.isAnswered})`).join('\n');
+    const fileDigest = files.map(f => `File: ${f.filename}`).join('\n');
+    const qaDigest = questions.map(q => `Q: ${q.text}`).join('\n');
 
-    const contextText = `=== CHAT TRANSCRIPT ===\n${chatDigest || 'No chat messages'}\n\n=== SHARED FILES ===\n${fileDigest || 'No files'}\n\n=== Q&A QUEUE ===\n${qaDigest || 'No Q&A'}`;
+    const contextText = `=== CHAT ===\n${chatDigest || 'No messages'}\n\n=== FILES ===\n${fileDigest || 'No files'}\n\n=== Q&A ===\n${qaDigest || 'No Q&A'}`;
 
     const rawResponse = await this.callChatCompletion([
-      { role: 'user', content: `Please summarize this lecture session:\n\n${contextText}` }
+      { role: 'user', content: `Please summarize:\n\n${contextText}` }
     ], systemPrompt);
 
     try {
@@ -116,7 +120,7 @@ Return ONLY valid JSON without markdown wrapping or code blocks.`;
       return {
         title: 'Lecture Summary',
         summary: rawResponse,
-        keyTakeaways: ['Review the discussion in the room.'],
+        keyTakeaways: ['Review room discussion.'],
         actionItems: [],
         suggestedQuiz: []
       };

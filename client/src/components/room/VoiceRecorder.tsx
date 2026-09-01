@@ -122,7 +122,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSendAudio, onCan
         </span>
         {recording && (
           <span className="text-caption text-apple-red/80 italic hidden sm:inline">
-            Recording audio (Echo cancelled)...
+            Recording voice note...
           </span>
         )}
       </div>

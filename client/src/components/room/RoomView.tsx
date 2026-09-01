@@ -25,10 +25,23 @@ import { CodePadModal } from './CodePadModal.js';
 import { ClassroomTimerModal } from './ClassroomTimer.js';
 import { QAQueueModal } from './QAQueueModal.js';
 import { SlidePresenterModal } from './SlidePresenterModal.js';
-import { AISummaryModal } from './AISummaryModal.js';
+import { DeveloperDocsModal } from '../docs/DeveloperDocsModal.js';
 import { ScreenShareViewer } from './ScreenShareViewer.js';
 import { Modal } from '../common/Modal.js';
-import { MessageSquare, Folder, Shield } from 'lucide-react';
+import {
+  MessageSquare,
+  Folder,
+  Shield,
+  PenTool,
+  Code2,
+  HelpCircle,
+  Presentation,
+  BarChart2,
+  Clock,
+  Monitor,
+  Sparkles,
+  Users
+} from 'lucide-react';
 import { formatFileSize } from '../../utils/format.js';
 
 interface RoomViewProps {
@@ -66,7 +79,6 @@ interface RoomViewProps {
   onEmitLaserMove: (pos: { x: number; y: number } | null) => void;
   onAnnotateSlide?: (slideIndex: number, stroke: WhiteboardStroke) => void;
   onClearSlideAnnotations?: (slideIndex: number) => void;
-  onGetAISummary: () => Promise<any>;
   onStartScreenShare: () => Promise<void>;
   onStopScreenShare: () => void;
   onRaiseHand: () => Promise<boolean>;
@@ -122,7 +134,6 @@ export const RoomView: React.FC<RoomViewProps> = ({
   onEmitLaserMove,
   onAnnotateSlide,
   onClearSlideAnnotations,
-  onGetAISummary,
   onStartScreenShare,
   onStopScreenShare,
   onRaiseHand,
@@ -153,7 +164,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
   const [isTimerModalOpen, setIsTimerModalOpen] = useState(false);
   const [isQAModalOpen, setIsQAModalOpen] = useState(false);
   const [isPresenterModalOpen, setIsPresenterModalOpen] = useState(false);
-  const [isAISummaryOpen, setIsAISummaryOpen] = useState(false);
+  const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isElevateModalOpen, setIsElevateModalOpen] = useState(false);
   const [elevatePassphrase, setElevatePassphrase] = useState('');
   const [elevateError, setElevateError] = useState('');
@@ -201,7 +212,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-[600px] mx-auto bg-apple-bg dark:bg-black border-x border-apple-border/50 dark:border-white/10 shadow-sm selection:bg-apple-blue selection:text-white transition-colors">
+    <div className="flex flex-col h-screen w-full max-w-7xl mx-auto bg-apple-bg dark:bg-black border-x border-apple-border/50 dark:border-white/10 shadow-lg selection:bg-apple-blue selection:text-white transition-colors">
       {/* Header */}
       <RoomHeader
         roomCode={room.code}
@@ -223,7 +234,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
         onOpenTimerModal={() => setIsTimerModalOpen(true)}
         onOpenQAModal={() => setIsQAModalOpen(true)}
         onOpenPresenter={() => setIsPresenterModalOpen(true)}
-        onOpenAISummary={() => setIsAISummaryOpen(true)}
+        onOpenDocs={() => setIsDocsOpen(true)}
         onStartScreenShare={onStartScreenShare}
         onToggleRaiseHand={handleToggleRaiseHand}
         onLeaveRoom={onLeaveRoom}
@@ -231,38 +242,10 @@ export const RoomView: React.FC<RoomViewProps> = ({
         onElevatePrompt={() => setIsElevateModalOpen(true)}
       />
 
-      {/* Segmented Chat / Files Switcher Bar */}
-      <div className="px-4 py-2 bg-white/50 dark:bg-black/50 backdrop-blur border-b border-apple-border/40 dark:border-white/10 shrink-0">
-        <div className="flex p-0.5 bg-apple-secondaryBg dark:bg-white/10 rounded-xl">
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-footnote font-semibold transition-all ${
-              activeTab === 'chat'
-                ? 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white shadow-sm'
-                : 'text-apple-textSecondary dark:text-white/60 hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>Chat ({room.messages.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('files')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-footnote font-semibold transition-all ${
-              activeTab === 'files'
-                ? 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white shadow-sm'
-                : 'text-apple-textSecondary dark:text-white/60 hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-          >
-            <Folder className="w-3.5 h-3.5" />
-            <span>Files ({room.files.length})</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-hidden relative">
-        {activeTab === 'chat' ? (
+      {/* DESKTOP SPLIT-SCREEN WORKSPACE (lg & xl screens) */}
+      <div className="hidden lg:grid lg:grid-cols-12 flex-1 min-h-0 overflow-hidden divide-x divide-apple-border/50 dark:divide-white/10">
+        {/* Left Column (60%): Live Chat Feed */}
+        <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full min-h-0 overflow-hidden bg-white/40 dark:bg-black/40">
           <ChatPanel
             messages={room.messages}
             currentMember={currentMember}
@@ -280,21 +263,147 @@ export const RoomView: React.FC<RoomViewProps> = ({
             onDeletePoll={onDeletePoll}
             onSendTyping={onSendTyping}
           />
-        ) : (
-          <FilePanel
-            files={room.files}
-            currentMember={currentMember}
-            transfers={transfers}
-            downloadedBlobs={downloadedBlobs}
-            onUploadFile={onUploadFile}
-            onDownloadFile={onDownloadFile}
-            onDeleteFile={onDeleteFile}
-            onShareInChat={handleShareFileInChat}
-          />
-        )}
-      </main>
+        </div>
 
-      {/* Screen Share Floating Viewer */}
+        {/* Right Column (40%): Live Files & Classroom Studio Side-Deck */}
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col h-full min-h-0 overflow-hidden bg-white/70 dark:bg-[#1C1C1E]/50">
+          {/* Top: Files Panel */}
+          <div className="flex-1 min-h-0 overflow-hidden border-b border-apple-border/50 dark:border-white/10 flex flex-col">
+            <div className="p-3 bg-white/90 dark:bg-black/40 border-b border-apple-border/40 dark:border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Folder className="w-4 h-4 text-apple-blue" />
+                <span className="text-footnote font-bold text-apple-textPrimary dark:text-white">
+                  Shared Files ({room.files.length})
+                </span>
+              </div>
+              <span className="text-[11px] text-apple-textSecondary dark:text-white/50 font-mono">
+                WebRTC P2P Mesh
+              </span>
+            </div>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <FilePanel
+                files={room.files}
+                transfers={transfers}
+                downloadedBlobs={downloadedBlobs}
+                currentMember={currentMember}
+                onUploadFile={onUploadFile}
+                onDownloadFile={onDownloadFile}
+                onDeleteFile={onDeleteFile}
+                onShareInChat={handleShareFileInChat}
+              />
+            </div>
+          </div>
+
+          {/* Bottom: Studio Quick Tools & Participants Sidebar */}
+          <div className="p-4 bg-apple-secondaryBg/40 dark:bg-white/5 space-y-3 shrink-0">
+            <div className="flex items-center justify-between">
+              <span className="text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/60">
+                Classroom Studio Tools
+              </span>
+              <span className="text-[11px] text-apple-blue font-semibold">
+                {room.members.length} Active in Room
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => setIsWhiteboardOpen(true)}
+                className="p-2.5 rounded-xl bg-white dark:bg-[#2C2C2E] hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-apple-border/50 dark:border-white/10 text-left transition-all active:scale-95 shadow-2xs group"
+              >
+                <PenTool className="w-4 h-4 text-apple-blue mb-1 transition-transform group-hover:scale-110" />
+                <p className="text-caption font-bold text-apple-textPrimary dark:text-white leading-tight">Whiteboard</p>
+                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Draw & Sync</p>
+              </button>
+
+              <button
+                onClick={() => setIsCodePadOpen(true)}
+                className="p-2.5 rounded-xl bg-white dark:bg-[#2C2C2E] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-apple-border/50 dark:border-white/10 text-left transition-all active:scale-95 shadow-2xs group"
+              >
+                <Code2 className="w-4 h-4 text-emerald-500 mb-1 transition-transform group-hover:scale-110" />
+                <p className="text-caption font-bold text-apple-textPrimary dark:text-white leading-tight">Code Pad</p>
+                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Live Runner</p>
+              </button>
+
+              <button
+                onClick={() => setIsPresenterModalOpen(true)}
+                className="p-2.5 rounded-xl bg-white dark:bg-[#2C2C2E] hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-apple-border/50 dark:border-white/10 text-left transition-all active:scale-95 shadow-2xs group"
+              >
+                <Presentation className="w-4 h-4 text-amber-500 mb-1 transition-transform group-hover:scale-110" />
+                <p className="text-caption font-bold text-apple-textPrimary dark:text-white leading-tight">Slides</p>
+                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Deck & Laser</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* MOBILE / TABLET VIEW (Compact Tabbed Switcher) */}
+      <div className="flex lg:hidden flex-col flex-1 min-h-0 overflow-hidden">
+        {/* Segmented Chat / Files Switcher Bar */}
+        <div className="px-4 py-2 bg-white/50 dark:bg-black/50 backdrop-blur border-b border-apple-border/40 dark:border-white/10 shrink-0">
+          <div className="flex p-0.5 bg-apple-secondaryBg dark:bg-white/10 rounded-xl">
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-footnote font-semibold transition-all ${
+                activeTab === 'chat'
+                  ? 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white shadow-sm'
+                  : 'text-apple-textSecondary dark:text-white/60 hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Chat ({room.messages.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('files')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-footnote font-semibold transition-all ${
+                activeTab === 'files'
+                  ? 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white shadow-sm'
+                  : 'text-apple-textSecondary dark:text-white/60 hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
+            >
+              <Folder className="w-3.5 h-3.5" />
+              <span>Files ({room.files.length})</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          {activeTab === 'chat' ? (
+            <ChatPanel
+              messages={room.messages}
+              currentMember={currentMember}
+              chatMuted={room.chatMuted}
+              pinnedAnnouncement={room.pinnedAnnouncement}
+              activePoll={room.activePoll}
+              typingUsers={typingUsers}
+              onSendMessage={onSendMessage}
+              onEditMessage={onEditMessage}
+              onDeleteMessage={onDeleteMessage}
+              onSendAudio={onSendAudio}
+              onReactToMessage={onReactToMessage}
+              onVotePoll={onVotePoll}
+              onClosePoll={onClosePoll}
+              onDeletePoll={onDeletePoll}
+              onSendTyping={onSendTyping}
+            />
+          ) : (
+            <FilePanel
+              files={room.files}
+              transfers={transfers}
+              downloadedBlobs={downloadedBlobs}
+              currentMember={currentMember}
+              onUploadFile={onUploadFile}
+              onDownloadFile={onDownloadFile}
+              onDeleteFile={onDeleteFile}
+              onShareInChat={handleShareFileInChat}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Floating Draggable Screen Share PiP */}
       <ScreenShareViewer
         stream={screenStream}
         presenterName={screenPresenterName}
@@ -303,104 +412,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
         onStopShare={onStopScreenShare}
       />
 
-      {/* Collaborative Whiteboard */}
-      <WhiteboardModal
-        isOpen={isWhiteboardOpen}
-        onClose={() => setIsWhiteboardOpen(false)}
-        strokes={room.whiteboardStrokes || []}
-        onEmitStroke={onEmitWhiteboardStroke}
-        onClearWhiteboard={onClearWhiteboard}
-        onBroadcastImage={handleBroadcastFile}
-      />
-
-      {/* Interactive Code Pad & Runner */}
-      <CodePadModal
-        isOpen={isCodePadOpen}
-        onClose={() => setIsCodePadOpen(false)}
-        onShareToChat={handleShareCodeToChat}
-      />
-
-      {/* Classroom Timer Modal */}
-      <ClassroomTimerModal
-        isOpen={isTimerModalOpen}
-        onClose={() => setIsTimerModalOpen(false)}
-        timerState={room.timerState}
-        onUpdateTimer={onUpdateTimerState}
-        isFaculty={!!isFacultyOrHost}
-      />
-
-      {/* Anonymous Q&A Modal */}
-      <QAQueueModal
-        isOpen={isQAModalOpen}
-        onClose={() => setIsQAModalOpen(false)}
-        questions={room.qaQuestions || []}
-        currentSocketId={currentMember?.socketId}
-        isFaculty={!!isFacultyOrHost}
-        onAskQuestion={onAskQAQuestion}
-        onEditQuestion={onEditQAQuestion}
-        onAnswerQuestion={onAnswerQAQuestion}
-        onUpvoteQuestion={onUpvoteQAQuestion}
-        onUpvoteAnswer={onUpvoteQAAnswer}
-        onToggleAnswer={onToggleAnswerQA}
-      />
-
-      {/* Synchronized Slide Presenter */}
-      <SlidePresenterModal
-        isOpen={isPresenterModalOpen}
-        onClose={() => setIsPresenterModalOpen(false)}
-        presenterState={room.presenterState}
-        laserPos={laserPos}
-        onSyncPresenter={onSyncPresenter}
-        onEmitLaserMove={onEmitLaserMove}
-        onAnnotateSlide={onAnnotateSlide}
-        onClearSlideAnnotations={onClearSlideAnnotations}
-        isFaculty={!!isFacultyOrHost}
-      />
-
-      {/* AI Summary Modal */}
-      <AISummaryModal
-        isOpen={isAISummaryOpen}
-        onClose={() => setIsAISummaryOpen(false)}
-        onGetSummary={onGetAISummary}
-      />
-
-      {/* Room Switcher Modal */}
-      <RoomSwitcherModal
-        isOpen={isRoomSwitcherOpen}
-        onClose={() => setIsRoomSwitcherOpen(false)}
-        currentRoomCode={room.code}
-        activeRooms={activeRooms}
-        onSwitchRoom={onSwitchRoom}
-        onJoinNewRoom={onJoinNewRoom}
-        onCreateNewRoom={onCreateNewRoom}
-        onRemoveRoomFromHistory={onRemoveRoomFromHistory}
-      />
-
-      {/* Raised Hands Modal */}
-      <HandRaiseModal
-        isOpen={isHandQueueOpen}
-        onClose={() => setIsHandQueueOpen(false)}
-        handsRaised={room.handsRaised || []}
-        onLowerHand={onLowerHand}
-        onLowerAllHands={onLowerAllHands}
-        isFaculty={!!isFacultyOrHost}
-      />
-
-      {/* Poll Creation Modal */}
-      <PollModal
-        isOpen={isPollModalOpen}
-        onClose={() => setIsPollModalOpen(false)}
-        onCreatePoll={onCreatePoll}
-      />
-
-      {/* QR Modal */}
-      <QRModal
-        isOpen={isQrOpen}
-        onClose={() => setIsQrOpen(false)}
-        roomCode={room.code}
-      />
-
-      {/* Faculty Slide-over */}
+      {/* Modals and Overlays */}
       <FacultySlideOver
         isOpen={isFacultySlideOverOpen}
         onClose={() => setIsFacultySlideOverOpen(false)}
@@ -415,54 +427,136 @@ export const RoomView: React.FC<RoomViewProps> = ({
         onEndRoom={onEndRoom}
       />
 
-      {/* Faculty Elevation Modal */}
+      <QRModal
+        isOpen={isQrOpen}
+        onClose={() => setIsQrOpen(false)}
+        roomCode={room.code}
+      />
+
+      <RoomSwitcherModal
+        isOpen={isRoomSwitcherOpen}
+        onClose={() => setIsRoomSwitcherOpen(false)}
+        currentRoomCode={room.code}
+        activeRooms={activeRooms}
+        onSwitchRoom={onSwitchRoom}
+        onJoinNewRoom={onJoinNewRoom}
+        onCreateNewRoom={onCreateNewRoom}
+        onRemoveRoomFromHistory={onRemoveRoomFromHistory}
+      />
+
+      <HandRaiseModal
+        isOpen={isHandQueueOpen}
+        onClose={() => setIsHandQueueOpen(false)}
+        handsRaised={room.handsRaised || []}
+        isFaculty={!!isFacultyOrHost}
+        onLowerHand={onLowerHand}
+        onLowerAllHands={onLowerAllHands}
+      />
+
+      <PollModal
+        isOpen={isPollModalOpen}
+        onClose={() => setIsPollModalOpen(false)}
+        onCreatePoll={onCreatePoll}
+      />
+
+      <WhiteboardModal
+        isOpen={isWhiteboardOpen}
+        onClose={() => setIsWhiteboardOpen(false)}
+        strokes={room.whiteboardStrokes || []}
+        onEmitStroke={onEmitWhiteboardStroke}
+        onClearWhiteboard={onClearWhiteboard}
+        onBroadcastImage={async (file: File) => {
+          await onUploadFile(file, true);
+        }}
+      />
+
+      <CodePadModal
+        isOpen={isCodePadOpen}
+        onClose={() => setIsCodePadOpen(false)}
+        onShareToChat={handleShareCodeToChat}
+      />
+
+      <ClassroomTimerModal
+        isOpen={isTimerModalOpen}
+        onClose={() => setIsTimerModalOpen(false)}
+        timerState={room.timerState}
+        isFaculty={!!isFacultyOrHost}
+        onUpdateTimer={onUpdateTimerState}
+      />
+
+      <QAQueueModal
+        isOpen={isQAModalOpen}
+        onClose={() => setIsQAModalOpen(false)}
+        questions={room.qaQuestions || []}
+        isFaculty={!!isFacultyOrHost}
+        currentSocketId={currentMember?.socketId}
+        onAskQuestion={onAskQAQuestion}
+        onEditQuestion={onEditQAQuestion}
+        onAnswerQuestion={onAnswerQAQuestion}
+        onUpvoteQuestion={onUpvoteQAQuestion}
+        onUpvoteAnswer={onUpvoteQAAnswer}
+        onToggleAnswer={onToggleAnswerQA}
+      />
+
+      <SlidePresenterModal
+        isOpen={isPresenterModalOpen}
+        onClose={() => setIsPresenterModalOpen(false)}
+        presenterState={room.presenterState}
+        laserPos={laserPos}
+        onSyncPresenter={onSyncPresenter}
+        onEmitLaserMove={onEmitLaserMove}
+        onAnnotateSlide={onAnnotateSlide}
+        onClearSlideAnnotations={onClearSlideAnnotations}
+        isFaculty={!!isFacultyOrHost}
+      />
+
+      <DeveloperDocsModal
+        isOpen={isDocsOpen}
+        onClose={() => setIsDocsOpen(false)}
+      />
+
+      {/* Elevate to Faculty Passphrase Modal */}
       <Modal
         isOpen={isElevateModalOpen}
-        onClose={() => setIsElevateModalOpen(false)}
-        title="Faculty Access"
+        onClose={() => {
+          setIsElevateModalOpen(false);
+          setElevatePassphrase('');
+          setElevateError('');
+        }}
+        title="Unlock Faculty Controls"
       >
         <form onSubmit={handleElevateSubmit} className="space-y-4">
-          <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-footnote">
-            <Shield className="w-5 h-5 text-amber-600 shrink-0" />
-            <span>Enter the institutional passphrase to unlock moderation tools.</span>
-          </div>
+          <p className="text-footnote text-apple-textSecondary dark:text-white/60">
+            Enter the institutional faculty passphrase to access moderation controls, chat mute, and announcement pinning.
+          </p>
 
-          <div>
-            <label className="block text-caption font-medium text-apple-textSecondary mb-1.5">
-              Passphrase
-            </label>
+          <div className="space-y-1">
             <input
               type="password"
               value={elevatePassphrase}
-              onChange={(e) => {
-                setElevatePassphrase(e.target.value);
-                setElevateError('');
-              }}
-              placeholder="Passphrase (default: faculty123)"
+              onChange={(e) => setElevatePassphrase(e.target.value)}
+              placeholder="Enter faculty passphrase"
+              className="w-full px-4 py-3 bg-apple-secondaryBg dark:bg-white/10 rounded-ios-input text-body text-apple-textPrimary dark:text-white placeholder:text-apple-textSecondary/50 outline-none focus:ring-2 focus:ring-apple-blue"
               autoFocus
-              className="w-full px-3.5 py-2.5 bg-apple-secondaryBg dark:bg-white/10 rounded-ios-input text-body text-apple-textPrimary dark:text-white outline-none focus:ring-2 focus:ring-apple-blue transition-all"
             />
+            {elevateError && (
+              <p className="text-caption text-apple-red font-medium">{elevateError}</p>
+            )}
           </div>
 
-          {elevateError && (
-            <p className="text-footnote text-apple-red font-medium">
-              {elevateError}
-            </p>
-          )}
-
-          <div className="flex gap-2 pt-2">
+          <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setIsElevateModalOpen(false)}
-              className="flex-1 py-2.5 px-4 rounded-full bg-apple-secondaryBg dark:bg-white/10 text-apple-textPrimary dark:text-white text-footnote font-medium hover:bg-apple-tertiaryBg transition-colors"
+              className="px-4 py-2 rounded-ios-btn text-footnote font-medium text-apple-textSecondary hover:bg-apple-secondaryBg"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 px-4 rounded-full bg-apple-blue text-white text-footnote font-semibold hover:bg-apple-blueHover transition-colors shadow-sm"
+              className="px-5 py-2 rounded-ios-btn bg-apple-blue hover:bg-apple-blueHover text-white font-medium text-footnote shadow-sm"
             >
-              Unlock Controls
+              Unlock
             </button>
           </div>
         </form>
