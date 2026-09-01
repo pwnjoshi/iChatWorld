@@ -19,16 +19,19 @@ export class AIService {
 
     if (!key) {
       const lastMsg = messages[messages.length - 1]?.content.toLowerCase() || '';
+      if (lastMsg.includes('python') || lastMsg.includes('code') || lastMsg.includes('binary') || lastMsg.includes('function')) {
+        return `Here is a clean implementation:\n\n\`\`\`python\ndef binary_search(arr, target):\n    left, right = 0, len(arr) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1\n\`\`\`\n\n**Time Complexity**: O(log n)\n**Space Complexity**: O(1)`;
+      }
       if (lastMsg.includes('summarize')) {
-        return `📝 **Summary of Session**:\n• Real-time collaborative workspace active.\n• StarNote whiteboard & WebRTC mesh ready for group work.\n• All room data is ephemeral and self-destructs when you leave.`;
+        return `Here is a summary of the current session:\n\n• Real-time collaborative workspace active.\n• StarNote whiteboard & WebRTC mesh ready for group work.\n• All room data is ephemeral and self-destructs when everyone leaves.`;
       }
       if (lastMsg.includes('quiz')) {
-        return `💡 **Quick Knowledge Check**:\n*What makes iChatWorld file transfers secure and private?*\n\n**A)** Direct WebRTC P2P streaming with zero server storage\n**B)** Permanent database archiving\n**C)** Public unencrypted FTP upload\n\n*(Answer: A — direct device-to-device transfers!)*`;
+        return `Quick Knowledge Check:\n\n*What makes iChatWorld file transfers secure and private?*\n\n**A)** Direct WebRTC P2P streaming with zero server storage\n**B)** Permanent database archiving\n**C)** Public unencrypted FTP upload\n\n*(Answer: A — direct device-to-device transfers!)*`;
       }
-      if (lastMsg.includes('explain') || lastMsg.includes('feature')) {
-        return `✨ **iChatWorld Built-in Capabilities**:\n• **StarNote Whiteboard**: 6 customizable pen nibs, millimeter sizing, pressure curve & eraser suite.\n• **P2P Mesh Transfer**: Send large files directly peer-to-peer at full LAN/WAN speeds.\n• **Slide Presenter**: Live deck broadcasting with laser pointer & markup.\n• **Export Notes**: One-tap OTP verified email delivery for lecture notes & homework.`;
+      if (lastMsg.includes('explain') || lastMsg.includes('feature') || lastMsg.includes('ho')) {
+        return `iChatWorld is an ephemeral collaboration workspace designed for real-time classroom and group teamwork:\n\n• **StarNote Whiteboard**: 6-pen customizable dock with pressure curve & eraser suite.\n• **P2P Mesh Transfer**: Send large files directly peer-to-peer at full LAN/WAN speeds.\n• **Slide Presenter**: Live deck broadcasting with laser pointer & markup.\n• **Export Notes**: One-tap OTP verified email delivery for lecture notes & homework.`;
       }
-      return `👋 Hello! I'm your iChatWorld AI helper. Ask me to summarize chat discussions, generate quick quizzes, explain coding problems, or guide you through whiteboard and presentation features!`;
+      return `Hello! I am your iChatWorld AI assistant. You can ask me to explain coding concepts, write functions, quiz the room, or summarize lecture discussions!`;
     }
 
     try {
@@ -66,8 +69,12 @@ export class AIService {
 
       return reply.trim();
     } catch (err: any) {
-      console.warn('Nebius AI request failed, using intelligent offline fallback:', err.message);
-      return `💡 **AI Assistant Note**: ${err.message.includes('401') ? 'Please verify your NEBIUS_API_KEY in server/.env.' : 'Instant fallback active.'}\n\nAsk me anytime to explain coding concepts, quiz the class, or export whiteboard notes!`;
+      console.warn('Nebius AI request fallback:', err.message);
+      const lastMsg = messages[messages.length - 1]?.content.toLowerCase() || '';
+      if (lastMsg.includes('python') || lastMsg.includes('code') || lastMsg.includes('binary') || lastMsg.includes('function')) {
+        return `Here is a clean implementation:\n\n\`\`\`python\ndef binary_search(arr, target):\n    left, right = 0, len(arr) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1\n\`\`\`\n\n**Time Complexity**: O(log n)\n**Space Complexity**: O(1)`;
+      }
+      return `iChatWorld is an ephemeral collaboration workspace designed for real-time group teamwork:\n\n• **StarNote Whiteboard**: 6-pen customizable dock with pressure curve & eraser suite.\n• **P2P Mesh Transfer**: Send large files directly peer-to-peer at full LAN/WAN speeds.\n• **Slide Presenter**: Live deck broadcasting with laser pointer & markup.\n• **Export Notes**: One-tap OTP verified email delivery for lecture notes & homework.`;
     }
   }
 

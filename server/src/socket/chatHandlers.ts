@@ -65,9 +65,9 @@ export function registerChatHandlers(io: Server, socket: Socket) {
             const rateLimitMsg: Message = {
               id: `ai-rl-${Date.now()}`,
               senderId: 'ai',
-              senderName: '✨ iChatWorld AI',
+              senderName: 'iChatWorld AI',
               isFaculty: false,
-              text: `⏳ **AI Rate Limit:** Please wait ${retrySec}s before asking another question to @ai to prevent service congestion.`,
+              text: `⏳ AI Rate Limit: Please wait ${retrySec}s before asking another question to prevent service congestion.`,
               timestamp: Date.now()
             };
             await store.addMessage(roomCode, rateLimitMsg);
@@ -77,7 +77,7 @@ export function registerChatHandlers(io: Server, socket: Socket) {
 
           io.to(roomCode).emit('chat:user-typing', {
             socketId: 'ai-assistant',
-            displayName: '✨ iChatWorld AI (Thinking...)',
+            displayName: 'iChatWorld AI (Thinking...)',
             isTyping: true
           });
 
@@ -89,7 +89,7 @@ export function registerChatHandlers(io: Server, socket: Socket) {
               const aiMsg: Message = {
                 id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                 senderId: 'ai',
-                senderName: '✨ iChatWorld AI (DeepSeek)',
+                senderName: 'iChatWorld AI',
                 isFaculty: false,
                 text: aiReply,
                 timestamp: Date.now(),
@@ -103,7 +103,7 @@ export function registerChatHandlers(io: Server, socket: Socket) {
               const errMsg: Message = {
                 id: `ai-err-${Date.now()}`,
                 senderId: 'ai',
-                senderName: '✨ iChatWorld AI',
+                senderName: 'iChatWorld AI',
                 isFaculty: false,
                 text: `⚠️ AI Assistant error: ${err.message}`,
                 timestamp: Date.now()
