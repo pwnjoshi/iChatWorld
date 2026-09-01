@@ -302,6 +302,11 @@ export function useSocket() {
 
       socket.emit('room:create', { displayName, isFaculty, passphrase, lifespanHours }, (response: any) => {
         if (response?.success) {
+          if (response.creatorSecret && response.room?.code) {
+            try {
+              localStorage.setItem(`ichatworld_creator_${response.room.code}`, response.creatorSecret);
+            } catch {}
+          }
           setRoom(response.room);
           setCurrentMember(response.member);
           setError(null);
@@ -318,7 +323,12 @@ export function useSocket() {
     return new Promise((resolve) => {
       if (!socket) return resolve({ success: false, error: 'Socket not connected' });
 
-      socket.emit('room:join', { code, displayName, isFaculty, passphrase }, (response: any) => {
+      let creatorSecret: string | undefined;
+      try {
+        creatorSecret = localStorage.getItem(`ichatworld_creator_${code}`) || undefined;
+      } catch {}
+
+      socket.emit('room:join', { code, displayName, isFaculty, passphrase, creatorSecret }, (response: any) => {
         if (response?.success) {
           setRoom(response.room);
           setCurrentMember(response.member);
@@ -336,7 +346,12 @@ export function useSocket() {
     return new Promise((resolve) => {
       if (!socket) return resolve({ success: false, error: 'Socket not connected' });
 
-      socket.emit('room:switch', { targetCode, displayName, isFaculty }, (response: any) => {
+      let creatorSecret: string | undefined;
+      try {
+        creatorSecret = localStorage.getItem(`ichatworld_creator_${targetCode}`) || undefined;
+      } catch {}
+
+      socket.emit('room:switch', { targetCode, displayName, isFaculty, creatorSecret }, (response: any) => {
         if (response?.success) {
           setRoom(response.room);
           setCurrentMember(response.member);

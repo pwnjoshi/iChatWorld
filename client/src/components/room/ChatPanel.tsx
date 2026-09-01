@@ -375,10 +375,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 <div className="flex items-start gap-1.5 max-w-[92%] sm:max-w-[80%] relative">
                   {!isOwn && (
                     <Avatar
-                      name={isAI ? 'AI' : msg.senderName}
+                      name={msg.senderName}
                       isFaculty={msg.isFaculty}
+                      isAI={isAI}
                       size="sm"
-                      className={`w-6 h-6 text-[10px] shrink-0 mt-0.5 ${isAI ? 'bg-gradient-to-tr from-purple-500 to-blue-500 text-white' : ''}`}
+                      className="mt-0.5"
                     />
                   )}
 

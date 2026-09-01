@@ -146,6 +146,7 @@ export interface RoomState {
   code: string;
   createdAt: number;
   expiresAt: number;
+  creatorSecret?: string;
   chatMuted: boolean;
   pinnedAnnouncement?: Message | null;
   members: Member[];

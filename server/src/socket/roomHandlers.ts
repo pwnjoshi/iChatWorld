@@ -42,13 +42,14 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       };
 
       const lifespanHours = typeof data.lifespanHours === 'number' ? data.lifespanHours : 24;
-      const room = await store.createRoom(code, member, undefined, lifespanHours);
+      const creatorSecret = `csec_${Math.random().toString(36).substring(2, 10)}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 10)}`;
+      const room = await store.createRoom(code, member, undefined, lifespanHours, creatorSecret);
       socket.join(code);
       (socket as any).roomCode = code;
       (socket as any).memberData = member;
 
       if (typeof callback === 'function') {
-        callback({ success: true, room, member });
+        callback({ success: true, room, member, creatorSecret });
       }
     } catch (err: any) {
       if (typeof callback === 'function') {
@@ -58,7 +59,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
   });
 
   // Join existing room
-  socket.on('room:join', async (data: { code: string; displayName: string; isFaculty?: boolean; passphrase?: string }, callback) => {
+  socket.on('room:join', async (data: { code: string; displayName: string; isFaculty?: boolean; passphrase?: string; creatorSecret?: string }, callback) => {
     try {
       const code = (data.code || '').trim().toUpperCase();
       const existingRoom = await store.getRoom(code);
@@ -77,11 +78,14 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
         }
       }
 
+      // Check if user has saved creatorSecret token from local storage
+      const isRecognizedCreator = !!(existingRoom.creatorSecret && data.creatorSecret && existingRoom.creatorSecret === data.creatorSecret);
+
       const member: Member = {
         socketId: socket.id,
-        displayName: (data.displayName || 'Participant').trim() || 'Participant',
-        isFaculty,
-        isCreator: false,
+        displayName: (data.displayName || (isRecognizedCreator ? 'Creator' : 'Participant')).trim() || (isRecognizedCreator ? 'Creator' : 'Participant'),
+        isFaculty: isFaculty || isRecognizedCreator,
+        isCreator: isRecognizedCreator,
         joinedAt: Date.now()
       };
 
@@ -103,7 +107,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       });
 
       if (typeof callback === 'function') {
-        callback({ success: true, room: updatedRoom, member });
+        callback({ success: true, room: updatedRoom, member, isCreator: isRecognizedCreator });
       }
     } catch (err: any) {
       if (typeof callback === 'function') {

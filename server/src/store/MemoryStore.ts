@@ -28,6 +28,7 @@ export class MemoryStore implements IStore {
       code: room.code,
       createdAt: room.createdAt,
       expiresAt: room.expiresAt,
+      creatorSecret: room.creatorSecret,
       chatMuted: room.chatMuted,
       pinnedAnnouncement: room.pinnedAnnouncement,
       members: membersArray,
@@ -59,7 +60,7 @@ export class MemoryStore implements IStore {
     this.timers.set(code, timer);
   }
 
-  async createRoom(code: string, creator: Member, facultyPassphraseHash?: string, lifespanHours?: number): Promise<SerializedRoom> {
+  async createRoom(code: string, creator: Member, facultyPassphraseHash?: string, lifespanHours?: number, creatorSecret?: string): Promise<SerializedRoom> {
     const now = Date.now();
     const isUnlimited = lifespanHours === 0;
     const durationHours = (lifespanHours && [1, 3, 6, 12, 24, 48].includes(lifespanHours)) ? lifespanHours : isUnlimited ? 0 : 24;
@@ -73,6 +74,7 @@ export class MemoryStore implements IStore {
       createdAt: now,
       expiresAt,
       facultyPassphraseHash,
+      creatorSecret,
       chatMuted: false,
       pinnedAnnouncement: null,
       members,

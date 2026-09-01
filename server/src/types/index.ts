@@ -146,6 +146,7 @@ export interface Room {
   createdAt: number;
   expiresAt: number;
   facultyPassphraseHash?: string;
+  creatorSecret?: string;
   chatMuted: boolean;
   pinnedAnnouncement?: Message | null;
   members: Map<string, Member> | Record<string, Member>;
@@ -163,6 +164,7 @@ export interface SerializedRoom {
   code: string;
   createdAt: number;
   expiresAt: number;
+  creatorSecret?: string;
   chatMuted: boolean;
   pinnedAnnouncement?: Message | null;
   members: Member[];
