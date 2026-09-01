@@ -26,6 +26,7 @@ import { ClassroomTimerModal } from './ClassroomTimer.js';
 import { QAQueueModal } from './QAQueueModal.js';
 import { SlidePresenterModal } from './SlidePresenterModal.js';
 import { DeveloperDocsModal } from '../docs/DeveloperDocsModal.js';
+import { ExportNotesModal } from './ExportNotesModal.js';
 import { ScreenShareViewer } from './ScreenShareViewer.js';
 import { Modal } from '../common/Modal.js';
 import {
@@ -165,6 +166,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
   const [isQAModalOpen, setIsQAModalOpen] = useState(false);
   const [isPresenterModalOpen, setIsPresenterModalOpen] = useState(false);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
+  const [isExportNotesOpen, setIsExportNotesOpen] = useState(false);
   const [isElevateModalOpen, setIsElevateModalOpen] = useState(false);
   const [elevatePassphrase, setElevatePassphrase] = useState('');
   const [elevateError, setElevateError] = useState('');
@@ -235,6 +237,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
         onOpenQAModal={() => setIsQAModalOpen(true)}
         onOpenPresenter={() => setIsPresenterModalOpen(true)}
         onOpenDocs={() => setIsDocsOpen(true)}
+        onOpenExportNotes={() => setIsExportNotesOpen(true)}
         onStartScreenShare={onStartScreenShare}
         onToggleRaiseHand={handleToggleRaiseHand}
         onLeaveRoom={onLeaveRoom}
@@ -513,6 +516,13 @@ export const RoomView: React.FC<RoomViewProps> = ({
       <DeveloperDocsModal
         isOpen={isDocsOpen}
         onClose={() => setIsDocsOpen(false)}
+      />
+
+      <ExportNotesModal
+        isOpen={isExportNotesOpen}
+        onClose={() => setIsExportNotesOpen(false)}
+        room={room}
+        currentMember={currentMember}
       />
 
       {/* Elevate to Faculty Passphrase Modal */}

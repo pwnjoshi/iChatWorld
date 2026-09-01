@@ -21,7 +21,8 @@ import {
   Clock,
   Monitor,
   Star,
-  BookOpen
+  BookOpen,
+  Mail
 } from 'lucide-react';
 
 import { BrandLogo } from '../common/BrandLogo.js';
@@ -47,6 +48,7 @@ interface RoomHeaderProps {
   onOpenQAModal: () => void;
   onOpenPresenter: () => void;
   onOpenDocs?: () => void;
+  onOpenExportNotes?: () => void;
   onStartScreenShare: () => void;
   onToggleRaiseHand: () => void;
   onLeaveRoom: () => void;
@@ -75,6 +77,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
   onOpenQAModal,
   onOpenPresenter,
   onOpenDocs,
+  onOpenExportNotes,
   onStartScreenShare,
   onToggleRaiseHand,
   onLeaveRoom,
@@ -403,6 +406,17 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               <Monitor className="w-3 h-3 text-apple-blue" />
               <span>Screen</span>
             </button>
+
+            {onOpenExportNotes && (
+              <button
+                onClick={onOpenExportNotes}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-blue hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors shrink-0 border border-blue-200/60 dark:border-blue-900/40"
+                title="Export Notes & Homework Package"
+              >
+                <Mail className="w-3 h-3 text-apple-blue" />
+                <span>Export Notes</span>
+              </button>
+            )}
           </div>
 
           {/* Quick Docs trigger on mobile */}

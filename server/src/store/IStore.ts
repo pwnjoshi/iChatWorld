@@ -13,7 +13,7 @@ import {
 } from '../types/index.js';
 
 export interface IStore {
-  createRoom(code: string, creator: Member, facultyPassphraseHash?: string): Promise<SerializedRoom>;
+  createRoom(code: string, creator: Member, facultyPassphraseHash?: string, lifespanHours?: number): Promise<SerializedRoom>;
   getRoom(code: string): Promise<SerializedRoom | null>;
   touchRoom(code: string): Promise<void>;
   addMember(code: string, member: Member): Promise<SerializedRoom | null>;

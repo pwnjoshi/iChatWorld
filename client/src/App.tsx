@@ -128,8 +128,8 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  const handleCreateRoom = async (displayName: string, isFaculty: boolean, passphrase?: string) => {
-    const result = await createRoom(displayName, isFaculty, passphrase);
+  const handleCreateRoom = async (displayName: string, isFaculty: boolean, passphrase?: string, lifespanHours?: number) => {
+    const result = await createRoom(displayName, isFaculty, passphrase, lifespanHours);
     if (result.success && result.code) {
       window.history.replaceState(null, '', `?code=${result.code}`);
     }

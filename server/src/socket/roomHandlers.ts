@@ -17,7 +17,7 @@ export function generateRoomCode(): string {
 
 export function registerRoomHandlers(io: Server, socket: Socket) {
   // Create a new room
-  socket.on('room:create', async (data: { displayName: string; isFaculty?: boolean; passphrase?: string }, callback) => {
+  socket.on('room:create', async (data: { displayName: string; isFaculty?: boolean; passphrase?: string; lifespanHours?: number }, callback) => {
     try {
       let code = generateRoomCode();
       let attempts = 0;
@@ -41,7 +41,8 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
         joinedAt: Date.now()
       };
 
-      const room = await store.createRoom(code, member);
+      const lifespanHours = typeof data.lifespanHours === 'number' ? data.lifespanHours : 24;
+      const room = await store.createRoom(code, member, undefined, lifespanHours);
       socket.join(code);
       (socket as any).roomCode = code;
       (socket as any).memberData = member;

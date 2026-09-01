@@ -7,6 +7,7 @@ import fs from 'fs';
 import { CONFIG } from './config.js';
 import roomRouter from './routes/room.js';
 import relayRouter from './routes/relay.js';
+import { emailRouter } from './routes/emailRoutes.js';
 import { registerRoomHandlers } from './socket/roomHandlers.js';
 import { registerChatHandlers } from './socket/chatHandlers.js';
 import { registerSignalingHandlers } from './socket/rtcSignaling.js';
@@ -33,10 +34,11 @@ app.use(cors({
 // Fallback binary relay route (before express.json)
 app.use('/api/relay', relayRouter);
 
-app.use(express.json());
+app.use(express.json({ limit: '25mb' })); // Support base64 image snapshots
 
 // REST Routes
 app.use('/api/rooms', roomRouter);
+app.use('/api/email', emailRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });

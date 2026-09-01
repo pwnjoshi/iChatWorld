@@ -275,11 +275,11 @@ export function useSocket() {
     };
   }, []);
 
-  const createRoom = useCallback((displayName: string, isFaculty?: boolean, passphrase?: string): Promise<{ success: boolean; code?: string; error?: string }> => {
+  const createRoom = useCallback((displayName: string, isFaculty?: boolean, passphrase?: string, lifespanHours?: number): Promise<{ success: boolean; code?: string; error?: string }> => {
     return new Promise((resolve) => {
       if (!socket) return resolve({ success: false, error: 'Socket not connected' });
 
-      socket.emit('room:create', { displayName, isFaculty, passphrase }, (response: any) => {
+      socket.emit('room:create', { displayName, isFaculty, passphrase, lifespanHours }, (response: any) => {
         if (response?.success) {
           setRoom(response.room);
           setCurrentMember(response.member);

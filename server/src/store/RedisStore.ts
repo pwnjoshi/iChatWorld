@@ -74,10 +74,11 @@ export class RedisStore implements IStore {
     return `room:${code}:presenter`;
   }
 
-  async createRoom(code: string, creator: Member, facultyPassphraseHash?: string): Promise<SerializedRoom> {
+  async createRoom(code: string, creator: Member, facultyPassphraseHash?: string, lifespanHours?: number): Promise<SerializedRoom> {
     const now = Date.now();
-    const expiresAt = now + CONFIG.ROOM_HARD_CAP_SEC * 1000;
-    const ttl = CONFIG.ROOM_INACTIVITY_TTL_SEC;
+    const durationHours = (lifespanHours && [1, 3, 6, 12, 24].includes(lifespanHours)) ? lifespanHours : 24;
+    const expiresAt = now + durationHours * 3600 * 1000;
+    const ttl = Math.min(CONFIG.ROOM_INACTIVITY_TTL_SEC, durationHours * 3600);
 
     const pipeline = this.redis.pipeline();
     pipeline.hset(this.metaKey(code), {
