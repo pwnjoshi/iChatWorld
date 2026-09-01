@@ -78,11 +78,14 @@ export interface WhiteboardPoint {
 
 export interface WhiteboardStroke {
   id: string;
-  type: 'pen' | 'highlighter' | 'eraser' | 'rect' | 'circle' | 'line';
+  type: 'pen' | 'pencil' | 'brush' | 'highlighter' | 'eraser' | 'rect' | 'circle' | 'line' | 'arrow' | 'triangle' | 'diamond' | 'star' | 'image';
   color: string;
   size: number;
   points: WhiteboardPoint[];
   isClosed?: boolean;
+  imageUrl?: string;
+  imageWidth?: number;
+  imageHeight?: number;
 }
 
 export interface QAAnswer {

@@ -14,11 +14,21 @@ import {
   Hand,
   ZoomIn,
   ZoomOut,
-  Undo,
+  Undo2,
+  Redo2,
   Palette,
   Sun,
   Moon,
-  Grid
+  Grid,
+  Maximize2,
+  Minimize2,
+  Image as ImageIcon,
+  Ruler,
+  ChevronDown,
+  ArrowRight,
+  Triangle,
+  Sparkles,
+  Layers
 } from 'lucide-react';
 
 interface WhiteboardModalProps {
@@ -29,6 +39,24 @@ interface WhiteboardModalProps {
   onClearWhiteboard: () => void;
   onBroadcastImage: (file: File) => Promise<any>;
 }
+
+type ToolType =
+  | 'pen'
+  | 'pencil'
+  | 'brush'
+  | 'highlighter'
+  | 'eraser'
+  | 'object_eraser'
+  | 'rect'
+  | 'circle'
+  | 'triangle'
+  | 'diamond'
+  | 'arrow'
+  | 'line'
+  | 'star'
+  | 'pan';
+
+type CanvasBgType = 'light' | 'dark' | 'grid' | 'dots' | 'lines';
 
 const APPLE_PALETTE = [
   { name: 'Obsidian', hex: '#1C1C1E' },
@@ -62,13 +90,18 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Tools & Styling
-  const [tool, setTool] = useState<'pen' | 'highlighter' | 'eraser' | 'rect' | 'circle' | 'line' | 'pan'>('pen');
+  const [tool, setTool] = useState<ToolType>('pen');
   const [color, setColor] = useState('#007AFF');
   const [size, setSize] = useState(4);
   const [customColor, setCustomColor] = useState('#007AFF');
-  const [canvasBg, setCanvasBg] = useState<'light' | 'dark' | 'grid'>('light');
+  const [canvasBg, setCanvasBg] = useState<CanvasBgType>('light');
+  const [showRuler, setShowRuler] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false);
+  const [isPenMenuOpen, setIsPenMenuOpen] = useState(false);
 
   // Pan & Zoom Navigation
   const [zoom, setZoom] = useState(1);
@@ -76,11 +109,37 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0 });
 
+  // Undo / Redo history stack
+  const [localStrokes, setLocalStrokes] = useState<WhiteboardStroke[]>([]);
+  const [redoStack, setRedoStack] = useState<WhiteboardStroke[]>([]);
+
   // Drawing state
   const [isDrawing, setIsDrawing] = useState(false);
   const currentPointsRef = useRef<WhiteboardPoint[]>([]);
 
-  // Redraw canvas with full Pan/Zoom transform and Bézier smoothing
+  // Cache loaded images
+  const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
+
+  // Sync strokes from props
+  useEffect(() => {
+    setLocalStrokes(strokes || []);
+  }, [strokes]);
+
+  // Preload any stroke images
+  useEffect(() => {
+    localStrokes.forEach((s) => {
+      if (s.type === 'image' && s.imageUrl && !imageCacheRef.current.has(s.imageUrl)) {
+        const img = new Image();
+        img.src = s.imageUrl;
+        img.onload = () => {
+          imageCacheRef.current.set(s.imageUrl!, img);
+          redrawCanvas();
+        };
+      }
+    });
+  }, [localStrokes]);
+
+  // Redraw canvas with full transform, grids, background & strokes
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -92,22 +151,24 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Render background
-    ctx.fillStyle = canvasBg === 'dark' ? '#121212' : '#FFFFFF';
+    const isDark = canvasBg === 'dark';
+    ctx.fillStyle = isDark ? '#121212' : '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Apply 2D Pan and Zoom
     ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
 
-    // Optional Grid pattern
+    const startX = -pan.x / zoom - 200;
+    const endX = (canvas.width - pan.x) / zoom + 200;
+    const startY = -pan.y / zoom - 200;
+    const endY = (canvas.height - pan.y) / zoom + 200;
+
+    // Background Patterns
     if (canvasBg === 'grid') {
       ctx.save();
-      ctx.strokeStyle = 'rgba(0, 122, 255, 0.08)';
+      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 122, 255, 0.08)';
       ctx.lineWidth = 1;
       const gridSize = 40;
-      const startX = -pan.x / zoom - 200;
-      const endX = (canvas.width - pan.x) / zoom + 200;
-      const startY = -pan.y / zoom - 200;
-      const endY = (canvas.height - pan.y) / zoom + 200;
 
       for (let x = startX - (startX % gridSize); x <= endX; x += gridSize) {
         ctx.beginPath();
@@ -122,13 +183,72 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         ctx.stroke();
       }
       ctx.restore();
+    } else if (canvasBg === 'dots') {
+      ctx.save();
+      ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
+      const dotSize = 30;
+      for (let x = startX - (startX % dotSize); x <= endX; x += dotSize) {
+        for (let y = startY - (startY % dotSize); y <= endY; y += dotSize) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1.2, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    } else if (canvasBg === 'lines') {
+      ctx.save();
+      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 122, 255, 0.12)';
+      ctx.lineWidth = 1;
+      const lineGap = 32;
+      for (let y = startY - (startY % lineGap); y <= endY; y += lineGap) {
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(endX, y);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
 
-    // Render all saved strokes
-    for (const stroke of strokes) {
-      drawSmoothStroke(ctx, stroke);
+    // Render all strokes
+    for (const stroke of localStrokes) {
+      drawSmoothStroke(ctx, stroke, isDark);
     }
-  }, [strokes, zoom, pan, canvasBg]);
+
+    // Optional Ruler & Coordinate Scale Overlay
+    if (showRuler) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // Screen-space ruler
+      ctx.save();
+      ctx.fillStyle = isDark ? 'rgba(28, 28, 30, 0.85)' : 'rgba(242, 242, 247, 0.85)';
+      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
+      ctx.font = '10px -apple-system, system-ui, sans-serif';
+      ctx.fillStyle = isDark ? '#AEAEB2' : '#8E8E93';
+
+      // Top Horizontal Ruler
+      ctx.fillRect(0, 0, canvas.width, 18);
+      ctx.strokeRect(0, 0, canvas.width, 18);
+      for (let x = 0; x < canvas.width; x += 50) {
+        const worldX = Math.round((x - pan.x) / zoom);
+        ctx.beginPath();
+        ctx.moveTo(x, 10);
+        ctx.lineTo(x, 18);
+        ctx.stroke();
+        ctx.fillText(`${worldX}`, x + 2, 14);
+      }
+
+      // Left Vertical Ruler
+      ctx.fillRect(0, 0, 24, canvas.height);
+      ctx.strokeRect(0, 0, 24, canvas.height);
+      for (let y = 0; y < canvas.height; y += 50) {
+        const worldY = Math.round((y - pan.y) / zoom);
+        ctx.beginPath();
+        ctx.moveTo(16, y);
+        ctx.lineTo(24, y);
+        ctx.stroke();
+        ctx.fillText(`${worldY}`, 2, y + 10);
+      }
+      ctx.restore();
+    }
+  }, [localStrokes, zoom, pan, canvasBg, showRuler]);
 
   useEffect(() => {
     if (isOpen) {
@@ -136,8 +256,8 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     }
   }, [isOpen, redrawCanvas]);
 
-  // Quadratic Bézier curve & pressure-sensitive renderer
-  const drawSmoothStroke = (ctx: CanvasRenderingContext2D, stroke: WhiteboardStroke) => {
+  // Comprehensive Stroke & Shape Renderer
+  const drawSmoothStroke = (ctx: CanvasRenderingContext2D, stroke: WhiteboardStroke, isDarkBg: boolean) => {
     const points = stroke.points;
     if (!points || points.length === 0) return;
 
@@ -145,16 +265,38 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
+    // Handle Image Stroke
+    if (stroke.type === 'image' && stroke.imageUrl) {
+      const img = imageCacheRef.current.get(stroke.imageUrl);
+      const p = points[0];
+      const w = stroke.imageWidth || 300;
+      const h = stroke.imageHeight || 200;
+      if (img && img.complete) {
+        ctx.drawImage(img, p.x, p.y, w, h);
+      }
+      ctx.restore();
+      return;
+    }
+
     if (stroke.type === 'eraser') {
-      // Clean eraser matching background
       ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = canvasBg === 'dark' ? '#121212' : '#FFFFFF';
+      ctx.strokeStyle = isDarkBg ? '#121212' : '#FFFFFF';
       ctx.lineWidth = stroke.size * 3;
     } else if (stroke.type === 'highlighter') {
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 0.35;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size * 3.5;
+    } else if (stroke.type === 'pencil') {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 0.8;
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = Math.max(1, stroke.size * 0.7);
+    } else if (stroke.type === 'brush') {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.size * 2;
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 1;
@@ -162,6 +304,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       ctx.lineWidth = stroke.size;
     }
 
+    // Shapes Rendering
     if (stroke.type === 'rect' && points.length >= 2) {
       const start = points[0];
       const end = points[points.length - 1];
@@ -173,6 +316,45 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       ctx.beginPath();
       ctx.arc(start.x, start.y, radius, 0, 2 * Math.PI);
       ctx.stroke();
+    } else if (stroke.type === 'triangle' && points.length >= 2) {
+      const start = points[0];
+      const end = points[points.length - 1];
+      const midX = (start.x + end.x) / 2;
+      ctx.beginPath();
+      ctx.moveTo(midX, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.lineTo(start.x, end.y);
+      ctx.closePath();
+      ctx.stroke();
+    } else if (stroke.type === 'diamond' && points.length >= 2) {
+      const start = points[0];
+      const end = points[points.length - 1];
+      const midX = (start.x + end.x) / 2;
+      const midY = (start.y + end.y) / 2;
+      ctx.beginPath();
+      ctx.moveTo(midX, start.y);
+      ctx.lineTo(end.x, midY);
+      ctx.lineTo(midX, end.y);
+      ctx.lineTo(start.x, midY);
+      ctx.closePath();
+      ctx.stroke();
+    } else if (stroke.type === 'star' && points.length >= 2) {
+      const start = points[0];
+      const end = points[points.length - 1];
+      const r = Math.hypot(end.x - start.x, end.y - start.y);
+      const spikes = 5;
+      const step = Math.PI / spikes;
+      ctx.beginPath();
+      for (let i = 0; i < 2 * spikes; i++) {
+        const radius = i % 2 === 0 ? r : r / 2;
+        const angle = i * step - Math.PI / 2;
+        const x = start.x + radius * Math.cos(angle);
+        const y = start.y + radius * Math.sin(angle);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
     } else if (stroke.type === 'line' && points.length >= 2) {
       const start = points[0];
       const end = points[points.length - 1];
@@ -180,15 +362,30 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       ctx.moveTo(start.x, start.y);
       ctx.lineTo(end.x, end.y);
       ctx.stroke();
+    } else if (stroke.type === 'arrow' && points.length >= 2) {
+      const start = points[0];
+      const end = points[points.length - 1];
+      const angle = Math.atan2(end.y - start.y, end.x - start.x);
+      const headLen = Math.max(12, stroke.size * 3);
+
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(end.x - headLen * Math.cos(angle - Math.PI / 6), end.y - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(end.x - headLen * Math.cos(angle + Math.PI / 6), end.y - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.stroke();
     } else if (points.length === 1) {
       const p = points[0];
       const pressure = p.pressure ?? 0.5;
       const r = (stroke.size * (0.4 + pressure * 0.8)) / 2;
       ctx.beginPath();
       ctx.arc(p.x, p.y, Math.max(1, r), 0, 2 * Math.PI);
-      ctx.fillStyle = stroke.type === 'eraser' 
-        ? (canvasBg === 'dark' ? '#121212' : '#FFFFFF') 
-        : stroke.color;
+      ctx.fillStyle = stroke.type === 'eraser' ? (isDarkBg ? '#121212' : '#FFFFFF') : stroke.color;
       ctx.fill();
     } else {
       // True continuous Bézier spline connecting midpoints
@@ -199,11 +396,16 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         const midY = (p1.y + p2.y) / 2;
 
         const pressure = ((p1.pressure ?? 0.5) + (p2.pressure ?? 0.5)) / 2;
-        ctx.lineWidth = stroke.type === 'eraser'
-          ? stroke.size * 3
-          : (stroke.type === 'highlighter' 
-              ? stroke.size * 3.5 
-              : Math.max(1, stroke.size * (0.35 + pressure * 0.9)));
+        ctx.lineWidth =
+          stroke.type === 'eraser'
+            ? stroke.size * 3
+            : stroke.type === 'highlighter'
+            ? stroke.size * 3.5
+            : stroke.type === 'pencil'
+            ? Math.max(1, stroke.size * 0.7)
+            : stroke.type === 'brush'
+            ? Math.max(2, stroke.size * (0.8 + pressure * 1.6))
+            : Math.max(1, stroke.size * (0.35 + pressure * 0.9));
 
         ctx.beginPath();
         if (i === 0) {
@@ -248,27 +450,98 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     return {
       x: worldX,
       y: worldY,
-      pressure: Math.max(0.1, pressure || 0.5)
+      pressure
     };
   };
 
+  // Undo and Redo operations
+  const handleUndo = useCallback(() => {
+    if (localStrokes.length === 0) return;
+    const last = localStrokes[localStrokes.length - 1];
+    const newStrokes = localStrokes.slice(0, -1);
+    setRedoStack((prev) => [...prev, last]);
+    setLocalStrokes(newStrokes);
+  }, [localStrokes]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return;
+    const last = redoStack[redoStack.length - 1];
+    setRedoStack((prev) => prev.slice(0, -1));
+    setLocalStrokes((prev) => [...prev, last]);
+    onEmitStroke(last);
+  }, [redoStack, onEmitStroke]);
+
+  // Global Keyboard Shortcuts (Ctrl+Z, Ctrl+Y, Esc)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleUndo, handleRedo]);
+
+  // Pointer Down
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
     const canvas = canvasRef.current;
     if (!canvas) return;
     canvas.setPointerCapture(e.pointerId);
 
+    // Pan canvas with middle click, spacebar or 'pan' tool
     if (tool === 'pan' || e.button === 1 || e.buttons === 4) {
       setIsPanning(true);
       panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
       return;
     }
 
+    const startPoint = getCanvasWorldCoords(e);
+
+    // Object Eraser: Delete stroke on click
+    if (tool === 'object_eraser') {
+      const targetIndex = localStrokes.findIndex((s) => {
+        return s.points.some((p) => Math.hypot(p.x - startPoint.x, p.y - startPoint.y) < 25);
+      });
+      if (targetIndex !== -1) {
+        const removed = localStrokes[targetIndex];
+        setRedoStack((prev) => [...prev, removed]);
+        setLocalStrokes((prev) => prev.filter((_, idx) => idx !== targetIndex));
+      }
+      return;
+    }
+
+    const strokeType = tool;
+
     setIsDrawing(true);
-    const point = getCanvasWorldCoords(e);
-    currentPointsRef.current = [point];
+    currentPointsRef.current = [startPoint];
+
+    // Live preview
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      const activeStroke: WhiteboardStroke = {
+        id: `temp-${Date.now()}`,
+        type: strokeType,
+        color,
+        size,
+        points: [startPoint]
+      };
+      ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
+      drawSmoothStroke(ctx, activeStroke, canvasBg === 'dark');
+    }
   };
 
+  // Pointer Move
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (isPanning) {
       setPan({
@@ -279,34 +552,51 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     }
 
     if (!isDrawing) return;
-    e.preventDefault();
+    const pt = getCanvasWorldCoords(e);
+    currentPointsRef.current.push(pt);
 
-    const point = getCanvasWorldCoords(e);
-    currentPointsRef.current.push(point);
+    const isShape = ['rect', 'circle', 'triangle', 'diamond', 'star', 'arrow', 'line'].includes(tool);
+    const strokeType = (tool === 'pan' || tool === 'object_eraser') ? 'pen' : tool;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    if (tool === 'pan') return;
-
-    // Full double-buffered redraw of active stroke — eliminates all spikes and rendering artifacts!
-    redrawCanvas();
-    ctx.save();
-    ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
-    const strokeType = tool as 'pen' | 'highlighter' | 'eraser' | 'rect' | 'circle' | 'line';
-    drawSmoothStroke(ctx, {
-      id: 'active',
-      type: strokeType,
-      color,
-      size,
-      points: currentPointsRef.current
-    });
-    ctx.restore();
+    if (isShape) {
+      redrawCanvas();
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (ctx) {
+        const shapeStroke: WhiteboardStroke = {
+          id: `preview-${Date.now()}`,
+          type: strokeType,
+          color,
+          size,
+          points: [currentPointsRef.current[0], pt]
+        };
+        ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
+        drawSmoothStroke(ctx, shapeStroke, canvasBg === 'dark');
+      }
+    } else {
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (ctx) {
+        const activeStroke: WhiteboardStroke = {
+          id: `temp-${Date.now()}`,
+          type: strokeType,
+          color,
+          size,
+          points: currentPointsRef.current
+        };
+        ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
+        drawSmoothStroke(ctx, activeStroke, canvasBg === 'dark');
+      }
+    }
   };
 
+  // Pointer Up
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (canvas && canvas.hasPointerCapture(e.pointerId)) {
+      canvas.releasePointerCapture(e.pointerId);
+    }
+
     if (isPanning) {
       setIsPanning(false);
       return;
@@ -316,57 +606,103 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     setIsDrawing(false);
 
     if (currentPointsRef.current.length > 0) {
-      const strokeType = (tool === 'pan' ? 'pen' : tool) as 'pen' | 'highlighter' | 'eraser' | 'rect' | 'circle' | 'line';
-      const newStroke: WhiteboardStroke = {
-        id: `stroke-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      const strokeType = (tool === 'pan' || tool === 'object_eraser') ? 'pen' : tool;
+      const finalStroke: WhiteboardStroke = {
+        id: `stroke-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
         type: strokeType,
         color,
         size,
         points: [...currentPointsRef.current]
       };
-      onEmitStroke(newStroke);
-      currentPointsRef.current = [];
+
+      setLocalStrokes((prev) => [...prev, finalStroke]);
+      setRedoStack([]); // Clear redo upon new action
+      onEmitStroke(finalStroke);
     }
+
+    currentPointsRef.current = [];
   };
 
-  // Zoom helpers
-  const handleZoomIn = () => setZoom(prev => Math.min(3.0, Math.round((prev + 0.25) * 100) / 100));
-  const handleZoomOut = () => setZoom(prev => Math.max(0.4, Math.round((prev - 0.25) * 100) / 100));
+  // Zoom Controls
+  const handleZoomIn = () => setZoom((prev) => Math.min(3, prev + 0.2));
+  const handleZoomOut = () => setZoom((prev) => Math.max(0.4, prev - 0.2));
   const handleResetView = () => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
   };
 
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      setZoom(prev => Math.min(3.0, Math.max(0.4, Math.round((prev + delta) * 100) / 100)));
-    } else {
-      setPan(prev => ({
-        x: prev.x - e.deltaX,
-        y: prev.y - e.deltaY
-      }));
-    }
+  // Insert Image onto Canvas
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      const img = new Image();
+      img.src = dataUrl;
+      img.onload = () => {
+        const aspect = img.width / img.height;
+        const width = 360;
+        const height = width / aspect;
+
+        const canvas = canvasRef.current;
+        const centerX = canvas ? (canvas.width / 2 - pan.x) / zoom - width / 2 : 100;
+        const centerY = canvas ? (canvas.height / 2 - pan.y) / zoom - height / 2 : 100;
+
+        const imageStroke: WhiteboardStroke = {
+          id: `img-${Date.now()}`,
+          type: 'image',
+          color: '#000000',
+          size: 1,
+          points: [{ x: centerX, y: centerY }],
+          imageUrl: dataUrl,
+          imageWidth: width,
+          imageHeight: height
+        };
+
+        imageCacheRef.current.set(dataUrl, img);
+        setLocalStrokes((prev) => [...prev, imageStroke]);
+        onEmitStroke(imageStroke);
+      };
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
+  // Export as High-DPI PNG
   const handleExportPNG = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const url = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `whiteboard-${Date.now()}.png`;
-    a.click();
+
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (!tempCtx) return;
+
+    // Draw solid background
+    tempCtx.fillStyle = canvasBg === 'dark' ? '#121212' : '#FFFFFF';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    tempCtx.drawImage(canvas, 0, 0);
+
+    const dataUrl = tempCanvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = `whiteboard-${new Date().toISOString().slice(0, 10)}.png`;
+    link.href = dataUrl;
+    link.click();
   };
 
+  // Broadcast Snapshot to Room Files
   const handleBroadcastSnapshot = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     canvas.toBlob(async (blob) => {
       if (blob) {
-        const file = new File([blob], `whiteboard-${Date.now()}.png`, { type: 'image/png' });
+        const file = new File([blob], `whiteboard-snapshot-${Date.now()}.png`, { type: 'image/png' });
         await onBroadcastImage(file);
+        alert('Whiteboard snapshot broadcasted to Room Files!');
       }
     }, 'image/png');
   };
@@ -374,68 +710,218 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Collaborative Freeform Whiteboard" maxWidth="max-w-5xl">
-      <div className="space-y-3 select-none">
-        {/* Apple Ribbon Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-apple-secondaryBg dark:bg-white/5 rounded-ios-card border border-apple-border/70 dark:border-white/10">
-          {/* Drawing & Navigation Tools */}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Collaborative Whiteboard Studio"
+      maxWidth={isFullscreen ? 'max-w-full !m-0 !h-screen !rounded-none' : 'max-w-6xl'}
+    >
+      <div className="space-y-3 select-none flex flex-col h-full">
+        {/* Hidden Image Input */}
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageUpload}
+        />
+
+        {/* Primary Studio Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-apple-secondaryBg dark:bg-white/5 rounded-2xl border border-apple-border/70 dark:border-white/10 shadow-2xs">
+          {/* Left: Pen Tools Group */}
           <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setTool('pen')}
-              className={`p-2 rounded-lg transition-all ${tool === 'pen' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'}`}
-              title="Smooth Pen (Pressure Sensitive)"
-            >
-              <Pen className="w-4 h-4" />
-            </button>
+            {/* Pen Options Dropdown / Toggle */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setTool('pen');
+                  setIsPenMenuOpen(!isPenMenuOpen);
+                }}
+                className={`p-2 rounded-lg transition-all flex items-center gap-1 ${
+                  tool === 'pen' || tool === 'pencil' || tool === 'brush'
+                    ? 'bg-apple-blue text-white shadow-sm'
+                    : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+                }`}
+                title="Pen & Brush Tools"
+              >
+                <Pen className="w-4 h-4" />
+                <ChevronDown className="w-3 h-3 opacity-70" />
+              </button>
+
+              {isPenMenuOpen && (
+                <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-[#1C1C1E] border border-apple-border/70 dark:border-white/10 rounded-xl shadow-lg p-1.5 z-40 w-36 space-y-1 animate-scale-up">
+                  <button
+                    onClick={() => {
+                      setTool('pen');
+                      setIsPenMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-footnote ${
+                      tool === 'pen' ? 'bg-apple-blue text-white font-semibold' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                    }`}
+                  >
+                    <Pen className="w-3.5 h-3.5" />
+                    <span>Ink Pen</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTool('pencil');
+                      setIsPenMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-footnote ${
+                      tool === 'pencil' ? 'bg-apple-blue text-white font-semibold' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                    }`}
+                  >
+                    <Pen className="w-3.5 h-3.5 opacity-60" />
+                    <span>Sketch Pencil</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTool('brush');
+                      setIsPenMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-footnote ${
+                      tool === 'brush' ? 'bg-apple-blue text-white font-semibold' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Art Brush</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Highlighter */}
             <button
               type="button"
               onClick={() => setTool('highlighter')}
-              className={`p-2 rounded-lg transition-all ${tool === 'highlighter' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'}`}
+              className={`p-2 rounded-lg transition-all ${
+                tool === 'highlighter' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
               title="Highlighter"
             >
               <Highlighter className="w-4 h-4" />
             </button>
+
+            {/* Eraser Tools */}
             <button
               type="button"
-              onClick={() => setTool('eraser')}
-              className={`p-2 rounded-lg transition-all ${tool === 'eraser' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'}`}
-              title="Eraser"
+              onClick={() => setTool(tool === 'eraser' ? 'object_eraser' : 'eraser')}
+              className={`p-2 rounded-lg transition-all ${
+                tool === 'eraser' || tool === 'object_eraser'
+                  ? 'bg-apple-blue text-white shadow-sm'
+                  : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
+              title={tool === 'object_eraser' ? 'Object Eraser (Click to delete stroke)' : 'Brush Eraser (Click again for Object Eraser)'}
             >
               <Eraser className="w-4 h-4" />
             </button>
+
+            {/* Pan / Move Canvas */}
             <button
               type="button"
               onClick={() => setTool('pan')}
-              className={`p-2 rounded-lg transition-all ${tool === 'pan' ? 'bg-amber-500 text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'}`}
-              title="Pan / Move Canvas (🖐️)"
+              className={`p-2 rounded-lg transition-all ${
+                tool === 'pan' ? 'bg-amber-500 text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
+              title="Pan / Hand Tool (Drag canvas)"
             >
               <Hand className="w-4 h-4" />
             </button>
+          </div>
+
+          {/* Shapes Menu Group */}
+          <div className="relative">
             <button
               type="button"
-              onClick={() => setTool('rect')}
-              className={`p-2 rounded-lg transition-all ${tool === 'rect' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'}`}
-              title="Rectangle"
+              onClick={() => setIsShapeMenuOpen(!isShapeMenuOpen)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-[#1C1C1E] border border-apple-border/60 dark:border-white/10 shadow-sm text-footnote font-semibold transition-all ${
+                ['rect', 'circle', 'triangle', 'diamond', 'star', 'arrow', 'line'].includes(tool)
+                  ? 'text-apple-blue border-apple-blue dark:border-apple-blue'
+                  : 'text-apple-textPrimary dark:text-white'
+              }`}
             >
               <Square className="w-4 h-4" />
+              <span>Shapes</span>
+              <ChevronDown className="w-3 h-3 opacity-60" />
             </button>
-            <button
-              type="button"
-              onClick={() => setTool('circle')}
-              className={`p-2 rounded-lg transition-all ${tool === 'circle' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'}`}
-              title="Circle"
-            >
-              <Circle className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setTool('line')}
-              className={`p-2 rounded-lg transition-all ${tool === 'line' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'}`}
-              title="Line / Arrow"
-            >
-              <Minus className="w-4 h-4" />
-            </button>
+
+            {isShapeMenuOpen && (
+              <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-[#1C1C1E] border border-apple-border/70 dark:border-white/10 rounded-2xl shadow-xl p-2 z-40 w-44 grid grid-cols-2 gap-1 animate-scale-up">
+                <button
+                  onClick={() => {
+                    setTool('rect');
+                    setIsShapeMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
+                    tool === 'rect' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                  }`}
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  <span>Rectangle</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setTool('circle');
+                    setIsShapeMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
+                    tool === 'circle' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                  }`}
+                >
+                  <Circle className="w-3.5 h-3.5" />
+                  <span>Circle</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setTool('triangle');
+                    setIsShapeMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
+                    tool === 'triangle' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                  }`}
+                >
+                  <Triangle className="w-3.5 h-3.5" />
+                  <span>Triangle</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setTool('diamond');
+                    setIsShapeMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
+                    tool === 'diamond' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Diamond</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setTool('arrow');
+                    setIsShapeMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
+                    tool === 'arrow' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                  }`}
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Arrow</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setTool('line');
+                    setIsShapeMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
+                    tool === 'line' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                  }`}
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                  <span>Line</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Stroke Width Selector */}
@@ -457,20 +943,24 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             ))}
           </div>
 
-          {/* Canvas Paper Theme (Light / Dark Obsidian / Grid) */}
+          {/* Canvas Background Paper Themes */}
           <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
             <button
               type="button"
               onClick={() => setCanvasBg('light')}
-              className={`p-1.5 rounded-lg text-caption font-medium transition-all ${canvasBg === 'light' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary'}`}
-              title="White Paper"
+              className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
+                canvasBg === 'light' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
+              title="Plain White Paper"
             >
               <Sun className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={() => setCanvasBg('dark')}
-              className={`p-1.5 rounded-lg text-caption font-medium transition-all ${canvasBg === 'dark' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary'}`}
+              className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
+                canvasBg === 'dark' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
               title="Dark Obsidian Paper"
             >
               <Moon className="w-3.5 h-3.5" />
@@ -478,51 +968,105 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             <button
               type="button"
               onClick={() => setCanvasBg('grid')}
-              className={`p-1.5 rounded-lg text-caption font-medium transition-all ${canvasBg === 'grid' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary'}`}
+              className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
+                canvasBg === 'grid' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
               title="Math Grid Paper"
             >
               <Grid className="w-3.5 h-3.5" />
             </button>
+            <button
+              type="button"
+              onClick={() => setCanvasBg('dots')}
+              className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
+                canvasBg === 'dots' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
+              title="Dot Graph Paper"
+            >
+              <span className="text-[10px] font-bold px-1">DOTS</span>
+            </button>
           </div>
 
-          {/* Pan & Zoom Navigation Controls */}
+          {/* Undo / Redo / Ruler Controls */}
           <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
             <button
               type="button"
-              onClick={handleZoomOut}
-              className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
-              title="Zoom Out"
+              onClick={handleUndo}
+              disabled={localStrokes.length === 0}
+              className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white disabled:opacity-30 transition-colors"
+              title="Undo (Ctrl+Z)"
             >
-              <ZoomOut className="w-3.5 h-3.5" />
+              <Undo2 className="w-4 h-4" />
             </button>
             <button
               type="button"
-              onClick={handleResetView}
-              className="px-2 py-1 rounded-lg text-caption font-mono font-semibold text-apple-textSecondary hover:text-apple-blue"
-              title="Reset View (100%)"
+              onClick={handleRedo}
+              disabled={redoStack.length === 0}
+              className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white disabled:opacity-30 transition-colors"
+              title="Redo (Ctrl+Y)"
             >
-              {Math.round(zoom * 100)}%
+              <Redo2 className="w-4 h-4" />
             </button>
             <button
               type="button"
-              onClick={handleZoomIn}
-              className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
-              title="Zoom In"
+              onClick={() => setShowRuler(!showRuler)}
+              className={`p-1.5 rounded-lg transition-colors ${
+                showRuler ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
+              title="Toggle Measurement Ruler"
             >
-              <ZoomIn className="w-3.5 h-3.5" />
+              <Ruler className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Action Buttons: Export, Broadcast, Clear */}
+          {/* Actions: Insert Image, Zoom, Export, Fullscreen, Clear */}
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+              className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
+              title="Insert Image / Diagram onto Canvas"
+            >
+              <ImageIcon className="w-4 h-4" />
+            </button>
+
+            {/* Pan & Zoom Navigation Controls */}
+            <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleResetView}
+                className="px-2 py-0.5 rounded-lg text-caption font-mono font-semibold text-apple-textSecondary hover:text-apple-blue"
+                title="Reset View (100%)"
+              >
+                {Math.round(zoom * 100)}%
+              </button>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={handleExportPNG}
               className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-              title="Save as PNG"
+              title="Save as High-Res PNG"
             >
               <Download className="w-4 h-4" />
             </button>
+
             <button
               type="button"
               onClick={handleBroadcastSnapshot}
@@ -531,11 +1075,23 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             >
               <Share2 className="w-4 h-4" />
             </button>
+
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
+              title={isFullscreen ? 'Exit Full Screen' : 'Full Screen Canvas'}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+
             <button
               type="button"
               onClick={() => {
                 if (window.confirm('Clear all drawings on the whiteboard?')) {
                   onClearWhiteboard();
+                  setLocalStrokes([]);
+                  setRedoStack([]);
                 }
               }}
               className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-red-50 dark:hover:bg-red-950 text-apple-red transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
@@ -546,8 +1102,8 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           </div>
         </div>
 
-        {/* Apple Minimal Color Palette Swatches */}
-        {tool !== 'eraser' && tool !== 'pan' && (
+        {/* Color Palette Swatches (Self-contained, non-clipping Apple styling) */}
+        {tool !== 'eraser' && tool !== 'object_eraser' && tool !== 'pan' && (
           <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-white dark:bg-[#1C1C1E] rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
               {APPLE_PALETTE.map((c) => {
@@ -558,22 +1114,24 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                     type="button"
                     onClick={() => setColor(c.hex)}
                     className={`w-7 h-7 rounded-full transition-all shrink-0 flex items-center justify-center ${
-                      isSelected
-                        ? 'bg-apple-blue/15 dark:bg-white/15 p-0.5'
-                        : 'p-0.5 hover:scale-105'
+                      isSelected ? 'bg-apple-blue/15 dark:bg-white/15 p-0.5' : 'p-0.5 hover:scale-105'
                     }`}
                     title={c.name}
                   >
                     <span
                       className={`w-full h-full rounded-full flex items-center justify-center shadow-2xs border ${
-                        isSelected
-                          ? 'border-apple-blue dark:border-white'
-                          : 'border-black/10 dark:border-white/20'
+                        isSelected ? 'border-apple-blue dark:border-white' : 'border-black/10 dark:border-white/20'
                       }`}
                       style={{ backgroundColor: c.hex }}
                     >
                       {isSelected && (
-                        <span className={`w-1.5 h-1.5 rounded-full ${c.hex === '#1C1C1E' || c.hex === '#5856D6' || c.hex === '#007AFF' || c.hex === '#E02020' || c.hex === '#6A1B9A' ? 'bg-white' : 'bg-black'}`} />
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            c.hex === '#1C1C1E' || c.hex === '#5856D6' || c.hex === '#007AFF' || c.hex === '#FF3B30'
+                              ? 'bg-white'
+                              : 'bg-black'
+                          }`}
+                        />
                       )}
                     </span>
                   </button>
@@ -600,32 +1158,29 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           </div>
         )}
 
-        {/* Infinite Canvas Stage */}
+        {/* The Collaborative Canvas Viewport */}
         <div
           ref={containerRef}
-          onWheel={handleWheel}
-          className={`relative border border-apple-border/80 dark:border-white/20 rounded-ios-card overflow-hidden shadow-inner flex items-center justify-center ${
-            canvasBg === 'dark' ? 'bg-[#121212]' : 'bg-white'
-          } ${
-            tool === 'pan' ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-crosshair'
+          className={`relative flex-1 w-full bg-white dark:bg-black rounded-2xl overflow-hidden border border-apple-border/80 dark:border-white/10 shadow-inner flex items-center justify-center ${
+            isFullscreen ? 'h-[80vh]' : 'h-[58vh] min-h-[420px]'
           }`}
         >
           <canvas
             ref={canvasRef}
-            width={1600}
-            height={900}
+            width={1920}
+            height={1080}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
-            className="w-full h-auto max-h-[62vh] touch-none block select-none"
+            className={`w-full h-full object-contain touch-none ${
+              tool === 'pan' || isPanning
+                ? 'cursor-grab active:cursor-grabbing'
+                : tool === 'eraser' || tool === 'object_eraser'
+                ? 'cursor-cell'
+                : 'cursor-crosshair'
+            }`}
           />
-        </div>
-
-        {/* Footer Hint */}
-        <div className="flex items-center justify-between text-caption text-apple-textSecondary dark:text-white/50 px-1">
-          <span>✨ Pressure-sensitive Bézier handwriting. Zero spikes.</span>
-          <span>Tip: Use 🖐️ Hand or two-finger scroll to pan canvas freely.</span>
         </div>
       </div>
     </Modal>
