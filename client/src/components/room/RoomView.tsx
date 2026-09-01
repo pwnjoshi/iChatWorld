@@ -338,96 +338,98 @@ export const RoomView: React.FC<RoomViewProps> = ({
         </div>
       )}
 
-      {/* DESKTOP SPLIT-SCREEN WORKSPACE (lg & xl screens) */}
-      <div className="hidden lg:grid lg:grid-cols-12 flex-1 min-h-0 overflow-hidden divide-x divide-apple-border/50 dark:divide-white/10">
-        {/* Left Column (60%): Live Chat Feed */}
-        <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full min-h-0 overflow-hidden bg-white/40 dark:bg-black/40">
-          <ChatPanel
-            messages={room.messages}
-            currentMember={currentMember}
-            chatMuted={room.chatMuted}
-            pinnedAnnouncement={room.pinnedAnnouncement}
-            activePoll={room.activePoll}
-            typingUsers={typingUsers}
-            onSendMessage={onSendMessage}
-            onEditMessage={onEditMessage}
-            onDeleteMessage={onDeleteMessage}
-            onSendAudio={onSendAudio}
-            onReactToMessage={onReactToMessage}
-            onVotePoll={onVotePoll}
-            onClosePoll={onClosePoll}
-            onDeletePoll={onDeletePoll}
-            onSendTyping={onSendTyping}
-          />
-        </div>
-
-        {/* Right Column (40%): Live Files & Classroom Studio Side-Deck */}
-        <div className="lg:col-span-5 xl:col-span-4 flex flex-col h-full min-h-0 overflow-hidden bg-white/70 dark:bg-[#1C1C1E]/50">
-          {/* Top: Files Panel */}
-          <div className="flex-1 min-h-0 overflow-hidden border-b border-apple-border/50 dark:border-white/10 flex flex-col">
-            <div className="p-3 bg-white/90 dark:bg-black/40 border-b border-apple-border/40 dark:border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Folder className="w-4 h-4 text-apple-blue" />
-                <span className="text-footnote font-bold text-apple-textPrimary dark:text-white">
-                  Shared Files ({room.files.length})
-                </span>
-              </div>
-              <span className="text-[11px] text-apple-textSecondary dark:text-white/50 font-mono">
-                WebRTC P2P Mesh
-              </span>
-            </div>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <FilePanel
-                files={room.files}
-                transfers={transfers}
-                downloadedBlobs={downloadedBlobs}
-                currentMember={currentMember}
-                onUploadFile={onUploadFile}
-                onDownloadFile={onDownloadFile}
-                onDeleteFile={onDeleteFile}
-                onShareInChat={handleShareFileInChat}
-              />
-            </div>
+      {/* DESKTOP SPLIT-SCREEN WORKSPACE (lg & xl screens - Contained with side margins) */}
+      <div className="hidden lg:flex flex-col flex-1 min-h-0 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-3.5 overflow-hidden">
+        <div className="grid grid-cols-12 flex-1 min-h-0 overflow-hidden rounded-3xl border border-apple-border/70 dark:border-white/10 shadow-ios-card divide-x divide-apple-border/50 dark:divide-white/10 bg-white/70 dark:bg-[#1C1C1E]/60 backdrop-blur-xl">
+          {/* Left Column (65%): Live Chat Feed */}
+          <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full min-h-0 overflow-hidden bg-white/40 dark:bg-black/30">
+            <ChatPanel
+              messages={room.messages}
+              currentMember={currentMember}
+              chatMuted={room.chatMuted}
+              pinnedAnnouncement={room.pinnedAnnouncement}
+              activePoll={room.activePoll}
+              typingUsers={typingUsers}
+              onSendMessage={onSendMessage}
+              onEditMessage={onEditMessage}
+              onDeleteMessage={onDeleteMessage}
+              onSendAudio={onSendAudio}
+              onReactToMessage={onReactToMessage}
+              onVotePoll={onVotePoll}
+              onClosePoll={onClosePoll}
+              onDeletePoll={onDeletePoll}
+              onSendTyping={onSendTyping}
+            />
           </div>
 
-          {/* Bottom: Studio Quick Tools & Participants Sidebar */}
-          <div className="p-4 bg-apple-secondaryBg/40 dark:bg-white/5 space-y-3 shrink-0">
-            <div className="flex items-center justify-between">
-              <span className="text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/60">
-                Classroom Studio Tools
-              </span>
-              <span className="text-[11px] text-apple-blue font-semibold">
-                {room.members.length} Active in Room
-              </span>
+          {/* Right Column (35%): Live Files & Classroom Studio Side-Deck */}
+          <div className="lg:col-span-5 xl:col-span-4 flex flex-col h-full min-h-0 overflow-hidden bg-apple-secondaryBg/30 dark:bg-white/5">
+            {/* Top: Files Panel */}
+            <div className="flex-1 min-h-0 overflow-hidden border-b border-apple-border/50 dark:border-white/10 flex flex-col">
+              <div className="p-3 bg-white/90 dark:bg-black/40 border-b border-apple-border/40 dark:border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Folder className="w-4 h-4 text-apple-blue" />
+                  <span className="text-footnote font-bold text-apple-textPrimary dark:text-white">
+                    Shared Files ({room.files.length})
+                  </span>
+                </div>
+                <span className="text-[11px] text-apple-textSecondary dark:text-white/50 font-mono">
+                  WebRTC P2P Mesh
+                </span>
+              </div>
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <FilePanel
+                  files={room.files}
+                  transfers={transfers}
+                  downloadedBlobs={downloadedBlobs}
+                  currentMember={currentMember}
+                  onUploadFile={onUploadFile}
+                  onDownloadFile={onDownloadFile}
+                  onDeleteFile={onDeleteFile}
+                  onShareInChat={handleShareFileInChat}
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => setIsWhiteboardOpen(true)}
-                className="p-2.5 rounded-xl bg-white dark:bg-[#2C2C2E] hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-apple-border/50 dark:border-white/10 text-left transition-all active:scale-95 shadow-2xs group"
-              >
-                <PenTool className="w-4 h-4 text-apple-blue mb-1 transition-transform group-hover:scale-110" />
-                <p className="text-caption font-bold text-apple-textPrimary dark:text-white leading-tight">Whiteboard</p>
-                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Draw & Sync</p>
-              </button>
+            {/* Bottom: Studio Quick Tools & Participants Sidebar */}
+            <div className="p-4 bg-white/80 dark:bg-[#1C1C1E]/80 space-y-3 shrink-0 border-t border-apple-border/40 dark:border-white/10">
+              <div className="flex items-center justify-between">
+                <span className="text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/60">
+                  Classroom Studio Tools
+                </span>
+                <span className="text-[11px] text-apple-blue font-semibold">
+                  {room.members.length} Active in Room
+                </span>
+              </div>
 
-              <button
-                onClick={() => setIsExportNotesOpen(true)}
-                className="p-2.5 rounded-xl bg-white dark:bg-[#2C2C2E] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-apple-border/50 dark:border-white/10 text-left transition-all active:scale-95 shadow-2xs group"
-              >
-                <Sparkles className="w-4 h-4 text-emerald-500 mb-1 transition-transform group-hover:scale-110" />
-                <p className="text-caption font-bold text-apple-textPrimary dark:text-white leading-tight">Export</p>
-                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Notes & OTP</p>
-              </button>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => setIsWhiteboardOpen(true)}
+                  className="p-2.5 rounded-2xl bg-white dark:bg-[#2C2C2E] hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-apple-border/60 dark:border-white/10 text-left transition-all active:scale-95 shadow-2xs group"
+                >
+                  <PenTool className="w-4 h-4 text-apple-blue mb-1 transition-transform group-hover:scale-110" />
+                  <p className="text-caption font-bold text-apple-textPrimary dark:text-white leading-tight">Whiteboard</p>
+                  <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Draw & Sync</p>
+                </button>
 
-              <button
-                onClick={() => setIsPresenterModalOpen(true)}
-                className="p-2.5 rounded-xl bg-white dark:bg-[#2C2C2E] hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-apple-border/50 dark:border-white/10 text-left transition-all active:scale-95 shadow-2xs group"
-              >
-                <Presentation className="w-4 h-4 text-amber-500 mb-1 transition-transform group-hover:scale-110" />
-                <p className="text-caption font-bold text-apple-textPrimary dark:text-white leading-tight">Slides</p>
-                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Deck & Laser</p>
-              </button>
+                <button
+                  onClick={() => setIsExportNotesOpen(true)}
+                  className="p-2.5 rounded-xl bg-white dark:bg-[#2C2C2E] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-apple-border/60 dark:border-white/10 text-left transition-all active:scale-95 shadow-2xs group"
+                >
+                  <Sparkles className="w-4 h-4 text-emerald-500 mb-1 transition-transform group-hover:scale-110" />
+                  <p className="text-caption font-bold text-apple-textPrimary dark:text-white leading-tight">Export</p>
+                  <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Notes & OTP</p>
+                </button>
+
+                <button
+                  onClick={() => setIsPresenterModalOpen(true)}
+                  className="p-2.5 rounded-xl bg-white dark:bg-[#2C2C2E] hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-apple-border/60 dark:border-white/10 text-left transition-all active:scale-95 shadow-2xs group"
+                >
+                  <Presentation className="w-4 h-4 text-amber-500 mb-1 transition-transform group-hover:scale-110" />
+                  <p className="text-caption font-bold text-apple-textPrimary dark:text-white leading-tight">Slides</p>
+                  <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Deck & Laser</p>
+                </button>
+              </div>
             </div>
           </div>
         </div>

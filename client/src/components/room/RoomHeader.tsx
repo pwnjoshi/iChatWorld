@@ -15,14 +15,16 @@ import {
   Moon,
   Sun,
   PenTool,
-  Code2,
   HelpCircle,
   Presentation,
   Clock,
   Monitor,
   Star,
   BookOpen,
-  Mail
+  Mail,
+  Sparkles,
+  MoreHorizontal,
+  X
 } from 'lucide-react';
 
 import { BrandLogo } from '../common/BrandLogo.js';
@@ -84,6 +86,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [showMemberList, setShowMemberList] = useState(false);
+  const [showMobileTools, setShowMobileTools] = useState(false);
   const [timerSecondsLeft, setTimerSecondsLeft] = useState<number>(0);
 
   const isFacultyOrHost = currentMember?.isFaculty || currentMember?.isCreator;
@@ -129,16 +132,16 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
         {/* Top Row: Room Code, Switcher, Timer Pill, Main Actions */}
         <div className="flex items-center justify-between gap-2">
           {/* Left: Switcher & Room Code */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <BrandLogo size="sm" />
 
             <button
               onClick={onOpenRoomSwitcher}
               title="Switch between rooms"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-apple-textPrimary dark:text-white transition-colors shadow-2xs"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-apple-textPrimary dark:text-white transition-colors shadow-2xs"
             >
-              <Layers className="w-3.5 h-3.5 text-apple-blue" />
-              <span className="font-mono font-bold text-headline tracking-wider text-xs md:text-sm">
+              <Layers className="w-3.5 h-3.5 text-apple-blue shrink-0" />
+              <span className="font-mono font-bold tracking-wider text-xs md:text-sm">
                 {roomCode}
               </span>
             </button>
@@ -178,9 +181,19 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
             )}
           </div>
 
-          {/* Right Controls: Docs, GitHub Star, Raised Hands, Theme, Members, Controls */}
-          <div className="flex items-center gap-1.5">
-            {/* Developer Docs Button */}
+          {/* Right Controls: Studio Tools (Mobile), Raised Hands, Theme, Members, Controls */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            {/* Mobile Studio Tools Trigger Button */}
+            <button
+              onClick={() => setShowMobileTools(true)}
+              className="flex md:hidden items-center gap-1 px-2.5 py-1.5 rounded-full bg-apple-blue/10 dark:bg-apple-blue/20 text-apple-blue font-semibold text-caption border border-apple-blue/30 shadow-2xs active:scale-95 transition-all"
+              title="Open Studio Tools"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-apple-blue" />
+              <span>Tools</span>
+            </button>
+
+            {/* Developer Docs Button (Desktop) */}
             {onOpenDocs && (
               <button
                 onClick={onOpenDocs}
@@ -192,7 +205,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               </button>
             )}
 
-            {/* GitHub Star Button */}
+            {/* GitHub Star Button (Desktop) */}
             <a
               href="https://github.com/pwnjoshi/iChatWorld"
               target="_blank"
@@ -201,7 +214,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               title="Star iChatWorld on GitHub"
             >
               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-              <span>Star on GitHub</span>
+              <span>Star</span>
             </a>
 
             {/* Hand Raise Trigger */}
@@ -209,7 +222,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               <button
                 onClick={onOpenHandQueue}
                 title="Raised Hands Queue"
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-semibold transition-all ${
+                className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-caption font-semibold transition-all ${
                   handsRaised.length > 0
                     ? 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
                     : 'bg-apple-secondaryBg dark:bg-white/10 text-apple-textSecondary'
@@ -245,7 +258,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
             <div className="relative">
               <button
                 onClick={() => setShowMemberList(!showMemberList)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-footnote font-semibold"
+                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-footnote font-semibold"
                 title="View members"
               >
                 <Users className="w-3.5 h-3.5 text-apple-textSecondary" />
@@ -258,25 +271,26 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                     className="fixed inset-0 z-30"
                     onClick={() => setShowMemberList(false)}
                   />
-                  <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-[#1C1C1E] rounded-ios-card shadow-ios-dropdown border border-apple-border/70 dark:border-white/10 p-3 z-40 space-y-2 animate-scale-up">
-                    <div className="flex items-center justify-between pb-1.5 border-b border-apple-border/40 dark:border-white/10">
-                      <span className="text-caption font-semibold uppercase text-apple-textSecondary dark:text-white/60">
-                        Members in Room ({members.length})
+                  <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-white dark:bg-[#1C1C1E] rounded-2xl shadow-ios-dropdown border border-apple-border dark:border-white/10 z-40 space-y-2 animate-scale-up">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-apple-border/50 dark:border-white/10">
+                      <span className="text-caption font-semibold uppercase tracking-wider text-apple-textSecondary dark:text-white/60">
+                        In Room ({members.length})
                       </span>
                     </div>
-                    <div className="max-h-60 overflow-y-auto space-y-1.5 py-1">
-                      {members.map(m => (
+
+                    <div className="max-h-60 overflow-y-auto space-y-1.5 no-scrollbar">
+                      {members.map((member) => (
                         <div
-                          key={m.socketId}
-                          className="flex items-center justify-between py-1 px-1.5 rounded-lg hover:bg-apple-secondaryBg dark:hover:bg-white/5"
+                          key={member.socketId}
+                          className="flex items-center justify-between p-1.5 rounded-xl hover:bg-apple-secondaryBg dark:hover:bg-white/5"
                         >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Avatar name={m.displayName} isFaculty={m.isFaculty} isCreator={m.isCreator} size="sm" />
-                            <span className="text-footnote text-apple-textPrimary dark:text-white truncate">
-                              {m.displayName} {m.socketId === currentMember?.socketId ? '(You)' : ''}
+                          <div className="flex items-center gap-2">
+                            <Avatar name={member.displayName} isFaculty={member.isFaculty} size="sm" />
+                            <span className="text-footnote font-medium text-apple-textPrimary dark:text-white">
+                              {member.displayName} {member.socketId === currentMember?.socketId && '(You)'}
                             </span>
                           </div>
-                          {m.isFaculty && (
+                          {member.isFaculty && (
                             <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/60 dark:text-amber-300 px-1.5 py-0.5 rounded-full">
                               Faculty
                             </span>
@@ -293,7 +307,8 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
             {isFacultyOrHost ? (
               <button
                 onClick={onOpenFacultyPanel}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold text-caption transition-colors"
+                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold text-caption transition-colors"
+                title="Faculty Moderation Controls"
               >
                 <Shield className="w-3 h-3 text-amber-700" />
                 <span className="hidden sm:inline">Controls</span>
@@ -337,8 +352,8 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
           </div>
         </div>
 
-        {/* Secondary Tool Ribbon (Whiteboard, CodePad, Q&A, Slides, Timer, Poll, Screen Share) */}
-        <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar py-0.5 border-t border-apple-border/40 dark:border-white/5">
+        {/* Secondary Tool Ribbon (Visible on Desktop / Tablet only to keep mobile pristine) */}
+        <div className="hidden md:flex items-center justify-between gap-1 overflow-x-auto no-scrollbar py-0.5 border-t border-apple-border/40 dark:border-white/5">
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={onOpenWhiteboard}
@@ -407,19 +422,144 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               </button>
             )}
           </div>
-
-          {/* Quick Docs trigger on mobile */}
-          {onOpenDocs && (
-            <button
-              onClick={onOpenDocs}
-              className="flex md:hidden items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold text-apple-blue hover:underline shrink-0"
-            >
-              <BookOpen className="w-3 h-3" />
-              <span>Docs</span>
-            </button>
-          )}
         </div>
       </div>
+
+      {/* Native Mobile iOS Studio Tools Bottom Sheet Drawer */}
+      {showMobileTools && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowMobileTools(false)}
+          />
+          <div className="relative z-50 w-full max-w-lg mx-auto bg-white dark:bg-[#1C1C1E] rounded-t-3xl border-t border-apple-border/80 dark:border-white/15 p-5 space-y-4 shadow-2xl animate-slide-up pb-safe">
+            {/* Grab Handle */}
+            <div className="w-12 h-1.5 bg-apple-border/80 dark:bg-white/20 rounded-full mx-auto" />
+
+            <div className="flex items-center justify-between pb-2 border-b border-apple-border/40 dark:border-white/10">
+              <div>
+                <h3 className="font-bold text-headline text-apple-textPrimary dark:text-white">
+                  Classroom Studio Tools
+                </h3>
+                <p className="text-caption text-apple-textSecondary dark:text-white/60">
+                  Quick real-time collaborative utilities
+                </p>
+              </div>
+              <button
+                onClick={() => setShowMobileTools(false)}
+                className="p-1.5 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Grid of Studio Tools */}
+            <div className="grid grid-cols-3 gap-2.5 pt-1">
+              <button
+                onClick={() => {
+                  setShowMobileTools(false);
+                  onOpenWhiteboard();
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <PenTool className="w-5 h-5 text-apple-blue" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Whiteboard</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Draw & Sync</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowMobileTools(false);
+                  onOpenQAModal();
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-purple-50 dark:hover:bg-purple-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <HelpCircle className="w-5 h-5 text-purple-500" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Q&A ({qaQuestions.length})</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Queue</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowMobileTools(false);
+                  onOpenPresenter();
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <Presentation className="w-5 h-5 text-amber-500" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Slides</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Laser Deck</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowMobileTools(false);
+                  onOpenTimerModal();
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <Clock className="w-5 h-5 text-apple-blue" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Timer</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Focus Clock</span>
+              </button>
+
+              {isFacultyOrHost && (
+                <button
+                  onClick={() => {
+                    setShowMobileTools(false);
+                    onOpenPollModal();
+                  }}
+                  className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+                >
+                  <BarChart2 className="w-5 h-5 text-emerald-500" />
+                  <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Polls</span>
+                  <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Live Vote</span>
+                </button>
+              )}
+
+              {onOpenExportNotes && (
+                <button
+                  onClick={() => {
+                    setShowMobileTools(false);
+                    onOpenExportNotes();
+                  }}
+                  className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+                >
+                  <Mail className="w-5 h-5 text-emerald-500" />
+                  <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Export</span>
+                  <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Notes & OTP</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  setShowMobileTools(false);
+                  onStartScreenShare();
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <Monitor className="w-5 h-5 text-apple-blue" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Screen</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Share PiP</span>
+              </button>
+
+              {onOpenDocs && (
+                <button
+                  onClick={() => {
+                    setShowMobileTools(false);
+                    onOpenDocs();
+                  }}
+                  className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+                >
+                  <BookOpen className="w-5 h-5 text-apple-blue" />
+                  <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Docs</span>
+                  <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Developer API</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
