@@ -15,7 +15,9 @@ export class AIService {
   }
 
   async callChatCompletion(messages: { role: string; content: string }[], systemPrompt?: string): Promise<string> {
-    if (!this.apiKey) {
+    const key = process.env.NEBIUS_API_KEY || this.apiKey || CONFIG.NEBIUS_API_KEY;
+
+    if (!key) {
       const lastMsg = messages[messages.length - 1]?.content.toLowerCase() || '';
       if (lastMsg.includes('summarize')) {
         return `📝 **Summary of Session**:\n• Real-time collaborative workspace active.\n• StarNote whiteboard & WebRTC mesh ready for group work.\n• All room data is ephemeral and self-destructs when you leave.`;
@@ -29,39 +31,44 @@ export class AIService {
       return `👋 Hello! I'm your iChatWorld AI helper. Ask me to summarize chat discussions, generate quick quizzes, explain coding problems, or guide you through whiteboard and presentation features!`;
     }
 
-    const payloadMessages: { role: string; content: string }[] = [];
-    if (systemPrompt) {
-      payloadMessages.push({ role: 'system', content: systemPrompt });
+    try {
+      const payloadMessages: { role: string; content: string }[] = [];
+      if (systemPrompt) {
+        payloadMessages.push({ role: 'system', content: systemPrompt });
+      }
+      payloadMessages.push(...messages);
+
+      const url = `${this.baseURL}chat/completions`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: payloadMessages,
+          temperature: 0.6,
+          max_tokens: 2048
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Nebius API error (${res.status}): ${errText}`);
+      }
+
+      const json: any = await res.json();
+      const reply = json.choices?.[0]?.message?.content;
+      if (!reply) {
+        throw new Error('Empty response from model');
+      }
+
+      return reply.trim();
+    } catch (err: any) {
+      console.warn('Nebius AI request failed, using intelligent offline fallback:', err.message);
+      return `💡 **AI Assistant Note**: ${err.message.includes('401') ? 'Please verify your NEBIUS_API_KEY in server/.env.' : 'Instant fallback active.'}\n\nAsk me anytime to explain coding concepts, quiz the class, or export whiteboard notes!`;
     }
-    payloadMessages.push(...messages);
-
-    const url = `${this.baseURL}chat/completions`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
-      },
-      body: JSON.stringify({
-        model: this.model,
-        messages: payloadMessages,
-        temperature: 0.6,
-        max_tokens: 2048
-      })
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Nebius DeepSeek API error (${res.status}): ${errText}`);
-    }
-
-    const json: any = await res.json();
-    const reply = json.choices?.[0]?.message?.content;
-    if (!reply) {
-      throw new Error('Empty response received from AI model');
-    }
-
-    return reply.trim();
   }
 
   async askAssistant(userPrompt: string, recentMessages: Message[]): Promise<string> {
