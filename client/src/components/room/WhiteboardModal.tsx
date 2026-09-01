@@ -29,7 +29,11 @@ import {
   Triangle,
   Sparkles,
   Layers,
-  Sliders
+  Sliders,
+  Edit3,
+  Feather,
+  Paintbrush,
+  Activity
 } from 'lucide-react';
 
 interface WhiteboardModalProps {
@@ -41,10 +45,10 @@ interface WhiteboardModalProps {
   onBroadcastImage: (file: File) => Promise<any>;
 }
 
+type PenSubType = 'pen' | 'fountain' | 'pencil' | 'brush' | 'ballpoint' | 'marker';
+
 type ToolType =
-  | 'pen'
-  | 'pencil'
-  | 'brush'
+  | PenSubType
   | 'highlighter'
   | 'eraser'
   | 'object_eraser'
@@ -58,6 +62,7 @@ type ToolType =
   | 'pan';
 
 type CanvasBgType = 'light' | 'dark' | 'grid' | 'dots' | 'lines';
+type PressureMode = 'stylus' | 'speed' | 'fixed';
 
 const APPLE_PALETTE = [
   { name: 'Obsidian', hex: '#1C1C1E' },
@@ -73,8 +78,17 @@ const APPLE_PALETTE = [
   { name: 'Vibrant Fuchsia', hex: '#FF2D55' }
 ];
 
-const PEN_PRESETS = [2, 4, 8, 16, 24];
+const PEN_PRESETS = [2, 4, 8, 16, 28];
 const HIGHLIGHTER_PRESETS = [12, 20, 32, 48, 64];
+
+const PEN_TOOLS: Array<{ id: PenSubType; label: string; icon: any; desc: string }> = [
+  { id: 'pen', label: 'Ink Pen', icon: Pen, desc: 'Natural ink with smooth pressure curve' },
+  { id: 'fountain', label: 'Fountain Pen', icon: Feather, desc: 'Calligraphic stroke with expressive taper' },
+  { id: 'ballpoint', label: 'Ballpoint Pen', icon: Edit3, desc: 'Uniform crisp line for precision & notes' },
+  { id: 'pencil', label: 'Sketch Pencil (2B)', icon: Pen, desc: 'Textured graphite with tilt/pressure shading' },
+  { id: 'brush', label: 'Art Brush', icon: Paintbrush, desc: 'Dynamic wide brush with pressure modulation' },
+  { id: 'marker', label: 'Luminous Marker', icon: Sparkles, desc: 'Soft glowing marker for diagrams' }
+];
 
 export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   isOpen,
@@ -90,16 +104,19 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
 
   // Tools & Styling
   const [tool, setTool] = useState<ToolType>('pen');
+  const [activePenType, setActivePenType] = useState<PenSubType>('pen');
   const [color, setColor] = useState('#007AFF');
   const [size, setSize] = useState(4);
   const [highlighterSize, setHighlighterSize] = useState(24);
+  const [opacity, setOpacity] = useState(100);
+  const [pressureMode, setPressureMode] = useState<PressureMode>('stylus');
   const [customColor, setCustomColor] = useState('#007AFF');
   const [canvasBg, setCanvasBg] = useState<CanvasBgType>('light');
   const [showRuler, setShowRuler] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false);
   const [isPenMenuOpen, setIsPenMenuOpen] = useState(false);
-  const [showSizeSlider, setShowSizeSlider] = useState(false);
+  const [showToolCustomizer, setShowToolCustomizer] = useState(false);
 
   // Pan & Zoom Navigation
   const [zoom, setZoom] = useState(1);
@@ -114,17 +131,26 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   // Drawing state
   const [isDrawing, setIsDrawing] = useState(false);
   const currentPointsRef = useRef<WhiteboardPoint[]>([]);
+  const lastPointTimeRef = useRef<number>(0);
 
   // Cache loaded images
   const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   // Current active stroke size based on tool
   const currentActiveSize = tool === 'highlighter' ? highlighterSize : size;
+  const isCurrentToolPen = ['pen', 'fountain', 'pencil', 'brush', 'ballpoint', 'marker'].includes(tool);
 
-  const handleToolSelect = (newTool: ToolType) => {
-    setTool(newTool);
-    if (newTool === 'highlighter' && size < 12) {
-      // Auto adjust to highlighter default width
+  const handleSelectPenSubtool = (pType: PenSubType) => {
+    setActivePenType(pType);
+    setTool(pType);
+    setIsPenMenuOpen(false);
+  };
+
+  const handleMainPenButtonClick = () => {
+    if (!isCurrentToolPen) {
+      setTool(activePenType);
+    } else {
+      setIsPenMenuOpen((prev) => !prev);
     }
   };
 
@@ -271,6 +297,9 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
 
     ctx.save();
 
+    // Base Opacity
+    const baseAlpha = stroke.opacity !== undefined ? stroke.opacity / 100 : 1;
+
     // Handle Image Stroke
     if (stroke.type === 'image' && stroke.imageUrl) {
       const img = imageCacheRef.current.get(stroke.imageUrl);
@@ -287,7 +316,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     // 1. HIGHLIGHTER (Unified Single-Path Ribbon — 0 Overlap Beads)
     if (stroke.type === 'highlighter') {
       ctx.globalCompositeOperation = isDarkBg ? 'screen' : 'multiply';
-      ctx.globalAlpha = 0.35;
+      ctx.globalAlpha = 0.35 * baseAlpha;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size;
       ctx.lineCap = 'round';
@@ -310,7 +339,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         }
         const last = points[points.length - 1];
         ctx.lineTo(last.x, last.y);
-        ctx.stroke(); // STROKE ONCE for uniform alpha without overlap dots
+        ctx.stroke(); // STROKE ONCE
       }
 
       ctx.restore();
@@ -324,19 +353,34 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = isDarkBg ? '#121212' : '#FFFFFF';
       ctx.lineWidth = stroke.size * 3;
+    } else if (stroke.type === 'ballpoint') {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = baseAlpha;
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.size;
     } else if (stroke.type === 'pencil') {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 0.8;
+      ctx.globalAlpha = 0.75 * baseAlpha;
       ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = Math.max(1, stroke.size * 0.7);
+      ctx.lineWidth = Math.max(1, stroke.size * 0.75);
     } else if (stroke.type === 'brush') {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = baseAlpha;
       ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.size * 1.8;
+      ctx.lineWidth = stroke.size * 1.5;
+    } else if (stroke.type === 'fountain') {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = baseAlpha;
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.size;
+    } else if (stroke.type === 'marker') {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 0.85 * baseAlpha;
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.size * 1.3;
     } else {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = baseAlpha;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size;
     }
@@ -425,7 +469,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       ctx.fillStyle = stroke.type === 'eraser' ? (isDarkBg ? '#121212' : '#FFFFFF') : stroke.color;
       ctx.fill();
     } else {
-      // True continuous Bézier spline connecting midpoints
+      // Dynamic Pen Bézier Spline with Pressure Curves
       for (let i = 0; i < points.length - 1; i++) {
         const p1 = points[i];
         const p2 = points[i + 1];
@@ -433,14 +477,22 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         const midY = (p1.y + p2.y) / 2;
 
         const pressure = ((p1.pressure ?? 0.5) + (p2.pressure ?? 0.5)) / 2;
-        ctx.lineWidth =
-          stroke.type === 'eraser'
-            ? stroke.size * 3
-            : stroke.type === 'pencil'
-            ? Math.max(1, stroke.size * 0.7)
-            : stroke.type === 'brush'
-            ? Math.max(2, stroke.size * (0.8 + pressure * 1.6))
-            : Math.max(1, stroke.size * (0.35 + pressure * 0.9));
+
+        if (stroke.type === 'eraser') {
+          ctx.lineWidth = stroke.size * 3;
+        } else if (stroke.type === 'ballpoint') {
+          ctx.lineWidth = stroke.size;
+        } else if (stroke.type === 'fountain') {
+          ctx.lineWidth = Math.max(1, stroke.size * (0.3 + pressure * 1.2));
+        } else if (stroke.type === 'pencil') {
+          ctx.lineWidth = Math.max(1, stroke.size * (0.6 + pressure * 0.5));
+        } else if (stroke.type === 'brush') {
+          ctx.lineWidth = Math.max(2, stroke.size * (0.3 + pressure * 1.8));
+        } else if (stroke.type === 'marker') {
+          ctx.lineWidth = stroke.size * 1.3;
+        } else {
+          ctx.lineWidth = Math.max(1, stroke.size * (0.35 + pressure * 0.9));
+        }
 
         ctx.beginPath();
         if (i === 0) {
@@ -459,7 +511,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     ctx.restore();
   };
 
-  // Convert Pointer Screen coordinates to Virtual World coordinates
+  // Convert Pointer Screen coordinates to Virtual World coordinates with Pressure Calculation
   const getCanvasWorldCoords = (e: React.PointerEvent<HTMLCanvasElement>): WhiteboardPoint => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0, pressure: 0.5 };
@@ -477,15 +529,36 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     const worldX = (rawX - pan.x) / zoom;
     const worldY = (rawY - pan.y) / zoom;
 
-    let pressure = e.pressure;
-    if (e.pointerType === 'mouse' && pressure === 0) {
-      pressure = 0.5;
+    let computedPressure = 0.5;
+
+    if (pressureMode === 'stylus') {
+      if (e.pointerType === 'pen' && e.pressure > 0) {
+        computedPressure = e.pressure;
+      } else if (e.pointerType === 'touch') {
+        computedPressure = e.pressure > 0 ? e.pressure : 0.6;
+      } else {
+        computedPressure = 0.5;
+      }
+    } else if (pressureMode === 'speed') {
+      const now = Date.now();
+      const dt = Math.max(1, now - (lastPointTimeRef.current || now));
+      const lastPt = currentPointsRef.current[currentPointsRef.current.length - 1];
+      if (lastPt) {
+        const dist = Math.hypot(worldX - lastPt.x, worldY - lastPt.y);
+        const speed = dist / dt; // px per ms
+        // Faster speed -> thinner stroke (fountain pen effect)
+        computedPressure = Math.max(0.2, Math.min(1.0, 1.2 - speed * 0.4));
+      }
+      lastPointTimeRef.current = now;
+    } else {
+      // Fixed precision
+      computedPressure = 0.5;
     }
 
     return {
       x: worldX,
       y: worldY,
-      pressure
+      pressure: computedPressure
     };
   };
 
@@ -541,6 +614,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       return;
     }
 
+    lastPointTimeRef.current = Date.now();
     const startPoint = getCanvasWorldCoords(e);
 
     // Object Eraser: Delete stroke on click
@@ -570,6 +644,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         type: strokeType,
         color,
         size: strokeSize,
+        opacity,
         points: [startPoint]
       };
       ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
@@ -592,7 +667,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     currentPointsRef.current.push(pt);
 
     const isShape = ['rect', 'circle', 'triangle', 'diamond', 'star', 'arrow', 'line'].includes(tool);
-    const strokeType = (tool === 'object_eraser' || tool === 'pan') ? 'pen' : tool;
+    const strokeType = (tool === 'object_eraser' || tool === 'pan') ? 'pen' : (tool as WhiteboardStroke['type']);
     const strokeSize = strokeType === 'highlighter' ? highlighterSize : size;
 
     if (isShape) {
@@ -605,6 +680,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           type: strokeType,
           color,
           size: strokeSize,
+          opacity,
           points: [currentPointsRef.current[0], pt]
         };
         ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
@@ -619,6 +695,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           type: strokeType,
           color,
           size: strokeSize,
+          opacity,
           points: currentPointsRef.current
         };
         ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
@@ -643,13 +720,14 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     setIsDrawing(false);
 
     if (currentPointsRef.current.length > 0) {
-      const strokeType = (tool === 'object_eraser' || tool === 'pan') ? 'pen' : tool;
+      const strokeType = (tool === 'object_eraser' || tool === 'pan') ? 'pen' : (tool as WhiteboardStroke['type']);
       const strokeSize = strokeType === 'highlighter' ? highlighterSize : size;
       const finalStroke: WhiteboardStroke = {
         id: `stroke-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
         type: strokeType,
         color,
         size: strokeSize,
+        opacity,
         points: [...currentPointsRef.current]
       };
 
@@ -746,6 +824,10 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Find active pen meta
+  const currentPenMeta = PEN_TOOLS.find((p) => p.id === activePenType) || PEN_TOOLS[0];
+  const ActivePenIcon = currentPenMeta.icon;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -767,63 +849,64 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-apple-secondaryBg dark:bg-white/5 rounded-2xl border border-apple-border/70 dark:border-white/10 shadow-2xs">
           {/* Left: Pen Tools Group */}
           <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-            {/* Pen Options Dropdown / Toggle */}
+            {/* Pen Options Dropdown Button */}
             <div className="relative">
               <button
                 type="button"
-                onClick={() => {
-                  handleToolSelect('pen');
-                  setIsPenMenuOpen(!isPenMenuOpen);
-                }}
-                className={`p-2 rounded-lg transition-all flex items-center gap-1 ${
-                  tool === 'pen' || tool === 'pencil' || tool === 'brush'
+                onClick={handleMainPenButtonClick}
+                className={`p-2 rounded-lg transition-all flex items-center gap-1.5 ${
+                  isCurrentToolPen
                     ? 'bg-apple-blue text-white shadow-sm'
                     : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
                 }`}
-                title="Pen & Brush Tools"
+                title={`Current Tool: ${currentPenMeta.label} (Click to open menu)`}
               >
-                <Pen className="w-4 h-4" />
-                <ChevronDown className="w-3 h-3 opacity-70" />
+                <ActivePenIcon className="w-4 h-4" />
+                <ChevronDown className="w-3 h-3 opacity-80" />
               </button>
 
+              {/* Full Notes-Style Pen Selection Dropdown Popover */}
               {isPenMenuOpen && (
-                <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-[#1C1C1E] border border-apple-border/70 dark:border-white/10 rounded-xl shadow-lg p-1.5 z-40 w-36 space-y-1 animate-scale-up">
-                  <button
-                    onClick={() => {
-                      handleToolSelect('pen');
-                      setIsPenMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-footnote ${
-                      tool === 'pen' ? 'bg-apple-blue text-white font-semibold' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                    }`}
-                  >
-                    <Pen className="w-3.5 h-3.5" />
-                    <span>Ink Pen</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleToolSelect('pencil');
-                      setIsPenMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-footnote ${
-                      tool === 'pencil' ? 'bg-apple-blue text-white font-semibold' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                    }`}
-                  >
-                    <Pen className="w-3.5 h-3.5 opacity-60" />
-                    <span>Sketch Pencil</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleToolSelect('brush');
-                      setIsPenMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-footnote ${
-                      tool === 'brush' ? 'bg-apple-blue text-white font-semibold' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                    }`}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Art Brush</span>
-                  </button>
+                <div className="absolute left-0 top-full mt-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-64 space-y-1 animate-scale-up">
+                  <div className="px-2 py-1 border-b border-apple-border/40 dark:border-white/10 flex items-center justify-between">
+                    <span className="text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
+                      Pen Studio
+                    </span>
+                    <span className="text-[10px] font-mono text-apple-blue font-semibold">
+                      {size}px
+                    </span>
+                  </div>
+
+                  <div className="space-y-1 pt-1">
+                    {PEN_TOOLS.map((p) => {
+                      const Icon = p.icon;
+                      const isSelected = activePenType === p.id && isCurrentToolPen;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => handleSelectPenSubtool(p.id)}
+                          className={`w-full flex items-start gap-2.5 p-2 rounded-xl text-left transition-all ${
+                            isSelected
+                              ? 'bg-apple-blue text-white font-semibold shadow-2xs'
+                              : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                          }`}
+                        >
+                          <div className={`p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-white/20' : 'bg-apple-secondaryBg dark:bg-white/5'}`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="space-y-0.5 overflow-hidden">
+                            <div className="text-footnote font-semibold flex items-center gap-1.5">
+                              <span>{p.label}</span>
+                            </div>
+                            <p className={`text-[11px] leading-tight line-clamp-1 ${isSelected ? 'text-white/80' : 'text-apple-textSecondary dark:text-white/50'}`}>
+                              {p.desc}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -831,11 +914,11 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             {/* Highlighter */}
             <button
               type="button"
-              onClick={() => handleToolSelect('highlighter')}
+              onClick={() => setTool('highlighter')}
               className={`p-2 rounded-lg transition-all ${
                 tool === 'highlighter' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
               }`}
-              title="Highlighter"
+              title="Neon Highlighter (Clean Ribbon)"
             >
               <Highlighter className="w-4 h-4" />
             </button>
@@ -843,7 +926,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             {/* Eraser Tools */}
             <button
               type="button"
-              onClick={() => handleToolSelect(tool === 'eraser' ? 'object_eraser' : 'eraser')}
+              onClick={() => setTool(tool === 'eraser' ? 'object_eraser' : 'eraser')}
               className={`p-2 rounded-lg transition-all ${
                 tool === 'eraser' || tool === 'object_eraser'
                   ? 'bg-apple-blue text-white shadow-sm'
@@ -857,7 +940,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             {/* Pan / Move Canvas */}
             <button
               type="button"
-              onClick={() => handleToolSelect('pan')}
+              onClick={() => setTool('pan')}
               className={`p-2 rounded-lg transition-all ${
                 tool === 'pan' ? 'bg-amber-500 text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
               }`}
@@ -887,7 +970,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
               <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-[#1C1C1E] border border-apple-border/70 dark:border-white/10 rounded-2xl shadow-xl p-2 z-40 w-44 grid grid-cols-2 gap-1 animate-scale-up">
                 <button
                   onClick={() => {
-                    handleToolSelect('rect');
+                    setTool('rect');
                     setIsShapeMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
@@ -899,7 +982,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    handleToolSelect('circle');
+                    setTool('circle');
                     setIsShapeMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
@@ -911,7 +994,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    handleToolSelect('triangle');
+                    setTool('triangle');
                     setIsShapeMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
@@ -923,7 +1006,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    handleToolSelect('diamond');
+                    setTool('diamond');
                     setIsShapeMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
@@ -935,7 +1018,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    handleToolSelect('arrow');
+                    setTool('arrow');
                     setIsShapeMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
@@ -947,7 +1030,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    handleToolSelect('line');
+                    setTool('line');
                     setIsShapeMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
@@ -961,7 +1044,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             )}
           </div>
 
-          {/* StarNote-style Quick Size Presets & Slider Toggle */}
+          {/* StarNote-style Quick Size Presets & Customizer Toggle */}
           <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
             {(tool === 'highlighter' ? HIGHLIGHTER_PRESETS : PEN_PRESETS).map((pSize) => {
               const isActive = (tool === 'highlighter' ? highlighterSize : size) === pSize;
@@ -988,14 +1071,16 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
               );
             })}
 
-            {/* Slider Toggle Button */}
+            {/* StarNote Tool Customizer Toggle Button */}
             <button
               type="button"
-              onClick={() => setShowSizeSlider(!showSizeSlider)}
-              className={`p-1.5 rounded-lg transition-colors ${
-                showSizeSlider ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              onClick={() => setShowToolCustomizer(!showToolCustomizer)}
+              className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${
+                showToolCustomizer
+                  ? 'bg-apple-blue text-white font-semibold'
+                  : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
               }`}
-              title="Custom Thickness Slider"
+              title="Open Thickness, Opacity & Pressure Customizer"
             >
               <Sliders className="w-3.5 h-3.5" />
             </button>
@@ -1160,17 +1245,18 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           </div>
         </div>
 
-        {/* StarNote-style Thickness Customizer Drawer (Visible when toggled or adjusting) */}
-        {showSizeSlider && (
-          <div className="p-3 bg-white dark:bg-[#1C1C1E] rounded-xl border border-apple-border/70 dark:border-white/10 shadow-sm flex items-center justify-between gap-4 animate-scale-up">
-            <div className="flex items-center gap-3 flex-1">
+        {/* StarNote / Apple Pencil Tool Customizer Drawer (Thickness, Opacity & Pressure Dynamics) */}
+        {showToolCustomizer && (
+          <div className="p-3.5 bg-white dark:bg-[#1C1C1E] rounded-2xl border border-apple-border/80 dark:border-white/15 shadow-md flex flex-wrap items-center justify-between gap-4 animate-scale-up">
+            {/* 1. Thickness Slider */}
+            <div className="flex items-center gap-3 flex-1 min-w-[200px]">
               <span className="text-caption font-semibold text-apple-textSecondary dark:text-white/70 w-24">
                 {tool === 'highlighter' ? 'Highlighter' : 'Stroke'} Width:
               </span>
               <input
                 type="range"
                 min="1"
-                max={tool === 'highlighter' ? '64' : '36'}
+                max={tool === 'highlighter' ? '64' : '48'}
                 value={tool === 'highlighter' ? highlighterSize : size}
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10);
@@ -1182,21 +1268,83 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 }}
                 className="flex-1 accent-apple-blue cursor-pointer"
               />
-              <span className="text-footnote font-mono font-bold text-apple-textPrimary dark:text-white w-12 text-right">
+              <span className="text-footnote font-mono font-bold text-apple-textPrimary dark:text-white w-10 text-right">
                 {tool === 'highlighter' ? highlighterSize : size}px
               </span>
             </div>
 
-            {/* Live Nib Indicator */}
-            <div className="flex items-center gap-2 pl-4 border-l border-apple-border/50 dark:border-white/10 shrink-0">
-              <span className="text-caption text-apple-textSecondary">Nib Preview:</span>
+            {/* 2. Opacity Slider */}
+            <div className="flex items-center gap-3 flex-1 min-w-[180px] pl-3 border-l border-apple-border/50 dark:border-white/10">
+              <span className="text-caption font-semibold text-apple-textSecondary dark:text-white/70 w-16">
+                Opacity:
+              </span>
+              <input
+                type="range"
+                min="20"
+                max="100"
+                value={opacity}
+                onChange={(e) => setOpacity(parseInt(e.target.value, 10))}
+                className="flex-1 accent-apple-blue cursor-pointer"
+              />
+              <span className="text-footnote font-mono font-bold text-apple-textPrimary dark:text-white w-10 text-right">
+                {opacity}%
+              </span>
+            </div>
+
+            {/* 3. Pressure Mode Selector */}
+            <div className="flex items-center gap-1.5 pl-3 border-l border-apple-border/50 dark:border-white/10 shrink-0">
+              <Activity className="w-3.5 h-3.5 text-apple-blue" />
+              <span className="text-caption font-semibold text-apple-textSecondary dark:text-white/70 mr-1">
+                Pressure:
+              </span>
+              <button
+                type="button"
+                onClick={() => setPressureMode('stylus')}
+                className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all ${
+                  pressureMode === 'stylus'
+                    ? 'bg-apple-blue text-white shadow-2xs'
+                    : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textSecondary hover:text-apple-textPrimary'
+                }`}
+                title="Hardware Stylus & Apple Pencil Pressure"
+              >
+                Stylus
+              </button>
+              <button
+                type="button"
+                onClick={() => setPressureMode('speed')}
+                className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all ${
+                  pressureMode === 'speed'
+                    ? 'bg-apple-blue text-white shadow-2xs'
+                    : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textSecondary hover:text-apple-textPrimary'
+                }`}
+                title="Speed Dynamic (Simulated Stylus for Mouse/Touch)"
+              >
+                Speed
+              </button>
+              <button
+                type="button"
+                onClick={() => setPressureMode('fixed')}
+                className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all ${
+                  pressureMode === 'fixed'
+                    ? 'bg-apple-blue text-white shadow-2xs'
+                    : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textSecondary hover:text-apple-textPrimary'
+                }`}
+                title="Fixed Precision"
+              >
+                Fixed
+              </button>
+            </div>
+
+            {/* 4. Live Nib Indicator */}
+            <div className="flex items-center gap-2 pl-3 border-l border-apple-border/50 dark:border-white/10 shrink-0">
+              <span className="text-caption text-apple-textSecondary">Nib:</span>
               <div
-                className="rounded-full shadow-inner border border-black/10 dark:border-white/20 transition-all"
+                className="rounded-full shadow-inner border border-black/10 dark:border-white/20 transition-all flex items-center justify-center"
                 style={{
-                  width: `${Math.min(32, Math.max(4, currentActiveSize))}px`,
-                  height: `${Math.min(32, Math.max(4, currentActiveSize))}px`,
+                  width: `${Math.min(32, Math.max(6, currentActiveSize))}px`,
+                  height: `${Math.min(32, Math.max(6, currentActiveSize))}px`,
                   backgroundColor: color,
-                  opacity: tool === 'highlighter' ? 0.45 : 1
+                  opacity: tool === 'highlighter' ? 0.45 : opacity / 100
                 }}
               />
             </div>

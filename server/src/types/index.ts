@@ -78,9 +78,10 @@ export interface WhiteboardPoint {
 
 export interface WhiteboardStroke {
   id: string;
-  type: 'pen' | 'pencil' | 'brush' | 'highlighter' | 'eraser' | 'rect' | 'circle' | 'line' | 'arrow' | 'triangle' | 'diamond' | 'star' | 'image';
+  type: 'pen' | 'fountain' | 'pencil' | 'brush' | 'ballpoint' | 'marker' | 'highlighter' | 'eraser' | 'rect' | 'circle' | 'line' | 'arrow' | 'triangle' | 'diamond' | 'star' | 'image';
   color: string;
   size: number;
+  opacity?: number;
   points: WhiteboardPoint[];
   isClosed?: boolean;
   imageUrl?: string;
