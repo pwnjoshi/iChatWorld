@@ -149,7 +149,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
             <button
               onClick={handleCopyCode}
               title="Copy code"
-              className="p-1.5 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary transition-colors"
+              className="hidden sm:flex p-1.5 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary transition-colors"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-apple-green" /> : <Copy className="w-3.5 h-3.5" />}
             </button>
@@ -157,7 +157,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
             <button
               onClick={onOpenQR}
               title="Show QR Code"
-              className="p-1.5 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors"
+              className="hidden sm:flex p-1.5 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors"
             >
               <QrCode className="w-3.5 h-3.5" />
             </button>
@@ -167,7 +167,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               <button
                 onClick={onOpenTimerModal}
                 title="Classroom Timer"
-                className={`hidden sm:flex items-center gap-1 px-3 py-1 rounded-full text-caption font-mono font-bold transition-all shadow-sm ${
+                className={`hidden md:flex items-center gap-1 px-3 py-1 rounded-full text-caption font-mono font-bold transition-all shadow-sm ${
                   timerSecondsLeft === 0
                     ? 'bg-red-500 text-white animate-bounce'
                     : timerState.isRunning
@@ -182,14 +182,14 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
           </div>
 
           {/* Right Controls: Studio Tools (Mobile), Raised Hands, Theme, Members, Controls */}
-          <div className="flex items-center gap-1 sm:gap-1.5">
+          <div className="flex items-center gap-1.5">
             {/* Mobile Studio Tools Trigger Button */}
             <button
               onClick={() => setShowMobileTools(true)}
-              className="flex md:hidden items-center gap-1 px-2.5 py-1.5 rounded-full bg-apple-blue/10 dark:bg-apple-blue/20 text-apple-blue font-semibold text-caption border border-apple-blue/30 shadow-2xs active:scale-95 transition-all"
+              className="flex md:hidden items-center gap-1.5 px-3 py-1 rounded-full bg-apple-blue text-white font-bold text-caption shadow-sm active:scale-95 transition-all"
               title="Open Studio Tools"
             >
-              <Sparkles className="w-3.5 h-3.5 text-apple-blue" />
+              <Sparkles className="w-3.5 h-3.5" />
               <span>Tools</span>
             </button>
 
@@ -217,12 +217,12 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               <span>Star</span>
             </a>
 
-            {/* Hand Raise Trigger */}
+            {/* Hand Raise Trigger (Desktop / Tablet) */}
             {isFacultyOrHost ? (
               <button
                 onClick={onOpenHandQueue}
                 title="Raised Hands Queue"
-                className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-caption font-semibold transition-all ${
+                className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-semibold transition-all ${
                   handsRaised.length > 0
                     ? 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
                     : 'bg-apple-secondaryBg dark:bg-white/10 text-apple-textSecondary'
@@ -235,7 +235,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               <button
                 onClick={onToggleRaiseHand}
                 title={isHandRaised ? 'Lower your hand' : 'Raise hand to ask question'}
-                className={`p-1.5 rounded-full transition-all ${
+                className={`hidden sm:flex p-1.5 rounded-full transition-all ${
                   isHandRaised
                     ? 'bg-amber-400 text-amber-950 ring-2 ring-amber-300 scale-105'
                     : 'hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary hover:text-amber-600'

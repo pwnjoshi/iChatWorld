@@ -438,13 +438,13 @@ export const RoomView: React.FC<RoomViewProps> = ({
       {/* MOBILE / TABLET VIEW (Compact Tabbed Switcher) */}
       <div className="flex lg:hidden flex-col flex-1 min-h-0 overflow-hidden">
         {/* Segmented Chat / Files Switcher Bar */}
-        <div className="px-4 py-2 bg-white/50 dark:bg-black/50 backdrop-blur border-b border-apple-border/40 dark:border-white/10 shrink-0">
-          <div className="flex p-0.5 bg-apple-secondaryBg dark:bg-white/10 rounded-xl">
+        <div className="px-3 py-1.5 bg-white/80 dark:bg-black/80 backdrop-blur border-b border-apple-border/40 dark:border-white/10 shrink-0">
+          <div className="flex p-0.5 bg-apple-secondaryBg dark:bg-white/10 rounded-full max-w-xs mx-auto">
             <button
               onClick={() => setActiveTab('chat')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-footnote font-semibold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-footnote font-semibold transition-all ${
                 activeTab === 'chat'
-                  ? 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white shadow-xs'
                   : 'text-apple-textSecondary dark:text-white/60 hover:text-apple-textPrimary dark:hover:text-white'
               }`}
             >
@@ -454,9 +454,9 @@ export const RoomView: React.FC<RoomViewProps> = ({
 
             <button
               onClick={() => setActiveTab('files')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-footnote font-semibold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-footnote font-semibold transition-all ${
                 activeTab === 'files'
-                  ? 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white shadow-xs'
                   : 'text-apple-textSecondary dark:text-white/60 hover:text-apple-textPrimary dark:hover:text-white'
               }`}
             >

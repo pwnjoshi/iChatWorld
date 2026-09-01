@@ -15,7 +15,9 @@ import {
   ArrowRight,
   Plus,
   BookOpen,
-  ShieldCheck
+  ShieldCheck,
+  Sparkles,
+  Lock
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -74,30 +76,30 @@ export const HomePage: React.FC<HomePageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-apple-primaryBg dark:bg-black text-apple-textPrimary dark:text-white flex flex-col justify-between p-4 sm:p-6 md:p-8 select-none transition-colors">
-      {/* Header */}
-      <header className="flex items-center justify-between py-2 border-b border-apple-border/40 dark:border-white/10">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-apple-primaryBg dark:bg-black text-apple-textPrimary dark:text-white flex flex-col justify-between p-3.5 sm:p-6 md:p-8 select-none transition-colors">
+      {/* Top Header */}
+      <header className="flex items-center justify-between py-2 border-b border-apple-border/40 dark:border-white/10 max-w-6xl mx-auto w-full">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           <BrandLogo size="md" />
           <div>
             <h2 className="text-body font-bold tracking-tight text-apple-textPrimary dark:text-white leading-tight">
               iChatWorld
             </h2>
-            <p className="text-caption text-apple-textSecondary dark:text-white/50">
+            <p className="text-[11px] text-apple-textSecondary dark:text-white/50 hidden sm:block">
               Ephemeral Collaboration Space
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Docs Modal Button */}
           <button
             onClick={() => setShowDocsModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-footnote font-medium text-apple-textSecondary dark:text-white/80 hover:text-apple-textPrimary dark:hover:text-white bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg dark:hover:bg-white/20 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-footnote font-semibold text-apple-textSecondary dark:text-white/80 hover:text-apple-textPrimary dark:hover:text-white bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg dark:hover:bg-white/20 transition-all active:scale-95"
             title="Open Platform & Developer Docs"
           >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Docs</span>
+            <BookOpen className="w-3.5 h-3.5 text-apple-blue" />
+            <span className="text-xs sm:text-footnote">Docs</span>
           </button>
 
           {/* Star on GitHub */}
@@ -105,7 +107,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             href="https://github.com/pwnjoshi/iChatWorld"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-apple-textPrimary dark:text-white border border-apple-border/50 dark:border-white/10 text-footnote font-medium transition-all"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-yellow-50 dark:hover:bg-yellow-950/30 text-apple-textPrimary dark:text-white border border-apple-border/50 dark:border-white/10 text-footnote font-semibold transition-all active:scale-95"
             title="Star iChatWorld on GitHub"
           >
             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
@@ -116,7 +118,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           {onToggleDarkMode && (
             <button
               onClick={onToggleDarkMode}
-              className="p-2 rounded-full text-apple-textSecondary dark:text-white/80 hover:text-apple-textPrimary dark:hover:text-white bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg dark:hover:bg-white/20 transition-colors"
+              className="p-2 rounded-full text-apple-textSecondary dark:text-white/80 hover:text-apple-textPrimary dark:hover:text-white bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg dark:hover:bg-white/20 transition-colors active:scale-95"
               title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
               {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
@@ -125,134 +127,167 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </header>
 
-      {/* Main Area */}
-      <main className="my-auto py-8 md:py-14 max-w-6xl mx-auto w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+      {/* Main Hero & Action Section */}
+      <main className="my-auto py-5 sm:py-8 md:py-12 max-w-6xl mx-auto w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center">
           {/* Left Column: Heading & Room Action Card */}
-          <div className="lg:col-span-7 space-y-6">
-            <div className="space-y-3">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-apple-textPrimary dark:text-white leading-tight">
+          <div className="lg:col-span-7 space-y-5 sm:space-y-6 text-center lg:text-left">
+            <div className="space-y-2.5 sm:space-y-3">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-apple-blue/10 dark:bg-apple-blue/20 text-apple-blue text-caption font-bold border border-apple-blue/30 mx-auto lg:mx-0">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Zero Accounts • Self-Destructing Rooms</span>
+              </div>
+
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-apple-textPrimary dark:text-white leading-tight">
                 Disposable rooms for real-time collaboration.
               </h1>
-              <p className="text-subhead text-apple-textSecondary dark:text-white/70 max-w-xl leading-relaxed">
-                Create a room in one tap or join with a 6-character code. Live chat, peer-to-peer file drops, synchronized whiteboard, and presentation tools for teams, study groups, labs, and workshops. All room data is ephemeral and self-destructs when you leave.
+              <p className="text-footnote sm:text-subhead text-apple-textSecondary dark:text-white/70 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                Instant encrypted workspaces with live chat, WebRTC file drops, StarNote whiteboard studio, and synchronized presentation decks. No history retained.
               </p>
             </div>
 
             {/* Action Card */}
-            <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-6 sm:p-7 shadow-sm border border-apple-border/70 dark:border-white/10 space-y-5 max-w-lg">
+            <div className="bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl rounded-3xl p-4 sm:p-7 shadow-ios-card border border-apple-border/70 dark:border-white/10 space-y-4 max-w-md mx-auto lg:mx-0">
               {/* Start a Room Button */}
               <div>
                 <button
                   onClick={() => setModalMode('create')}
-                  className="w-full py-3.5 px-6 rounded-xl bg-apple-blue hover:bg-apple-blueHover text-white font-semibold text-body transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-sm"
+                  className="w-full py-3.5 px-6 rounded-2xl bg-apple-blue hover:bg-apple-blueHover text-white font-bold text-body transition-all flex items-center justify-center gap-2 active:scale-[0.98] shadow-md shadow-apple-blue/25"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-5 h-5" />
                   <span>Start a New Room</span>
                 </button>
               </div>
 
               {/* Symmetric Divider */}
-              <div className="relative flex items-center justify-center my-3">
+              <div className="relative flex items-center justify-center my-2">
                 <div className="flex-grow border-t border-apple-border/70 dark:border-white/10" />
-                <span className="shrink-0 px-3 text-caption uppercase tracking-wider text-apple-textSecondary dark:text-white/40 font-medium">
+                <span className="shrink-0 px-3 text-[10px] font-bold uppercase tracking-widest text-apple-textSecondary/60 dark:text-white/40">
                   or enter room code
                 </span>
                 <div className="flex-grow border-t border-apple-border/70 dark:border-white/10" />
               </div>
 
-              {/* Join Form */}
-              <form onSubmit={handleJoinClick} className="space-y-3">
-                <div className="flex gap-2">
+              {/* Join Form (Embedded input capsule without overflow) */}
+              <form onSubmit={handleJoinClick} className="space-y-2">
+                <div className="flex items-center gap-1.5 p-1 bg-apple-secondaryBg dark:bg-white/10 rounded-2xl border border-apple-border/50 dark:border-white/10 focus-within:ring-2 focus-within:ring-apple-blue transition-all">
                   <input
                     type="text"
                     value={codeInput}
                     onChange={handleCodeChange}
                     placeholder="e.g. 482-901"
                     maxLength={7}
-                    className="flex-1 px-4 py-3 bg-apple-secondaryBg dark:bg-white/10 rounded-xl text-body font-mono font-bold tracking-widest text-center text-apple-textPrimary dark:text-white placeholder:text-apple-textSecondary/40 dark:placeholder:text-white/30 outline-none border border-apple-border/40 dark:border-white/10 focus:border-apple-blue transition-all uppercase"
+                    className="flex-1 bg-transparent px-3 py-2 text-center text-body sm:text-headline font-mono font-bold tracking-widest text-apple-textPrimary dark:text-white placeholder:text-apple-textSecondary/40 dark:placeholder:text-white/30 outline-none uppercase"
                   />
                   <button
                     type="submit"
                     disabled={cleanRoomCode(codeInput).length !== 6}
-                    className="px-5 py-3 rounded-xl bg-apple-blue hover:bg-apple-blueHover disabled:opacity-30 text-white font-semibold text-footnote transition-all flex items-center justify-center shrink-0 active:scale-[0.98]"
+                    className="px-4 py-2.5 rounded-xl bg-apple-blue hover:bg-apple-blueHover disabled:opacity-30 text-white font-bold text-footnote transition-all flex items-center gap-1 shrink-0 active:scale-95 shadow-sm"
                   >
                     <span>Join</span>
-                    <ArrowRight className="w-4 h-4 ml-1" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
                 {joinError && (
-                  <p className="text-caption text-apple-red font-medium text-center">
+                  <p className="text-caption text-apple-red font-medium text-center pt-1">
                     {joinError}
                   </p>
                 )}
               </form>
-            </div>
 
-            {/* Privacy note */}
-            <div className="flex items-center gap-2 text-caption text-apple-textSecondary dark:text-white/50">
-              <ShieldCheck className="w-4 h-4 text-apple-green shrink-0" />
-              <span>Zero accounts, no tracking cookies, and zero server file retention.</span>
+              {/* Privacy note */}
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-apple-textSecondary dark:text-white/50 pt-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-apple-green shrink-0" />
+                <span>Zero accounts, no tracking cookies, zero server logs.</span>
+              </div>
             </div>
           </div>
 
-          {/* Right Column: Live Studio Preview Panel */}
+          {/* Right Column: Studio Capabilities (Desktop Preview / Mobile 2x2 Grid) */}
           <div className="lg:col-span-5">
-            <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-apple-border/70 dark:border-white/10 shadow-sm p-5 space-y-4">
+            {/* Desktop Full Workspace Preview Card */}
+            <div className="hidden lg:block bg-white dark:bg-[#1C1C1E] rounded-3xl border border-apple-border/70 dark:border-white/10 shadow-ios-card p-5 space-y-4">
               <div className="flex items-center justify-between border-b border-apple-border/40 dark:border-white/10 pb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-apple-green" />
-                  <span className="text-footnote font-semibold text-apple-textPrimary dark:text-white">
+                  <div className="w-2.5 h-2.5 rounded-full bg-apple-green animate-pulse" />
+                  <span className="text-footnote font-bold text-apple-textPrimary dark:text-white">
                     Room Workspace Preview
                   </span>
                 </div>
-                <span className="text-[11px] font-mono text-apple-textSecondary dark:text-white/50">
+                <span className="text-[11px] font-mono font-semibold text-apple-textSecondary dark:text-white/50">
                   CODE: 729-415
                 </span>
               </div>
 
               {/* Tool Capabilities Preview */}
               <div className="space-y-2 text-footnote">
-                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-apple-secondaryBg/70 dark:bg-white/5">
+                <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-apple-secondaryBg/70 dark:bg-white/5">
                   <MessageSquare className="w-4 h-4 text-apple-blue shrink-0" />
                   <div>
-                    <p className="font-semibold text-apple-textPrimary dark:text-white leading-tight">Live Ephemeral Chat</p>
+                    <p className="font-bold text-apple-textPrimary dark:text-white leading-tight">Live Ephemeral Chat</p>
                     <p className="text-caption text-apple-textSecondary dark:text-white/60">Voice notes, code snippets, reactions, and in-room @ai assistance.</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-apple-secondaryBg/70 dark:bg-white/5">
+                <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-apple-secondaryBg/70 dark:bg-white/5">
                   <Folder className="w-4 h-4 text-apple-blue shrink-0" />
                   <div>
-                    <p className="font-semibold text-apple-textPrimary dark:text-white leading-tight">P2P File Transfers</p>
+                    <p className="font-bold text-apple-textPrimary dark:text-white leading-tight">P2P File Transfers</p>
                     <p className="text-caption text-apple-textSecondary dark:text-white/60">Direct WebRTC gigabit mesh streaming without server disk storage.</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-apple-secondaryBg/70 dark:bg-white/5">
+                <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-apple-secondaryBg/70 dark:bg-white/5">
                   <PenTool className="w-4 h-4 text-apple-blue shrink-0" />
                   <div>
-                    <p className="font-semibold text-apple-textPrimary dark:text-white leading-tight">Collaborative Whiteboard</p>
-                    <p className="text-caption text-apple-textSecondary dark:text-white/60">Bézier pressure strokes, math grid paper, and PNG exports.</p>
+                    <p className="font-bold text-apple-textPrimary dark:text-white leading-tight">StarNote Whiteboard Studio</p>
+                    <p className="text-caption text-apple-textSecondary dark:text-white/60">6-Pen dock, pressure curves, multi-erasers, and text notes.</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-apple-secondaryBg/70 dark:bg-white/5">
+                <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-apple-secondaryBg/70 dark:bg-white/5">
                   <Presentation className="w-4 h-4 text-apple-blue shrink-0" />
                   <div>
-                    <p className="font-semibold text-apple-textPrimary dark:text-white leading-tight">Slide Presenter & Laser</p>
+                    <p className="font-bold text-apple-textPrimary dark:text-white leading-tight">Slide Presenter & Laser</p>
                     <p className="text-caption text-apple-textSecondary dark:text-white/60">Synchronized slides with live drawing annotations and laser pointer.</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-apple-secondaryBg/70 dark:bg-white/5">
+                <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-apple-secondaryBg/70 dark:bg-white/5">
                   <Mail className="w-4 h-4 text-apple-blue shrink-0" />
                   <div>
-                    <p className="font-semibold text-apple-textPrimary dark:text-white leading-tight">Export Notes & Homework</p>
+                    <p className="font-bold text-apple-textPrimary dark:text-white leading-tight">Export Notes & Homework</p>
                     <p className="text-caption text-apple-textSecondary dark:text-white/60">6-digit OTP verified delivery with whiteboard PNGs & assignments.</p>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Mobile Native 2x2 Feature Cards Grid */}
+            <div className="grid grid-cols-2 gap-2.5 lg:hidden pt-2">
+              <div className="p-3 bg-white/70 dark:bg-white/5 backdrop-blur rounded-2xl border border-apple-border/60 dark:border-white/10 space-y-1">
+                <MessageSquare className="w-4 h-4 text-apple-blue" />
+                <p className="text-caption font-bold text-apple-textPrimary dark:text-white">Live Chat & AI</p>
+                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Voice notes & @ai helper</p>
+              </div>
+
+              <div className="p-3 bg-white/70 dark:bg-white/5 backdrop-blur rounded-2xl border border-apple-border/60 dark:border-white/10 space-y-1">
+                <Folder className="w-4 h-4 text-emerald-500" />
+                <p className="text-caption font-bold text-apple-textPrimary dark:text-white">P2P File Drop</p>
+                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Direct gigabit mesh</p>
+              </div>
+
+              <div className="p-3 bg-white/70 dark:bg-white/5 backdrop-blur rounded-2xl border border-apple-border/60 dark:border-white/10 space-y-1">
+                <PenTool className="w-4 h-4 text-purple-500" />
+                <p className="text-caption font-bold text-apple-textPrimary dark:text-white">Whiteboard</p>
+                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">StarNote 6-pen studio</p>
+              </div>
+
+              <div className="p-3 bg-white/70 dark:bg-white/5 backdrop-blur rounded-2xl border border-apple-border/60 dark:border-white/10 space-y-1">
+                <Mail className="w-4 h-4 text-amber-500" />
+                <p className="text-caption font-bold text-apple-textPrimary dark:text-white">Export Notes</p>
+                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">6-digit OTP delivery</p>
               </div>
             </div>
           </div>
@@ -260,12 +295,12 @@ export const HomePage: React.FC<HomePageProps> = ({
       </main>
 
       {/* Footer */}
-      <footer className="pt-5 border-t border-apple-border/40 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-caption text-apple-textSecondary dark:text-white/50">
+      <footer className="pt-4 border-t border-apple-border/40 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-[11px] text-apple-textSecondary dark:text-white/50 max-w-6xl mx-auto w-full pb-safe">
         <p>iChatWorld — Ephemeral peer-to-peer workspace • Open source under MIT</p>
         <div className="flex items-center gap-4">
           <button
             onClick={() => setShowDocsModal(true)}
-            className="hover:text-apple-blue transition-colors font-medium"
+            className="hover:text-apple-blue transition-colors font-semibold"
           >
             Developer Docs
           </button>
@@ -273,7 +308,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             href="https://github.com/pwnjoshi/iChatWorld"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-apple-blue transition-colors font-medium flex items-center gap-1"
+            className="hover:text-apple-blue transition-colors font-semibold flex items-center gap-1"
           >
             <span>GitHub</span>
             <Star className="w-3 h-3 fill-amber-400 text-amber-500" />

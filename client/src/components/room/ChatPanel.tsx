@@ -419,13 +419,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick @ai & Feature Prompt Chips */}
+      {/* Quick @ai & Feature Prompt Chips (Smooth scroll, zero scrollbars) */}
       {canSend && !isRecordingVoice && (
-        <div className="px-3 pt-2 pb-1 bg-white/70 dark:bg-black/70 backdrop-blur border-t border-apple-border/40 dark:border-white/5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+        <div className="px-3 py-1.5 bg-white/80 dark:bg-black/80 backdrop-blur border-t border-apple-border/40 dark:border-white/5 flex items-center gap-1.5 overflow-x-auto no-scrollbar touch-pan-x select-none">
           <button
             type="button"
             onClick={() => setInputText('@ai explain ')}
-            className="px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
+            className="px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
           >
             <Sparkles className="w-3 h-3 text-purple-500" />
             <span>@ai explain</span>
@@ -433,7 +433,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           <button
             type="button"
             onClick={() => setInputText('@ai quiz me on ')}
-            className="px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
+            className="px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
           >
             <HelpCircle className="w-3 h-3 text-blue-500" />
             <span>@ai quiz me</span>
@@ -441,65 +441,58 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           <button
             type="button"
             onClick={() => setInputText('@ai list all features and how to use them')}
-            className="px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
+            className="px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
           >
             <span>🛠️ @ai features</span>
           </button>
           <button
             type="button"
             onClick={() => setInputText('@ai summarize our discussion in 3 key points')}
-            className="px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
+            className="px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
           >
             <span>📝 @ai summarize</span>
           </button>
         </div>
       )}
 
-      {/* Input or Muted Banner */}
-      <div className="p-3 bg-white dark:bg-black border-t border-apple-border/70 dark:border-white/10 shrink-0">
+      {/* Input Bar */}
+      <div className="p-2 sm:p-3 bg-white/95 dark:bg-black/95 border-t border-apple-border/70 dark:border-white/10 shrink-0 pb-safe">
         {isRecordingVoice ? (
           <VoiceRecorder
             onSendAudio={onSendAudio}
             onCancel={() => setIsRecordingVoice(false)}
           />
         ) : chatMuted && !isFacultyOrHost ? (
-          <div className="flex items-center justify-center gap-2 py-3 px-4 bg-apple-secondaryBg dark:bg-white/10 rounded-ios-input text-apple-textSecondary text-footnote">
+          <div className="flex items-center justify-center gap-2 py-3 px-4 bg-apple-secondaryBg dark:bg-white/10 rounded-2xl text-apple-textSecondary text-footnote">
             <VolumeX className="w-4 h-4 text-apple-textSecondary" />
             <span>Chat is muted by faculty (files and polls remain active)</span>
           </div>
         ) : (
-          <form onSubmit={handleSend} className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowSearch(!showSearch)}
-              title="Search messages"
-              className="p-2 text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors"
-            >
-              <Search className="w-4 h-4" />
-            </button>
+          <form onSubmit={handleSend} className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0 bg-apple-secondaryBg dark:bg-white/10 rounded-full px-3 py-1 border border-apple-border/60 dark:border-white/10 focus-within:ring-2 focus-within:ring-apple-blue transition-all">
+              <input
+                type="text"
+                value={inputText}
+                onChange={handleInputChange}
+                placeholder={chatMuted ? "Post as faculty..." : "Type a message or @ai..."}
+                maxLength={500}
+                className="flex-1 bg-transparent py-1.5 text-body text-apple-textPrimary dark:text-white placeholder:text-apple-textSecondary/50 dark:placeholder:text-white/30 outline-none min-w-0"
+              />
 
-            <input
-              type="text"
-              value={inputText}
-              onChange={handleInputChange}
-              placeholder={chatMuted ? "You can post as faculty..." : "Type a message..."}
-              maxLength={500}
-              className="flex-1 px-4 py-2.5 bg-apple-secondaryBg dark:bg-white/10 rounded-full text-body text-apple-textPrimary dark:text-white placeholder:text-apple-textSecondary/50 outline-none focus:ring-2 focus:ring-apple-blue/70 transition-all"
-            />
-
-            <button
-              type="button"
-              onClick={() => setIsRecordingVoice(true)}
-              title="Record voice note"
-              className="p-2.5 rounded-full text-apple-textSecondary hover:text-apple-blue hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
-            >
-              <Mic className="w-4 h-4" />
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsRecordingVoice(true)}
+                title="Record voice note"
+                className="p-1.5 rounded-full text-apple-textSecondary hover:text-apple-blue transition-colors shrink-0"
+              >
+                <Mic className="w-4 h-4" />
+              </button>
+            </div>
 
             <button
               type="submit"
               disabled={!inputText.trim() || isSending}
-              className="p-2.5 rounded-full bg-apple-blue hover:bg-apple-blueHover disabled:opacity-40 text-white transition-all shadow-sm shrink-0 active:scale-95"
+              className="p-2.5 rounded-full bg-apple-blue hover:bg-apple-blueHover disabled:opacity-30 text-white transition-all shadow-sm shrink-0 active:scale-95 flex items-center justify-center"
             >
               <Send className="w-4 h-4" />
             </button>
