@@ -15,5 +15,5 @@ export const CONFIG = {
   NEBIUS_BASE_URL: process.env.NEBIUS_BASE_URL || 'https://api.tokenfactory.us-central1.nebius.com/v1/',
   NEBIUS_MODEL: process.env.NEBIUS_MODEL || 'deepseek-ai/DeepSeek-V4-Flash',
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
-  RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL || 'iChatWorld <onboarding@resend.dev>'
+  RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL || 'iChatWorld <info@ichatworld.xyz>'
 };

@@ -115,7 +115,7 @@ FACULTY_PASSPHRASE=faculty123
 
 # Resend Email Delivery for OTP & Notes Export
 RESEND_API_KEY=your_resend_api_key_here
-RESEND_FROM_EMAIL=onboarding@resend.dev
+RESEND_FROM_EMAIL=info@ichatworld.xyz
 
 # Optional: Nebius DeepSeek-V4 AI Integration
 NEBIUS_API_KEY=your_nebius_api_key_here
