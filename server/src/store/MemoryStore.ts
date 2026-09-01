@@ -46,6 +46,12 @@ export class MemoryStore implements IStore {
     const existing = this.timers.get(code);
     if (existing) clearTimeout(existing);
 
+    const room = this.rooms.get(code);
+    if (room && room.expiresAt === Number.MAX_SAFE_INTEGER) {
+      // Unlimited room - kept alive until host closes
+      return;
+    }
+
     const timer = setTimeout(() => {
       this.deleteRoom(code);
     }, CONFIG.ROOM_INACTIVITY_TTL_SEC * 1000);
@@ -55,8 +61,9 @@ export class MemoryStore implements IStore {
 
   async createRoom(code: string, creator: Member, facultyPassphraseHash?: string, lifespanHours?: number): Promise<SerializedRoom> {
     const now = Date.now();
-    const durationHours = (lifespanHours && [1, 3, 6, 12, 24].includes(lifespanHours)) ? lifespanHours : 24;
-    const expiresAt = now + durationHours * 3600 * 1000;
+    const isUnlimited = lifespanHours === 0;
+    const durationHours = (lifespanHours && [1, 3, 6, 12, 24, 48].includes(lifespanHours)) ? lifespanHours : isUnlimited ? 0 : 24;
+    const expiresAt = isUnlimited ? Number.MAX_SAFE_INTEGER : now + durationHours * 3600 * 1000;
 
     const members = new Map<string, Member>();
     members.set(creator.socketId, creator);

@@ -122,11 +122,6 @@ export const ScreenShareViewer: React.FC<ScreenShareViewerProps> = ({
           <span className="font-semibold truncate">
             {isPresenter ? 'Your Screen' : `${presenterName}'s Screen`}
           </span>
-          {!isFullscreen && (
-            <span className="text-[10px] text-white/40 flex items-center gap-0.5">
-              <Move className="w-2.5 h-2.5" /> Drag
-            </span>
-          )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0" onPointerDown={(e) => e.stopPropagation()}>

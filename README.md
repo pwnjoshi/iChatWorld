@@ -1,4 +1,4 @@
-# iChatWorld — Disposable Workspaces for Real-Time Collaboration
+# iChatWorld — Ephemeral Workspaces for Real-Time Collaboration
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![React 18](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)](https://reactjs.org/)
@@ -6,43 +6,50 @@
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![WebRTC](https://img.shields.io/badge/WebRTC-P2P%20Streaming-FF6B6B?logo=webrtc&logoColor=white)](https://webrtc.org/)
 [![Socket.io](https://img.shields.io/badge/Socket.io-4.7-010101?logo=socket.io&logoColor=white)](https://socket.io/)
+[![HugeIcons](https://img.shields.io/badge/HugeIcons-React-007AFF)](https://hugeicons.com/)
+[![Resend](https://img.shields.io/badge/Email-Resend%20API-black?logo=resend&logoColor=white)](https://resend.com/)
 [![DeepSeek-V4](https://img.shields.io/badge/AI-DeepSeek--V4--Flash-007AFF)](https://tokenfactory.nebius.com/)
-[![Netlify Deploy](https://img.shields.io/badge/Deploy-Netlify-00C7B7?logo=netlify&logoColor=white)](https://www.netlify.com/)
 
 > **Zero accounts. No tracking. Ephemeral self-destructing rooms.**  
-> A fast, disposable room platform for live chat, direct WebRTC gigabit file drops, synchronized whiteboard, and presentation tools for teams, labs, study groups, hackathons, and workshops.
+> A fast, disposable workspace for live chat, direct WebRTC gigabit file drops, StarNote collaborative whiteboard studio, and presentation tools for teams, labs, study groups, hackathons, and workshops.
 
 ---
 
 ## 🌟 Core Capabilities
 
-### 💬 1. Live Ephemeral Chat & In-Room @ai Assistant
+### 🎨 1. StarNote Collaborative Whiteboard Studio
+- **6-Pen Studio Suite**: Fude/Fountain Pen, Natural Ink Pen, 2B Sketch Pencil with tilt/pressure shading, Ballpoint Pen, Art Brush, and Luminous Marker.
+- **StarNote Floating Pen Box (Dock)**: Customizable quick-access pen tray with miniature 3D nib renderings and 1-tap preset activation.
+- **4-in-1 Multi-Eraser Suite**: Standard Brush Eraser, 1-Click Object/Shape Eraser, Highlighter-Only Eraser, and Lasso Area Eraser.
+- **Shape Select & Move Tool**: Click and drag any drawn stroke, geometric shape, or diagram anywhere on the canvas.
+- **Inline Text & Labeling Tool**: Place text notes, equations, and annotations directly on the whiteboard.
+- **Live Remote Stylus Cursors & Author Badges**: Real-time Apple-style pointer dots with author name tags (`[Prof. Alex ✍️]`) and drawing ripples.
+- **Ultra-Low Bandwidth Engine**: Redundant jitter decimation ($< 1.5\text{px}$) and 40ms throttled broadcasts reduce network payload sizes by over 60%.
+- **True Immersive Fullscreen**: Full-screen canvas viewport with frosted-glass controls and `Esc` shortcut.
+
+### ✉️ 2. Export Notes & Homework via Resend OTP
+- **6-Digit Cryptographic OTP Verification**: Dispatches one-time verification codes using Resend API to verify recipient ownership.
+- **Customizable Export Bundle**: Send whiteboard diagrams (PNG), chat transcripts (MD), uploaded files, and custom instructor notes in one package.
+
+### 💬 3. Live Ephemeral Chat & In-Room @ai Assistant
 - **In-Room `@ai` Assistant**: Type `@ai <prompt>` in chat for instant peer tutoring, code analysis, and conceptual explanations powered by Nebius DeepSeek-V4-Flash.
 - **Voice Notes & Code Blocks**: Clean voice recording with hardware-grade acoustic echo cancellation and syntax-highlighted code blocks with tapback reactions.
 
-### 🎨 2. Collaborative Whiteboard Studio
-- **Bézier Pressure Strokes**: Double-buffered active stroke rendering with 0 spikes, 60–120fps smooth drawing.
-- **Paper Themes**: Pure White, Dark Obsidian (`#121212`), and Math Grid paper modes with 1-tap snapshot exports.
-
-### 📁 3. Direct WebRTC P2P File Transfers
+### 📁 4. Direct WebRTC P2P File Transfers
 - **Direct Mesh Streaming**: Multi-megabyte files stream directly peer-to-peer over local Wi-Fi / gigabit network without passing through or persisting on server disks.
 - **Share in Chat**: 1-tap button to post instant download references into the active chat stream.
 
-### 📑 4. Synchronized Slide Presenter & Laser
+### 📑 5. Synchronized Slide Presenter & Laser
 - **Cloud Relay Sync**: Upload presentation slide decks with real-time synchronized slide transitions across all participants.
 - **Live Annotations**: Draw on slides with pen, highlighter, eraser, and glowing red laser pointer dot tracking.
 
-### ⏱️ 5. Focus Timer, Live Polls & Q&A Queue
-- **Synchronized Focus Timer**: Presets (2m, 5m, 10m, 15m) with auto-closing modal and header countdown badge.
-- **Live Polls**: Real-time aggregated voting with 1-tap creator/host deletion.
-- **Anonymous Q&A**: Question queue with upvoting and threaded answers.
+### ⏱️ 6. Prominent Synchronized Focus Timer Island
+- **Room-Wide Island Banner**: Active countdown island pinned beneath the header with real-time sync, pause/resume, and "Time's Up! ⏰" alerts.
+- **Live Polls & Q&A Queue**: Real-time anonymous Q&A queue with upvoting and live voting polls.
 
-### 🖥️ 6. Draggable Floating Screen Share PiP & CodePad
-- **Draggable PiP**: Position your floating screen share anywhere on the screen without obscuring your workspace.
-- **Interactive CodePad**: In-browser multi-language runner with broadcast to chat.
-
-### 🛡️ 7. Host Moderation Controls
-- Unlock moderation tools with a room passphrase: whole-room chat mute, pinned announcements, and member removal.
+### 🛡️ 7. Host Moderation Controls & Custom Room Lifespan
+- **Configurable Room Lifespan**: Select room auto-disposal timer from 1h, 3h, 6h, 12h, 24h, up to 48 hours.
+- **Moderation Controls**: Unlock host tools with a passphrase: whole-room chat mute, pinned announcements, and member removal.
 
 ---
 
@@ -51,7 +58,7 @@
 ```
 ┌────────────────────────────────────────────────────────┐
 │                   iChatWorld Client                    │
-│     (React 18 + Vite + Tailwind CSS + Lucide Icons)    │
+│   (React 18 + Vite + Tailwind CSS + HugeIcons React)   │
 └──────────────┬──────────────────────────┬──────────────┘
                │                          │
    [WebRTC P2P DataChannels]      [Socket.io WebSocket]
@@ -69,10 +76,10 @@
                   ┌───────────────────────┴──────────────────────┐
                   ▼                                              ▼
     ┌───────────────────────────┐                  ┌───────────────────────────┐
-    │  Ephemeral Store Engine   │                  │  Nebius AI TokenFactory   │
-    │  • In-Memory Map (Default)│                  │  (DeepSeek-V4-Flash)      │
+    │  Ephemeral Store Engine   │                  │  Resend & Nebius AI API   │
+    │  • In-Memory Map (Default)│                  │  • 6-Digit OTP Delivery   │
     │  • Redis Cloud (Optional) │                  │  • In-Room @ai Assistant  │
-    │  • Auto-TTL Self-Destruct │                  │  • Code & Question Helper │
+    │  • 1h - 48h Auto-Disposal │                  │  • Markdown Notes Export  │
     └───────────────────────────┘                  └───────────────────────────┘
 ```
 
@@ -106,6 +113,10 @@ PORT=3001
 CORS_ORIGIN=*
 FACULTY_PASSPHRASE=faculty123
 
+# Resend Email Delivery for OTP & Notes Export
+RESEND_API_KEY=your_resend_api_key_here
+RESEND_FROM_EMAIL=onboarding@resend.dev
+
 # Optional: Nebius DeepSeek-V4 AI Integration
 NEBIUS_API_KEY=your_nebius_api_key_here
 NEBIUS_BASE_URL=https://api.tokenfactory.us-central1.nebius.com/v1/
@@ -121,83 +132,19 @@ npm run dev
 
 ---
 
-## 📦 Deployment Guide
+## 📦 Production Build & Deployment
 
-### Option A: Deploy Frontend on Netlify + Backend on Render/Railway/Fly.io (Recommended)
-
-#### Step 1: Deploy Backend (Render / Railway / Fly.io / VPS)
-1. Push your repository to GitHub: `https://github.com/pwnjoshi/iChatWorld`
-2. Create a new **Web Service** on [Render](https://render.com/) or [Railway](https://railway.app/).
-3. Set build settings:
-   - **Root Directory**: `server`
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm start`
-   - **Environment Variables**:
-     - `PORT`: `3001` (or provided by host)
-     - `FACULTY_PASSPHRASE`: `your_secure_passphrase`
-     - `NEBIUS_API_KEY`: `your_nebius_api_key`
-     - `CORS_ORIGIN`: `*`
-4. Copy your backend service URL (e.g. `https://ichatworld-server.onrender.com`).
-
-#### Step 2: Deploy Frontend to Netlify
-1. Go to [Netlify](https://app.netlify.com/) and click **"Add new site" -> "Import an existing project"**.
-2. Select your repository `pwnjoshi/iChatWorld`.
-3. Set build settings:
-   - **Base directory**: `client`
-   - **Build command**: `npm run build`
-   - **Publish directory**: `dist`
-4. In **Site configuration > Environment variables**, add:
-   - `VITE_BACKEND_URL`: `https://ichatworld-server.onrender.com` (your backend URL from Step 1)
-5. Click **Deploy Site**!
-
----
-
-### Option B: Monolithic Full-Stack Deployment (Docker / VPS)
-
+### Build for Production
 ```bash
-# Build both frontend and backend
 npm run build
+```
 
-# Start the full-stack server (serves client/dist statically)
+### Run Production Server
+```bash
 npm start
 ```
 
 ---
 
-## 🔒 Security & Privacy Architecture
-
-- **No Persisted Logs or Accounts**: Users join with a temporary display name. No emails, phone numbers, or passwords stored.
-- **Ephemeral Storage**: All messages, whiteboard strokes, polls, and questions reside in memory with automatic time-to-live (TTL) expiration.
-- **Security Headers**: Built-in HTTP security headers (`X-Content-Type-Options`, `X-Frame-Options: SAMEORIGIN`, `X-XSS-Protection`, `Referrer-Policy`).
-- **Encrypted P2P Channels**: WebRTC DataChannels are end-to-end encrypted via DTLS/SCTP.
-- **No Secret Leaks**: `.env` and sensitive API keys are strictly excluded from git tracking.
-
----
-
-## 🧪 Testing
-
-Run test suites:
-
-```bash
-# Test all tools (Whiteboard, Screen Share, Code Pad, Timer, Q&A, Slides)
-npx tsx server/scripts/test-all-tools.ts
-
-# Test AI Assistant, Poll Deletion & Slide Annotations
-npx tsx server/scripts/test-new-features.ts
-
-# Test full end-to-end room message & file management
-npx tsx server/scripts/test-message-file-management.ts
-```
-
----
-
 ## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
-
----
-
-## 👤 Author
-
-Developed by **[Pawan Joshi](https://github.com/pwnjoshi)**  
-GitHub: [@pwnjoshi](https://github.com/pwnjoshi)
+This project is open-source under the **MIT License**.

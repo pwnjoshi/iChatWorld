@@ -16,11 +16,12 @@ const PRESET_NAMES = [
 ];
 
 const LIFESPAN_OPTIONS = [
-  { label: '1 Hour', hours: 1 },
-  { label: '3 Hours', hours: 3 },
-  { label: '6 Hours', hours: 6 },
-  { label: '12 Hours', hours: 12 },
-  { label: '24 Hours', hours: 24 }
+  { label: '1h', hours: 1 },
+  { label: '3h', hours: 3 },
+  { label: '6h', hours: 6 },
+  { label: '12h', hours: 12 },
+  { label: '24h', hours: 24 },
+  { label: '48h', hours: 48 }
 ];
 
 export const DisplayNameModal: React.FC<DisplayNameModalProps> = ({
@@ -109,7 +110,7 @@ export const DisplayNameModal: React.FC<DisplayNameModalProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-5 gap-1 pt-1">
+            <div className="grid grid-cols-6 gap-1 pt-1">
               {LIFESPAN_OPTIONS.map((opt) => {
                 const isSelected = lifespanHours === opt.hours;
                 return (
@@ -123,13 +124,13 @@ export const DisplayNameModal: React.FC<DisplayNameModalProps> = ({
                         : 'bg-white dark:bg-[#1C1C1E] text-apple-textSecondary dark:text-white/70 hover:text-apple-textPrimary dark:hover:text-white border border-apple-border/40 dark:border-white/5'
                     }`}
                   >
-                    {opt.hours}h
+                    {opt.label}
                   </button>
                 );
               })}
             </div>
             <p className="text-[11px] text-apple-textSecondary dark:text-white/40">
-              The room stays active even if all members disconnect, until this timer ends.
+              The room stays active even if all members disconnect, for up to {lifespanHours} hours.
             </p>
           </div>
         )}

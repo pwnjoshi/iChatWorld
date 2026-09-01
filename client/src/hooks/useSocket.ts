@@ -182,9 +182,6 @@ export function useSocket() {
 
     // Chat events
     socketInstance.on('chat:received', (message: Message) => {
-      if (!message.isSystem) {
-        playChime();
-      }
       setRoom(prev => {
         if (!prev) return null;
         if (prev.messages.some(m => m.id === message.id)) return prev;
@@ -219,7 +216,6 @@ export function useSocket() {
 
     // File events
     socketInstance.on('file:announced', (fileMeta: FileMetadata) => {
-      playChime();
       setRoom(prev => {
         if (!prev) return null;
         if (prev.files.some(f => f.id === fileMeta.id)) return prev;

@@ -4,19 +4,17 @@ import { DisplayNameModal } from './DisplayNameModal.js';
 import { DeveloperDocsModal } from '../docs/DeveloperDocsModal.js';
 import { BrandLogo } from '../common/BrandLogo.js';
 import {
-  ArrowRight,
-  Plus,
-  Moon,
-  Sun,
-  Star,
-  BookOpen,
   MessageSquare,
   Folder,
   PenTool,
   Presentation,
   Mail,
-  HelpCircle,
-  BarChart2,
+  Sun,
+  Moon,
+  Star,
+  ArrowRight,
+  Plus,
+  BookOpen,
   ShieldCheck
 } from 'lucide-react';
 
@@ -32,18 +30,21 @@ export const HomePage: React.FC<HomePageProps> = ({
   onCreateRoom,
   onJoinRoom,
   initialCode = '',
-  isDarkMode = false,
+  isDarkMode,
   onToggleDarkMode
 }) => {
-  const [codeInput, setCodeInput] = useState(initialCode ? formatRoomCode(initialCode) : '');
+  const [codeInput, setCodeInput] = useState('');
   const [modalMode, setModalMode] = useState<'create' | 'join' | null>(null);
-  const [showDocsModal, setShowDocsModal] = useState(false);
   const [joinError, setJoinError] = useState('');
+  const [showDocsModal, setShowDocsModal] = useState(false);
 
   useEffect(() => {
     if (initialCode) {
-      setCodeInput(formatRoomCode(initialCode));
-      setModalMode('join');
+      const formatted = formatRoomCode(initialCode);
+      setCodeInput(formatted);
+      if (cleanRoomCode(initialCode).length === 6) {
+        setModalMode('join');
+      }
     }
   }, [initialCode]);
 
@@ -73,18 +74,18 @@ export const HomePage: React.FC<HomePageProps> = ({
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 selection:bg-apple-blue selection:text-white">
-      {/* Top Header */}
-      <header className="flex items-center justify-between pb-5 border-b border-apple-border/50 dark:border-white/10">
+    <div className="min-h-screen bg-apple-primaryBg dark:bg-black text-apple-textPrimary dark:text-white flex flex-col justify-between p-4 sm:p-6 md:p-8 select-none transition-colors">
+      {/* Header */}
+      <header className="flex items-center justify-between py-2 border-b border-apple-border/40 dark:border-white/10">
         <div className="flex items-center gap-3">
           <BrandLogo size="md" />
           <div>
-            <span className="font-bold text-headline tracking-tight text-apple-textPrimary dark:text-white block leading-none">
+            <h2 className="text-body font-bold tracking-tight text-apple-textPrimary dark:text-white leading-tight">
               iChatWorld
-            </span>
-            <span className="text-[11px] text-apple-textSecondary dark:text-white/50 tracking-wide font-medium">
-              Disposable Workspace
-            </span>
+            </h2>
+            <p className="text-caption text-apple-textSecondary dark:text-white/50">
+              Ephemeral Collaboration Space
+            </p>
           </div>
         </div>
 
@@ -125,7 +126,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </header>
 
       {/* Main Area */}
-      <main className="my-auto py-8 md:py-14">
+      <main className="my-auto py-8 md:py-14 max-w-6xl mx-auto w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left Column: Heading & Room Action Card */}
           <div className="lg:col-span-7 space-y-6">
