@@ -385,7 +385,12 @@ export class MemoryStore implements IStore {
     const room = this.rooms.get(code);
     if (!room) return;
     if (!room.whiteboardStrokes) room.whiteboardStrokes = [];
-    room.whiteboardStrokes.push(stroke);
+    const idx = room.whiteboardStrokes.findIndex(s => s.id === stroke.id);
+    if (idx !== -1) {
+      room.whiteboardStrokes[idx] = stroke;
+    } else {
+      room.whiteboardStrokes.push(stroke);
+    }
     this.touchRoom(code);
   }
 

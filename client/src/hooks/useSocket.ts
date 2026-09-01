@@ -89,9 +89,16 @@ export function useSocket() {
     socketInstance.on('whiteboard:stroke-received', (stroke: WhiteboardStroke) => {
       setRoom(prev => {
         if (!prev) return null;
+        const currentStrokes = prev.whiteboardStrokes || [];
+        const existingIndex = currentStrokes.findIndex(s => s.id === stroke.id);
+        if (existingIndex !== -1) {
+          const updated = [...currentStrokes];
+          updated[existingIndex] = stroke;
+          return { ...prev, whiteboardStrokes: updated };
+        }
         return {
           ...prev,
-          whiteboardStrokes: [...(prev.whiteboardStrokes || []), stroke]
+          whiteboardStrokes: [...currentStrokes, stroke]
         };
       });
     });
