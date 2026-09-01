@@ -42,7 +42,8 @@ import {
   X,
   Monitor,
   Sparkles,
-  Users
+  Users,
+  BookOpen
 } from 'lucide-react';
 import { formatFileSize } from '../../utils/format.js';
 
@@ -171,6 +172,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
   const [isPresenterModalOpen, setIsPresenterModalOpen] = useState(false);
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isExportNotesOpen, setIsExportNotesOpen] = useState(false);
+  const [isMobileToolsOpen, setIsMobileToolsOpen] = useState(false);
   const [isElevateModalOpen, setIsElevateModalOpen] = useState(false);
   const [elevatePassphrase, setElevatePassphrase] = useState('');
   const [elevateError, setElevateError] = useState('');
@@ -260,6 +262,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
         onOpenTimerModal={() => setIsTimerModalOpen(true)}
         onOpenQAModal={() => setIsQAModalOpen(true)}
         onOpenPresenter={() => setIsPresenterModalOpen(true)}
+        onOpenTools={() => setIsMobileToolsOpen(true)}
         onOpenDocs={() => setIsDocsOpen(true)}
         onOpenExportNotes={() => setIsExportNotesOpen(true)}
         onStartScreenShare={onStartScreenShare}
@@ -723,6 +726,138 @@ export const RoomView: React.FC<RoomViewProps> = ({
           </div>
         </form>
       </Modal>
+
+      {/* Native Mobile iOS Studio Tools Bottom Sheet Drawer */}
+      {isMobileToolsOpen && (
+        <div className="fixed inset-0 z-[100] flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div
+            className="fixed inset-0 z-[90]"
+            onClick={() => setIsMobileToolsOpen(false)}
+          />
+          <div className="relative z-[100] w-full max-w-lg mx-auto bg-white dark:bg-[#1C1C1E] rounded-t-3xl border-t border-apple-border/80 dark:border-white/15 p-5 space-y-4 shadow-2xl animate-slide-up pb-safe">
+            {/* Grab Handle */}
+            <div className="w-12 h-1.5 bg-apple-border/80 dark:bg-white/20 rounded-full mx-auto" />
+
+            <div className="flex items-center justify-between pb-2 border-b border-apple-border/40 dark:border-white/10">
+              <div>
+                <h3 className="font-bold text-headline text-apple-textPrimary dark:text-white">
+                  Studio Tools
+                </h3>
+                <p className="text-caption text-apple-textSecondary dark:text-white/60">
+                  Real-time collaborative utilities
+                </p>
+              </div>
+              <button
+                onClick={() => setIsMobileToolsOpen(false)}
+                className="p-1.5 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Grid of Studio Tools */}
+            <div className="grid grid-cols-3 gap-2.5 pt-1">
+              <button
+                onClick={() => {
+                  setIsMobileToolsOpen(false);
+                  setIsWhiteboardOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <PenTool className="w-5 h-5 text-apple-blue" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Whiteboard</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Draw & Sync</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsMobileToolsOpen(false);
+                  setIsQAModalOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-purple-50 dark:hover:bg-purple-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <HelpCircle className="w-5 h-5 text-purple-500" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Q&A ({room.qaQuestions?.length || 0})</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Queue</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsMobileToolsOpen(false);
+                  setIsPresenterModalOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <Presentation className="w-5 h-5 text-amber-500" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Slides</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Laser Deck</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsMobileToolsOpen(false);
+                  setIsTimerModalOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <Clock className="w-5 h-5 text-apple-blue" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Timer</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Focus Clock</span>
+              </button>
+
+              {isFacultyOrHost && (
+                <button
+                  onClick={() => {
+                    setIsMobileToolsOpen(false);
+                    setIsPollModalOpen(true);
+                  }}
+                  className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+                >
+                  <BarChart2 className="w-5 h-5 text-emerald-500" />
+                  <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Polls</span>
+                  <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Live Vote</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  setIsMobileToolsOpen(false);
+                  setIsExportNotesOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <Sparkles className="w-5 h-5 text-emerald-500" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Export</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Notes & OTP</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsMobileToolsOpen(false);
+                  onStartScreenShare();
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <Monitor className="w-5 h-5 text-apple-blue" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Screen</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Share PiP</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsMobileToolsOpen(false);
+                  setIsDocsOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <BookOpen className="w-5 h-5 text-apple-blue" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Docs</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Developer API</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
