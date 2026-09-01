@@ -1,4 +1,4 @@
-# 💬 iChatWorld — Ephemeral Collaborative Classroom & Real-Time Studio
+# iChatWorld — Disposable Workspaces for Real-Time Collaboration
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![React 18](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)](https://reactjs.org/)
@@ -6,55 +6,43 @@
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![WebRTC](https://img.shields.io/badge/WebRTC-P2P%20Streaming-FF6B6B?logo=webrtc&logoColor=white)](https://webrtc.org/)
 [![Socket.io](https://img.shields.io/badge/Socket.io-4.7-010101?logo=socket.io&logoColor=white)](https://socket.io/)
-[![DeepSeek-V4](https://img.shields.io/badge/AI-DeepSeek--V4--Flash-8A2BE2)](https://tokenfactory.nebius.com/)
+[![DeepSeek-V4](https://img.shields.io/badge/AI-DeepSeek--V4--Flash-007AFF)](https://tokenfactory.nebius.com/)
 [![Netlify Deploy](https://img.shields.io/badge/Deploy-Netlify-00C7B7?logo=netlify&logoColor=white)](https://www.netlify.com/)
 
-> **Zero logins. Zero trackers. Ephemeral self-destructing rooms.**  
-> A high-performance real-time virtual classroom, presentation studio, and peer-to-peer file sharing platform built with an Apple-grade minimalist aesthetic.
+> **Zero accounts. No tracking. Ephemeral self-destructing rooms.**  
+> A fast, disposable room platform for live chat, direct WebRTC gigabit file drops, synchronized whiteboard, and presentation tools for teams, labs, study groups, hackathons, and workshops.
 
 ---
 
-## 🌟 Highlights & Key Features
+## 🌟 Core Capabilities
 
-### 🤖 1. DeepSeek-V4-Flash AI Integration (Nebius TokenFactory)
-- **In-Room `@ai` Teaching Assistant**: Type `@ai <question>` directly in chat for instant, context-aware answers broadcast to the room.
-- **✨ AI Lecture Digest & Summary**: 1-tap header button synthesizes messages, uploaded files, and student Q&A into structured summaries, key takeaways, action items, and concept quizzes with markdown export.
+### 💬 1. Live Ephemeral Chat & In-Room @ai Assistant
+- **In-Room `@ai` Assistant**: Type `@ai <prompt>` in chat for instant peer tutoring, code analysis, and conceptual explanations powered by Nebius DeepSeek-V4-Flash.
+- **Voice Notes & Code Blocks**: Clean voice recording with hardware-grade acoustic echo cancellation and syntax-highlighted code blocks with tapback reactions.
 
 ### 🎨 2. Collaborative Whiteboard Studio
-- **Buttery-Smooth Bézier Splines**: Double-buffered active stroke rendering eliminates jitter and jagged spikes at 60–120fps.
-- **Canvas Paper Themes**: Toggle between Pure White, Dark Obsidian (`#121212`), and Math Grid paper modes.
-- **Tools**: Pressure-sensitive Pen, Highlighter, Eraser, Geometric Shapes, Pan/Zoom Navigation, and Snapshot Broadcast to room files.
+- **Bézier Pressure Strokes**: Double-buffered active stroke rendering with 0 spikes, 60–120fps smooth drawing.
+- **Paper Themes**: Pure White, Dark Obsidian (`#121212`), and Math Grid paper modes with 1-tap snapshot exports.
 
-### 🖥️ 3. Floating Draggable Screen Share PiP
-- **Draggable Window**: Grab and reposition the floating "Your Screen" PiP anywhere across the viewport.
-- **Theater / Fullscreen Modes**: Clean UI without distracting flashing indicators.
+### 📁 3. Direct WebRTC P2P File Transfers
+- **Direct Mesh Streaming**: Multi-megabyte files stream directly peer-to-peer over local Wi-Fi / gigabit network without passing through or persisting on server disks.
+- **Share in Chat**: 1-tap button to post instant download references into the active chat stream.
 
-### 🎙️ 4. Echo-Cancelled Voice Notes & Web Audio Chimes
-- **Acoustic Echo Cancellation**: Hardware-accelerated WebRTC audio constraints (`echoCancellation: true`, `noiseSuppression: true`, `autoGainControl: true`) to eliminate feedback loops and speaker reverberation.
-- **Gentle Apple Chimes**: Synthesized pure sine dual-tone chords (880Hz → 1320Hz) via Web Audio API (0 KB network overhead).
+### 📑 4. Synchronized Slide Presenter & Laser
+- **Cloud Relay Sync**: Upload presentation slide decks with real-time synchronized slide transitions across all participants.
+- **Live Annotations**: Draw on slides with pen, highlighter, eraser, and glowing red laser pointer dot tracking.
 
-### 📑 5. Synchronized Slide Presenter Studio
-- **Cross-Peer Relay Upload**: Slides upload to cloud relay so all students view identical slides in sync.
-- **Slide Management**: 1-tap slide deletion from thumbnail strip and 1-tap "Clear Entire Deck".
-- **Live Slide Annotations**: Draw on slides with Pen, Highlighter, Eraser, and Glowing Red Laser Pointer.
+### ⏱️ 5. Focus Timer, Live Polls & Q&A Queue
+- **Synchronized Focus Timer**: Presets (2m, 5m, 10m, 15m) with auto-closing modal and header countdown badge.
+- **Live Polls**: Real-time aggregated voting with 1-tap creator/host deletion.
+- **Anonymous Q&A**: Question queue with upvoting and threaded answers.
 
-### ⏱️ 6. Synchronized Classroom Timer
-- Synchronized countdown timer with quick presets (2m, 5m, 10m, 15m), custom labels, auto-closing modal, and prominent glowing countdown badge in the room header.
+### 🖥️ 6. Draggable Floating Screen Share PiP & CodePad
+- **Draggable PiP**: Position your floating screen share anywhere on the screen without obscuring your workspace.
+- **Interactive CodePad**: In-browser multi-language runner with broadcast to chat.
 
-### 📊 7. Live Polls & Q&A Queue
-- **Live Polls**: Real-time vote percentage bars, single-choice voting, creator/faculty poll deletion, and lock options.
-- **Anonymous Q&A**: Upvoting system, instructor answer threads, and answered status filters.
-
-### 📁 8. P2P Direct File Transfers & "Share in Chat"
-- **WebRTC DataChannels**: Multi-megabyte files transfer direct peer-to-peer at local Wi-Fi / gigabit speeds without passing through server disks.
-- **Share in Chat**: 1-tap button on file cards to post download references straight into chat.
-
-### 🛡️ 9. Faculty Moderation & Institutional Controls
-- Unlock faculty controls with a secure room passphrase.
-- Toggle whole-room chat mute, pin emergency announcements, kick disruptive users, and initiate room termination.
-
-### 🌓 10. Apple Design Language & Full Dark Mode
-- Polished typography, iOS-style blur materials, smooth transitions, and seamless Light/Dark mode switching.
+### 🛡️ 7. Host Moderation Controls
+- Unlock moderation tools with a room passphrase: whole-room chat mute, pinned announcements, and member removal.
 
 ---
 
@@ -73,7 +61,7 @@
                ▼                  • Chat & Typing Events
 ┌────────────────────────┐                │
 │    Peer Browsers       │                ▼
-│ (Faculty & Students)   │    ┌──────────────────────────┐
+│ (Teams, Labs, Peers)   │    ┌──────────────────────────┐
 └────────────────────────┘    │   Node.js Express Server │
                               │   (WebSocket Signaling)  │
                               └───────────┬──────────────┘
@@ -84,7 +72,7 @@
     │  Ephemeral Store Engine   │                  │  Nebius AI TokenFactory   │
     │  • In-Memory Map (Default)│                  │  (DeepSeek-V4-Flash)      │
     │  • Redis Cloud (Optional) │                  │  • In-Room @ai Assistant  │
-    │  • Auto-TTL Self-Destruct │                  │  • Lecture Digest Synth   │
+    │  • Auto-TTL Self-Destruct │                  │  • Code & Question Helper │
     └───────────────────────────┘                  └───────────────────────────┘
 ```
 
@@ -104,13 +92,10 @@ cd iChatWorld
 
 ### 2. Install Dependencies
 ```bash
-# Install workspace dependencies for both client and server
 npm install
 ```
 
 ### 3. Configure Environment Variables
-Create your `.env` in `server/`:
-
 ```bash
 cp server/.env.example server/.env
 ```
@@ -121,13 +106,13 @@ PORT=3001
 CORS_ORIGIN=*
 FACULTY_PASSPHRASE=faculty123
 
-# Optional: Nebius DeepSeek-V4 AI API Key
+# Optional: Nebius DeepSeek-V4 AI Integration
 NEBIUS_API_KEY=your_nebius_api_key_here
 NEBIUS_BASE_URL=https://api.tokenfactory.us-central1.nebius.com/v1/
 NEBIUS_MODEL=deepseek-ai/DeepSeek-V4-Flash
 ```
 
-### 4. Run Locally in Development Mode
+### 4. Run Locally
 ```bash
 npm run dev
 ```
@@ -143,7 +128,7 @@ npm run dev
 #### Step 1: Deploy Backend (Render / Railway / Fly.io / VPS)
 1. Push your repository to GitHub: `https://github.com/pwnjoshi/iChatWorld`
 2. Create a new **Web Service** on [Render](https://render.com/) or [Railway](https://railway.app/).
-3. Set the following settings:
+3. Set build settings:
    - **Root Directory**: `server`
    - **Build Command**: `npm install && npm run build`
    - **Start Command**: `npm start`
@@ -151,7 +136,7 @@ npm run dev
      - `PORT`: `3001` (or provided by host)
      - `FACULTY_PASSPHRASE`: `your_secure_passphrase`
      - `NEBIUS_API_KEY`: `your_nebius_api_key`
-     - `CORS_ORIGIN`: `*` (or your Netlify domain)
+     - `CORS_ORIGIN`: `*`
 4. Copy your backend service URL (e.g. `https://ichatworld-server.onrender.com`).
 
 #### Step 2: Deploy Frontend to Netlify
@@ -167,9 +152,7 @@ npm run dev
 
 ---
 
-### Option B: Monolithic Single-Container Deployment (Docker / VPS / Render)
-
-You can run both client and server from a single Node process:
+### Option B: Monolithic Full-Stack Deployment (Docker / VPS)
 
 ```bash
 # Build both frontend and backend
@@ -191,49 +174,12 @@ npm start
 
 ---
 
-## 📁 Repository Structure
-
-```
-ichatworld/
-├── .env.example             # Root example environment configuration
-├── .gitignore               # Comprehensive gitignore for root and workspaces
-├── netlify.toml             # Netlify deployment configuration
-├── package.json             # Root workspace orchestration
-├── README.md                # Project documentation
-│
-├── client/                  # Frontend SPA (React + TypeScript + Vite + Tailwind)
-│   ├── public/              # Static assets, icons, _redirects
-│   ├── src/
-│   │   ├── components/      # UI components (Home, Room, Whiteboard, Presenter, etc.)
-│   │   ├── hooks/           # Custom React hooks (useSocket, useFileTransfer)
-│   │   ├── types/           # Client TypeScript interfaces
-│   │   ├── utils/           # WebRTC manager, formatters, Web Audio chimes
-│   │   ├── App.tsx          # Main application container
-│   │   └── main.tsx         # Entry point
-│   ├── vite.config.ts       # Vite bundler & proxy configuration
-│   └── package.json
-│
-└── server/                  # Backend Engine (Node.js + Express + Socket.io + Redis)
-    ├── src/
-    │   ├── routes/          # REST & Relay endpoints
-    │   ├── services/        # Nebius DeepSeek AI service
-    │   ├── socket/          # WebSocket event handlers (room, chat, rtc)
-    │   ├── store/           # Memory & Redis ephemeral storage engines
-    │   ├── types/           # Server TypeScript interfaces
-    │   ├── config.ts        # Environment configuration
-    │   └── server.ts        # Express & Socket.io server entry
-    ├── scripts/             # Integration & stress test suites
-    └── package.json
-```
-
----
-
 ## 🧪 Testing
 
 Run test suites:
 
 ```bash
-# Test all classroom tools (Whiteboard, Screen Share, Code Pad, Timer, Q&A, Slides)
+# Test all tools (Whiteboard, Screen Share, Code Pad, Timer, Q&A, Slides)
 npx tsx server/scripts/test-all-tools.ts
 
 # Test AI Assistant, Poll Deletion & Slide Annotations
@@ -253,5 +199,5 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## 👤 Author
 
-Developed with ❤️ by **[Pawan Joshi](https://github.com/pwnjoshi)**  
+Developed by **[Pawan Joshi](https://github.com/pwnjoshi)**  
 GitHub: [@pwnjoshi](https://github.com/pwnjoshi)

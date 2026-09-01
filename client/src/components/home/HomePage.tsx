@@ -6,20 +6,18 @@ import { BrandLogo } from '../common/BrandLogo.js';
 import {
   ArrowRight,
   Plus,
-  Zap,
-  Lock,
-  Sparkles,
   Moon,
   Sun,
   Star,
   BookOpen,
+  MessageSquare,
+  Folder,
   PenTool,
   Presentation,
   Code2,
   HelpCircle,
   BarChart2,
-  Cpu,
-  Heart
+  ShieldCheck
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -76,16 +74,16 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   return (
     <div className="min-h-screen flex flex-col justify-between w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 selection:bg-apple-blue selection:text-white">
-      {/* Top Brand & Navigation Bar */}
-      <header className="flex items-center justify-between pb-6 border-b border-apple-border/40 dark:border-white/10">
+      {/* Top Header */}
+      <header className="flex items-center justify-between pb-5 border-b border-apple-border/50 dark:border-white/10">
         <div className="flex items-center gap-3">
           <BrandLogo size="md" />
           <div>
-            <span className="font-bold text-title-2 tracking-tight text-apple-textPrimary dark:text-white block leading-none">
+            <span className="font-bold text-headline tracking-tight text-apple-textPrimary dark:text-white block leading-none">
               iChatWorld
             </span>
-            <span className="text-[11px] font-medium text-apple-textSecondary dark:text-white/50 tracking-wide uppercase">
-              Classroom & Studio
+            <span className="text-[11px] text-apple-textSecondary dark:text-white/50 tracking-wide font-medium">
+              Disposable Workspace
             </span>
           </div>
         </div>
@@ -94,24 +92,23 @@ export const HomePage: React.FC<HomePageProps> = ({
           {/* Docs Modal Button */}
           <button
             onClick={() => setShowDocsModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-footnote font-semibold text-apple-textSecondary dark:text-white/80 hover:text-apple-textPrimary dark:hover:text-white bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg dark:hover:bg-white/20 transition-all active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-footnote font-medium text-apple-textSecondary dark:text-white/80 hover:text-apple-textPrimary dark:hover:text-white bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg dark:hover:bg-white/20 transition-all"
             title="Open Platform & Developer Docs"
           >
-            <BookOpen className="w-3.5 h-3.5 text-apple-blue" />
+            <BookOpen className="w-3.5 h-3.5" />
             <span>Docs</span>
           </button>
 
-          {/* Star on GitHub CTA */}
+          {/* Star on GitHub */}
           <a
             href="https://github.com/pwnjoshi/iChatWorld"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-yellow-50 dark:hover:bg-yellow-950/40 text-apple-textPrimary dark:text-white border border-apple-border/50 dark:border-white/10 text-footnote font-semibold transition-all active:scale-95 shadow-2xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-apple-textPrimary dark:text-white border border-apple-border/50 dark:border-white/10 text-footnote font-medium transition-all"
             title="Star iChatWorld on GitHub"
           >
             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-            <span className="hidden sm:inline">Star on GitHub</span>
-            <span className="sm:hidden">Star</span>
+            <span className="hidden sm:inline">Star</span>
           </a>
 
           {/* Dark Mode Toggle */}
@@ -127,206 +124,134 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </header>
 
-      {/* Main Studio Grid Area (2-Column on Desktop) */}
-      <main className="my-auto py-8 md:py-12">
+      {/* Main Area */}
+      <main className="my-auto py-8 md:py-14">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-          {/* Left Column: Hero & Action Card */}
-          <div className="lg:col-span-6 space-y-6">
-            <div className="space-y-3 text-left">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-apple-textPrimary dark:text-white leading-[1.15]">
-                Connect instantly.<br />
-                <span className="text-apple-blue font-semibold">
-                  No login. Just a code.
-                </span>
+          {/* Left Column: Heading & Room Action Card */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="space-y-3">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-apple-textPrimary dark:text-white leading-tight">
+                Disposable rooms for real-time collaboration.
               </h1>
-              <p className="text-subhead text-apple-textSecondary dark:text-white/70 max-w-lg leading-relaxed">
-                Zero-login real-time classroom chat, WebRTC direct gigabit file sharing, AI teaching assistant, and synchronized whiteboard studio.
+              <p className="text-subhead text-apple-textSecondary dark:text-white/70 max-w-xl leading-relaxed">
+                Create a room in one tap or join with a 6-character code. Live chat, peer-to-peer file drops, synchronized whiteboard, and presentation tools for teams, study groups, labs, and workshops. All room data is ephemeral and self-destructs when you leave.
               </p>
             </div>
 
-            {/* Primary Action Card */}
-            <div className="bg-white dark:bg-[#1C1C1E] rounded-3xl p-6 sm:p-8 shadow-xl border border-apple-border/70 dark:border-white/10 space-y-5">
+            {/* Action Card */}
+            <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-6 sm:p-7 shadow-sm border border-apple-border/70 dark:border-white/10 space-y-5 max-w-lg">
               {/* Start a Room Button */}
               <div>
                 <button
                   onClick={() => setModalMode('create')}
-                  className="w-full py-4 px-6 rounded-full bg-apple-blue hover:bg-apple-blueHover text-white font-bold text-headline shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 group active:scale-[0.99]"
+                  className="w-full py-3.5 px-6 rounded-xl bg-apple-blue hover:bg-apple-blueHover text-white font-semibold text-body transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-sm"
                 >
-                  <Plus className="w-5 h-5 transition-transform group-hover:scale-110" />
+                  <Plus className="w-4 h-4" />
                   <span>Start a New Room</span>
                 </button>
               </div>
 
-              {/* Improved Centered Divider with Lines on Left & Right */}
-              <div className="relative flex items-center justify-center my-4">
+              {/* Symmetric Divider */}
+              <div className="relative flex items-center justify-center my-3">
                 <div className="flex-grow border-t border-apple-border/70 dark:border-white/10" />
-                <span className="shrink-0 px-4 text-caption font-semibold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
-                  or join existing
+                <span className="shrink-0 px-3 text-caption uppercase tracking-wider text-apple-textSecondary dark:text-white/40 font-medium">
+                  or enter room code
                 </span>
                 <div className="flex-grow border-t border-apple-border/70 dark:border-white/10" />
               </div>
 
-              {/* Join Code Input Form */}
+              {/* Join Form */}
               <form onSubmit={handleJoinClick} className="space-y-3">
-                <div className="space-y-1.5">
-                  <label className="block text-footnote font-medium text-apple-textSecondary dark:text-white/70 text-center">
-                    Enter 6-Character Room Code
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={codeInput}
-                      onChange={handleCodeChange}
-                      placeholder="e.g. 482-901"
-                      maxLength={7}
-                      className="flex-1 px-4 py-3.5 bg-apple-secondaryBg dark:bg-white/10 rounded-2xl text-headline font-mono font-bold tracking-widest text-center text-apple-textPrimary dark:text-white placeholder:text-apple-textSecondary/40 dark:placeholder:text-white/30 outline-none border border-apple-border/40 dark:border-white/10 focus:ring-2 focus:ring-apple-blue transition-all uppercase"
-                    />
-                    <button
-                      type="submit"
-                      disabled={cleanRoomCode(codeInput).length !== 6}
-                      className="px-6 py-3.5 rounded-2xl bg-apple-blue hover:bg-apple-blueHover disabled:opacity-30 disabled:hover:bg-apple-blue text-white font-semibold text-subhead transition-all flex items-center justify-center shrink-0 active:scale-[0.98] shadow-sm"
-                    >
-                      <span>Join</span>
-                      <ArrowRight className="w-4 h-4 ml-1.5" />
-                    </button>
-                  </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={codeInput}
+                    onChange={handleCodeChange}
+                    placeholder="e.g. 482-901"
+                    maxLength={7}
+                    className="flex-1 px-4 py-3 bg-apple-secondaryBg dark:bg-white/10 rounded-xl text-body font-mono font-bold tracking-widest text-center text-apple-textPrimary dark:text-white placeholder:text-apple-textSecondary/40 dark:placeholder:text-white/30 outline-none border border-apple-border/40 dark:border-white/10 focus:border-apple-blue transition-all uppercase"
+                  />
+                  <button
+                    type="submit"
+                    disabled={cleanRoomCode(codeInput).length !== 6}
+                    className="px-5 py-3 rounded-xl bg-apple-blue hover:bg-apple-blueHover disabled:opacity-30 text-white font-semibold text-footnote transition-all flex items-center justify-center shrink-0 active:scale-[0.98]"
+                  >
+                    <span>Join</span>
+                    <ArrowRight className="w-4 h-4 ml-1" />
+                  </button>
                 </div>
 
                 {joinError && (
-                  <p className="text-footnote text-apple-red font-medium text-center">
+                  <p className="text-caption text-apple-red font-medium text-center">
                     {joinError}
                   </p>
                 )}
               </form>
             </div>
 
-            {/* Quick Guarantees */}
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-3 bg-white/70 dark:bg-white/5 rounded-2xl border border-apple-border/40 dark:border-white/10 shadow-2xs">
-                <Zap className="w-4 h-4 text-apple-blue mx-auto mb-1" />
-                <p className="text-caption font-bold text-apple-textPrimary dark:text-white">Instant P2P</p>
-                <p className="text-[11px] text-apple-textSecondary dark:text-white/50">Direct Wi-Fi speeds</p>
-              </div>
-              <div className="p-3 bg-white/70 dark:bg-white/5 rounded-2xl border border-apple-border/40 dark:border-white/10 shadow-2xs">
-                <Lock className="w-4 h-4 text-apple-green mx-auto mb-1" />
-                <p className="text-caption font-bold text-apple-textPrimary dark:text-white">Zero Login</p>
-                <p className="text-[11px] text-apple-textSecondary dark:text-white/50">No emails or accounts</p>
-              </div>
-              <div className="p-3 bg-white/70 dark:bg-white/5 rounded-2xl border border-apple-border/40 dark:border-white/10 shadow-2xs">
-                <Sparkles className="w-4 h-4 text-amber-500 mx-auto mb-1" />
-                <p className="text-caption font-bold text-apple-textPrimary dark:text-white">Self-Destructs</p>
-                <p className="text-[11px] text-apple-textSecondary dark:text-white/50">Auto-purged</p>
-              </div>
+            {/* Privacy note */}
+            <div className="flex items-center gap-2 text-caption text-apple-textSecondary dark:text-white/50">
+              <ShieldCheck className="w-4 h-4 text-apple-green shrink-0" />
+              <span>Zero accounts, no tracking cookies, and zero server file retention.</span>
             </div>
           </div>
 
-          {/* Right Column: Interactive Studio Feature Explorer (Desktop Showcase) */}
-          <div className="lg:col-span-6 space-y-4">
-            <div className="p-6 rounded-3xl bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur border border-apple-border/70 dark:border-white/10 shadow-lg space-y-4">
+          {/* Right Column: Live Studio Preview Panel */}
+          <div className="lg:col-span-5">
+            <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-apple-border/70 dark:border-white/10 shadow-sm p-5 space-y-4">
               <div className="flex items-center justify-between border-b border-apple-border/40 dark:border-white/10 pb-3">
                 <div className="flex items-center gap-2">
-                  <Cpu className="w-5 h-5 text-apple-blue" />
-                  <h3 className="text-headline font-bold text-apple-textPrimary dark:text-white">
-                    Integrated Classroom Suite
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setShowDocsModal(true)}
-                  className="text-caption font-bold text-apple-blue hover:underline flex items-center gap-1"
-                >
-                  <span>Explore All Docs</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Feature 1 */}
-                <div className="p-3.5 rounded-2xl bg-apple-secondaryBg/70 dark:bg-white/5 border border-apple-border/40 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-footnote">
-                    <Sparkles className="w-4 h-4" />
-                    <span>In-Room @ai Assistant</span>
-                  </div>
-                  <p className="text-caption text-apple-textSecondary dark:text-white/60">
-                    Type <code className="text-xs font-mono px-1 py-0.5 bg-black/10 dark:bg-white/10 rounded">@ai &lt;question&gt;</code> in chat for instant peer tutoring & code explanations.
-                  </p>
-                </div>
-
-                {/* Feature 2 */}
-                <div className="p-3.5 rounded-2xl bg-apple-secondaryBg/70 dark:bg-white/5 border border-apple-border/40 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-apple-blue font-bold text-footnote">
-                    <PenTool className="w-4 h-4" />
-                    <span>Whiteboard Studio</span>
-                  </div>
-                  <p className="text-caption text-apple-textSecondary dark:text-white/60">
-                    Smooth Bézier pressure drawing with 0 spikes, Obsidian dark mode, and paper grid themes.
-                  </p>
-                </div>
-
-                {/* Feature 3 */}
-                <div className="p-3.5 rounded-2xl bg-apple-secondaryBg/70 dark:bg-white/5 border border-apple-border/40 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-footnote">
-                    <Presentation className="w-4 h-4" />
-                    <span>Slide Presenter & Laser</span>
-                  </div>
-                  <p className="text-caption text-apple-textSecondary dark:text-white/60">
-                    Synchronized slides with live pen, highlighter, slide deletion, and red laser pointer tracking.
-                  </p>
-                </div>
-
-                {/* Feature 4 */}
-                <div className="p-3.5 rounded-2xl bg-apple-secondaryBg/70 dark:bg-white/5 border border-apple-border/40 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-footnote">
-                    <Code2 className="w-4 h-4" />
-                    <span>Interactive CodePad</span>
-                  </div>
-                  <p className="text-caption text-apple-textSecondary dark:text-white/60">
-                    Live multi-language code runner and syntax highlighter with 1-tap broadcast to chat.
-                  </p>
-                </div>
-
-                {/* Feature 5 */}
-                <div className="p-3.5 rounded-2xl bg-apple-secondaryBg/70 dark:bg-white/5 border border-apple-border/40 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-footnote">
-                    <BarChart2 className="w-4 h-4" />
-                    <span>Live Polls & 1-Tap Delete</span>
-                  </div>
-                  <p className="text-caption text-apple-textSecondary dark:text-white/60">
-                    Real-time aggregated classroom voting with instant creator/faculty deletion.
-                  </p>
-                </div>
-
-                {/* Feature 6 */}
-                <div className="p-3.5 rounded-2xl bg-apple-secondaryBg/70 dark:bg-white/5 border border-apple-border/40 dark:border-white/5 space-y-1">
-                  <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-footnote">
-                    <HelpCircle className="w-4 h-4" />
-                    <span>Anonymous Q&A Queue</span>
-                  </div>
-                  <p className="text-caption text-apple-textSecondary dark:text-white/60">
-                    Student question queue with upvoting and instructor answer threads.
-                  </p>
-                </div>
-              </div>
-
-              {/* GitHub Banner Callout */}
-              <div className="p-4 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 border border-apple-border/70 dark:border-white/10 flex items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <span className="text-xs font-bold text-apple-textPrimary dark:text-white flex items-center gap-1.5">
-                    <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
-                    <span>Love iChatWorld?</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-apple-green" />
+                  <span className="text-footnote font-semibold text-apple-textPrimary dark:text-white">
+                    Room Workspace Preview
                   </span>
-                  <p className="text-[12px] text-apple-textSecondary dark:text-white/70">
-                    Star on GitHub or fork the repo to contribute new studio features!
-                  </p>
                 </div>
-                <a
-                  href="https://github.com/pwnjoshi/iChatWorld"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3.5 py-1.5 rounded-full bg-apple-blue hover:bg-apple-blueHover text-white text-caption font-semibold transition-all shadow-sm shrink-0 flex items-center gap-1.5 active:scale-95"
-                >
-                  <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                  <span>Star</span>
-                </a>
+                <span className="text-[11px] font-mono text-apple-textSecondary dark:text-white/50">
+                  CODE: 729-415
+                </span>
+              </div>
+
+              {/* Tool Capabilities Preview */}
+              <div className="space-y-2 text-footnote">
+                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-apple-secondaryBg/70 dark:bg-white/5">
+                  <MessageSquare className="w-4 h-4 text-apple-blue shrink-0" />
+                  <div>
+                    <p className="font-semibold text-apple-textPrimary dark:text-white leading-tight">Live Ephemeral Chat</p>
+                    <p className="text-caption text-apple-textSecondary dark:text-white/60">Voice notes, code snippets, reactions, and in-room @ai assistance.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-apple-secondaryBg/70 dark:bg-white/5">
+                  <Folder className="w-4 h-4 text-apple-blue shrink-0" />
+                  <div>
+                    <p className="font-semibold text-apple-textPrimary dark:text-white leading-tight">P2P File Transfers</p>
+                    <p className="text-caption text-apple-textSecondary dark:text-white/60">Direct WebRTC gigabit mesh streaming without server disk storage.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-apple-secondaryBg/70 dark:bg-white/5">
+                  <PenTool className="w-4 h-4 text-apple-blue shrink-0" />
+                  <div>
+                    <p className="font-semibold text-apple-textPrimary dark:text-white leading-tight">Collaborative Whiteboard</p>
+                    <p className="text-caption text-apple-textSecondary dark:text-white/60">Bézier pressure strokes, math grid paper, and PNG exports.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-apple-secondaryBg/70 dark:bg-white/5">
+                  <Presentation className="w-4 h-4 text-apple-blue shrink-0" />
+                  <div>
+                    <p className="font-semibold text-apple-textPrimary dark:text-white leading-tight">Slide Presenter & Laser</p>
+                    <p className="text-caption text-apple-textSecondary dark:text-white/60">Synchronized slides with live drawing annotations and laser pointer.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-apple-secondaryBg/70 dark:bg-white/5">
+                  <Code2 className="w-4 h-4 text-apple-blue shrink-0" />
+                  <div>
+                    <p className="font-semibold text-apple-textPrimary dark:text-white leading-tight">CodePad & Runner</p>
+                    <p className="text-caption text-apple-textSecondary dark:text-white/60">Multi-language code execution and 1-tap broadcast to chat.</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -334,8 +259,8 @@ export const HomePage: React.FC<HomePageProps> = ({
       </main>
 
       {/* Footer */}
-      <footer className="pt-6 border-t border-apple-border/40 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-caption text-apple-textSecondary dark:text-white/50">
-        <p>Built with ❤️ for modern classrooms • No server storage • 100% Ephemeral</p>
+      <footer className="pt-5 border-t border-apple-border/40 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-caption text-apple-textSecondary dark:text-white/50">
+        <p>iChatWorld — Ephemeral peer-to-peer workspace • Open source under MIT</p>
         <div className="flex items-center gap-4">
           <button
             onClick={() => setShowDocsModal(true)}
@@ -350,7 +275,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             className="hover:text-apple-blue transition-colors font-medium flex items-center gap-1"
           >
             <span>GitHub</span>
-            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+            <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
           </a>
         </div>
       </footer>

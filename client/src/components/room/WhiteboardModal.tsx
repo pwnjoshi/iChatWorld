@@ -546,10 +546,10 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           </div>
         </div>
 
-        {/* Apple Minimal Color Palette Swatches (Clean, non-clipping with padding) */}
+        {/* Apple Minimal Color Palette Swatches */}
         {tool !== 'eraser' && tool !== 'pan' && (
-          <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 bg-apple-secondaryBg/80 dark:bg-white/5 rounded-xl border border-apple-border/50 dark:border-white/10">
-            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1 px-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-white dark:bg-[#1C1C1E] rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
               {APPLE_PALETTE.map((c) => {
                 const isSelected = color.toLowerCase() === c.hex.toLowerCase();
                 return (
@@ -557,17 +557,25 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                     key={c.hex}
                     type="button"
                     onClick={() => setColor(c.hex)}
-                    className={`w-6 h-6 rounded-full transition-all shrink-0 flex items-center justify-center border ${
+                    className={`w-7 h-7 rounded-full transition-all shrink-0 flex items-center justify-center ${
                       isSelected
-                        ? 'ring-2 ring-apple-blue ring-offset-2 dark:ring-offset-[#1C1C1E] border-transparent shadow-sm scale-110'
-                        : 'border-black/15 dark:border-white/20 hover:scale-105'
+                        ? 'bg-apple-blue/15 dark:bg-white/15 p-0.5'
+                        : 'p-0.5 hover:scale-105'
                     }`}
-                    style={{ backgroundColor: c.hex }}
                     title={c.name}
                   >
-                    {isSelected && (
-                      <span className={`w-1.5 h-1.5 rounded-full ${c.hex === '#1C1C1E' || c.hex === '#5856D6' || c.hex === '#007AFF' ? 'bg-white' : 'bg-black/80'}`} />
-                    )}
+                    <span
+                      className={`w-full h-full rounded-full flex items-center justify-center shadow-2xs border ${
+                        isSelected
+                          ? 'border-apple-blue dark:border-white'
+                          : 'border-black/10 dark:border-white/20'
+                      }`}
+                      style={{ backgroundColor: c.hex }}
+                    >
+                      {isSelected && (
+                        <span className={`w-1.5 h-1.5 rounded-full ${c.hex === '#1C1C1E' || c.hex === '#5856D6' || c.hex === '#007AFF' || c.hex === '#E02020' || c.hex === '#6A1B9A' ? 'bg-white' : 'bg-black'}`} />
+                      )}
+                    </span>
                   </button>
                 );
               })}
