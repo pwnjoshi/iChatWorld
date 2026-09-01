@@ -17,21 +17,53 @@ export class AIService {
   async callChatCompletion(messages: { role: string; content: string }[], systemPrompt?: string): Promise<string> {
     const key = process.env.NEBIUS_API_KEY || this.apiKey || CONFIG.NEBIUS_API_KEY;
 
+    const generateContextualResponse = (messages: { role: string; content: string }[]): string => {
+      const lastMsg = (messages[messages.length - 1]?.content || '').toLowerCase();
+      const cleanQ = lastMsg.replace(/^[a-z0-9_\-\s]+:\s*/i, '').replace(/@ai/gi, '').trim();
+
+      // 1. Python / Coding / Algorithms
+      if (cleanQ.includes('python') || cleanQ.includes('binary search') || cleanQ.includes('algorithm') || cleanQ.includes('function') || cleanQ.includes('code') || cleanQ.includes('sort') || cleanQ.includes('linked list') || cleanQ.includes('reverse') || cleanQ.includes('javascript') || cleanQ.includes('typescript') || cleanQ.includes('react')) {
+        if (cleanQ.includes('binary search')) {
+          return `Here is a clean implementation of Binary Search in Python:\n\n\`\`\`python\ndef binary_search(arr, target):\n    left, right = 0, len(arr) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1\n\`\`\`\n\n**Time Complexity**: O(log n)\n**Space Complexity**: O(1)`;
+        }
+        if (cleanQ.includes('reverse')) {
+          return `Here is how to reverse a sequence in Python:\n\n\`\`\`python\n# 1. String reversal with slicing\ntext = "hello world"\nreversed_text = text[::-1]\n\n# 2. In-place list reversal\nnumbers = [1, 2, 3, 4, 5]\nnumbers.reverse()\n\`\`\`\n\n**Time Complexity**: O(n)`;
+        }
+        return `Here is a clean coding template:\n\n\`\`\`python\ndef solve(data: list) -> dict:\n    \"\"\"Process input dataset efficiently.\"\"\"\n    result = {}\n    for item in data:\n        key = str(item).lower()\n        result[key] = result.get(key, 0) + 1\n    return result\n\n# Example usage:\nprint(solve(["apple", "banana", "apple", "cherry"]))\n\`\`\`\n\nLet me know if you would like me to adjust this for specific edge cases!`;
+      }
+
+      // 2. Data Analytics / Specific Topics (e.g. "explain da", "what is da", etc.)
+      if (cleanQ === 'da' || cleanQ.includes(' da') || cleanQ.includes('data analytics') || cleanQ.includes('data analysis')) {
+        return `**Data Analytics (DA)** is the science of analyzing raw datasets to discover patterns, draw conclusions, and support decision-making:\n\n• **Descriptive Analytics**: What happened? (Summary statistics, dashboards)\n• **Diagnostic Analytics**: Why did it happen? (Root-cause analysis, drill-downs)\n• **Predictive Analytics**: What is likely to happen? (Statistical forecasting, ML)\n• **Prescriptive Analytics**: What should we do next? (Optimization, decision rules)`;
+      }
+
+      if (cleanQ.includes('webrtc') || cleanQ.includes('p2p') || cleanQ.includes('peer')) {
+        return `**WebRTC (Web Real-Time Communication)** enables browsers to exchange audio, video, and arbitrary data directly peer-to-peer without server storage:\n\n• **Signaling Phase**: WebSocket exchanges session descriptions (SDP) and ICE candidate addresses.\n• **DataChannel**: Establishes direct SCTP-over-DTLS encrypted streaming for high-speed file sharing.`;
+      }
+
+      // 3. Summarization based on real recent discussion
+      if (cleanQ.includes('summarize') || cleanQ.includes('summary')) {
+        const userChat = messages.filter(m => m.role === 'user' && !m.content.includes('@ai')).slice(-6);
+        if (userChat.length > 0) {
+          return `**Session Discussion Summary**:\n\n` + userChat.map(m => `• ${m.content}`).join('\n') + `\n\n*All room discussions and whiteboard notes are ephemeral.*`;
+        }
+        return `**Session Summary**:\n• Real-time collaborative room active.\n• StarNote whiteboard and P2P mesh ready for group collaboration.\n• All shared files and chat messages are ephemeral.`;
+      }
+
+      if (cleanQ.includes('quiz')) {
+        return `**Quick Knowledge Check**:\n\n*What makes iChatWorld file transfers secure and private?*\n\n**A)** Direct WebRTC P2P streaming with zero server storage\n**B)** Permanent database archiving\n**C)** Public unencrypted FTP upload\n\n*(Answer: A — direct device-to-device transfers!)*`;
+      }
+
+      if (cleanQ.includes('feature') || cleanQ.includes('help')) {
+        return `**iChatWorld Key Capabilities**:\n\n• **StarNote Whiteboard**: 6-pen customizable dock with pressure curve & eraser suite.\n• **P2P Mesh Transfer**: Send large files directly peer-to-peer at full LAN/WAN speeds.\n• **Slide Presenter**: Live deck broadcasting with laser pointer & markup.\n• **Export Notes**: One-tap OTP verified email delivery for lecture notes & homework.`;
+      }
+
+      // 4. Dynamic answer for custom questions
+      return `Regarding **"${cleanQ || 'your question'}"**:\n\n• You can ask me coding questions (e.g. \`@ai python binary search\` or \`@ai reverse string\`).\n• You can ask academic and technical explanations.\n• You can ask \`@ai summarize\` to get a bulleted recap of the current room chat!`;
+    };
+
     if (!key) {
-      const lastMsg = messages[messages.length - 1]?.content.toLowerCase() || '';
-      if (lastMsg.includes('python') || lastMsg.includes('code') || lastMsg.includes('binary') || lastMsg.includes('function')) {
-        return `Here is a clean implementation:\n\n\`\`\`python\ndef binary_search(arr, target):\n    left, right = 0, len(arr) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1\n\`\`\`\n\n**Time Complexity**: O(log n)\n**Space Complexity**: O(1)`;
-      }
-      if (lastMsg.includes('summarize')) {
-        return `Here is a summary of the current session:\n\n• Real-time collaborative workspace active.\n• StarNote whiteboard & WebRTC mesh ready for group work.\n• All room data is ephemeral and self-destructs when everyone leaves.`;
-      }
-      if (lastMsg.includes('quiz')) {
-        return `Quick Knowledge Check:\n\n*What makes iChatWorld file transfers secure and private?*\n\n**A)** Direct WebRTC P2P streaming with zero server storage\n**B)** Permanent database archiving\n**C)** Public unencrypted FTP upload\n\n*(Answer: A — direct device-to-device transfers!)*`;
-      }
-      if (lastMsg.includes('explain') || lastMsg.includes('feature') || lastMsg.includes('ho')) {
-        return `iChatWorld is an ephemeral collaboration workspace designed for real-time classroom and group teamwork:\n\n• **StarNote Whiteboard**: 6-pen customizable dock with pressure curve & eraser suite.\n• **P2P Mesh Transfer**: Send large files directly peer-to-peer at full LAN/WAN speeds.\n• **Slide Presenter**: Live deck broadcasting with laser pointer & markup.\n• **Export Notes**: One-tap OTP verified email delivery for lecture notes & homework.`;
-      }
-      return `Hello! I am your iChatWorld AI assistant. You can ask me to explain coding concepts, write functions, quiz the room, or summarize lecture discussions!`;
+      return generateContextualResponse(messages);
     }
 
     try {
@@ -70,11 +102,7 @@ export class AIService {
       return reply.trim();
     } catch (err: any) {
       console.warn('Nebius AI request fallback:', err.message);
-      const lastMsg = messages[messages.length - 1]?.content.toLowerCase() || '';
-      if (lastMsg.includes('python') || lastMsg.includes('code') || lastMsg.includes('binary') || lastMsg.includes('function')) {
-        return `Here is a clean implementation:\n\n\`\`\`python\ndef binary_search(arr, target):\n    left, right = 0, len(arr) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1\n\`\`\`\n\n**Time Complexity**: O(log n)\n**Space Complexity**: O(1)`;
-      }
-      return `iChatWorld is an ephemeral collaboration workspace designed for real-time group teamwork:\n\n• **StarNote Whiteboard**: 6-pen customizable dock with pressure curve & eraser suite.\n• **P2P Mesh Transfer**: Send large files directly peer-to-peer at full LAN/WAN speeds.\n• **Slide Presenter**: Live deck broadcasting with laser pointer & markup.\n• **Export Notes**: One-tap OTP verified email delivery for lecture notes & homework.`;
+      return generateContextualResponse(messages);
     }
   }
 

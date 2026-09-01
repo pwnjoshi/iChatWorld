@@ -15,12 +15,10 @@ import {
   Edit3,
   Trash2,
   Check,
+  CheckCheck,
   Ban,
-  Sparkles,
-  HelpCircle,
   Copy,
-  Terminal,
-  MoreHorizontal
+  Terminal
 } from 'lucide-react';
 
 interface ChatPanelProps {
@@ -280,7 +278,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
       {/* Pinned Announcement Banner */}
       {pinnedAnnouncement && (
-        <div className="bg-amber-50/90 dark:bg-amber-950/40 border-b border-amber-200/80 dark:border-amber-800 px-4 py-2.5 flex items-start gap-2.5 shrink-0 animate-fade-in">
+        <div className="bg-amber-50/90 dark:bg-amber-950/40 border-b border-amber-200/80 dark:border-amber-800 px-4 py-2 flex items-start gap-2.5 shrink-0 animate-fade-in">
           <Pin className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <div className="text-footnote text-amber-950 dark:text-amber-200 flex-1">
             <span className="font-semibold">{pinnedAnnouncement.senderName}: </span>
@@ -290,7 +288,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       )}
 
       {/* Messages List Area */}
-      <div className="flex-1 overflow-y-auto p-2 sm:p-3.5 space-y-1.5 sm:space-y-2">
+      <div className="flex-1 overflow-y-auto p-2 sm:p-3.5 space-y-2">
         {/* Active Poll Card Pinned at Top of Chat if exists */}
         {activePoll && (
           <PollCard
@@ -309,7 +307,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
               {searchQuery ? 'No matching messages' : 'No messages yet'}
             </p>
             <p className="text-footnote mt-1">
-              {searchQuery ? 'Try searching for something else.' : 'Say hello or share notes with everyone in this room.'}
+              {searchQuery ? 'Try searching for something else.' : 'Say hello or ask @ai anything in this room.'}
             </p>
           </div>
         ) : (
@@ -349,17 +347,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 key={msg.id || index}
                 className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} group relative`}
               >
-                {/* Sender Name (Only 1 Clean Header) */}
+                {/* Sender Name Bar (Clean WhatsApp/Telegram style) */}
                 {showSender && (
-                  <div className="flex items-center gap-1.5 mb-1 px-1">
+                  <div className="flex items-center gap-1.5 mb-1 pl-8 pr-1">
                     {isAI ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-apple-blue dark:text-blue-400">
-                        <Sparkles className="w-3 h-3" />
-                        <span>iChatWorld AI</span>
+                      <span className="text-[12px] font-bold text-apple-blue dark:text-blue-400">
+                        iChatWorld AI
                       </span>
                     ) : (
                       <>
-                        <span className="text-[11px] font-bold text-apple-textSecondary dark:text-white/70">
+                        <span className="text-[12px] font-bold text-apple-textPrimary dark:text-white">
                           {msg.senderName}
                         </span>
                         {msg.isFaculty && (
@@ -379,7 +376,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                       isFaculty={msg.isFaculty}
                       isAI={isAI}
                       size="sm"
-                      className="mt-0.5"
+                      className="mt-0.5 shrink-0"
                     />
                   )}
 
@@ -411,10 +408,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         </div>
                       </div>
                     ) : (
-                      /* Normal Message Bubble */
+                      /* Message Bubble */
                       <div
                         onClick={() => setActiveReactionMenu(activeReactionMenu === msg.id ? null : msg.id)}
-                        className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl text-[13.5px] sm:text-[14px] leading-snug break-words shadow-2xs select-text cursor-pointer transition-all active:scale-[0.99] ${
+                        className={`px-3.5 py-2 rounded-2xl text-[13.5px] sm:text-[14px] leading-snug break-words shadow-2xs select-text cursor-pointer transition-all active:scale-[0.99] ${
                           isOwn
                             ? 'bg-apple-blue text-white rounded-br-xs'
                             : isAI
@@ -436,9 +433,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                           <FormattedMessageText text={msg.text} isOwn={isOwn} />
                         )}
 
-                        <div className={`flex items-center justify-end gap-1 text-[9.5px] mt-0.5 ${isOwn ? 'text-white/75' : 'text-apple-textSecondary/60 dark:text-white/40'}`}>
+                        {/* Timestamp & Delivery Feedback Ticks */}
+                        <div className={`flex items-center justify-end gap-1 text-[9.5px] mt-1 ${isOwn ? 'text-white/80' : 'text-apple-textSecondary/60 dark:text-white/40'}`}>
                           <span>{formatTime(msg.timestamp)}</span>
                           {msg.isEdited && <span>• edited</span>}
+                          {isOwn && (
+                            <CheckCheck className="w-3 h-3 text-white/90 shrink-0" />
+                          )}
                         </div>
                       </div>
                     )}
@@ -565,9 +566,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           })
         )}
 
-        {/* Typing indicator */}
+        {/* Real-time Typing Indicator in message flow */}
         {activeTypers.length > 0 && (
-          <div className="flex items-center gap-2 text-caption text-apple-textSecondary dark:text-white/60 italic animate-pulse px-1">
+          <div className="flex items-center gap-2 text-[12px] text-apple-textSecondary dark:text-white/60 italic pl-8 py-1">
+            <span className="inline-flex gap-1 items-center">
+              <span className="w-1.5 h-1.5 rounded-full bg-apple-blue animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-apple-blue animate-pulse delay-75" />
+              <span className="w-1.5 h-1.5 rounded-full bg-apple-blue animate-pulse delay-150" />
+            </span>
             <span>
               {activeTypers.join(', ')} {activeTypers.length > 1 ? 'are' : 'is'} typing...
             </span>
@@ -577,43 +583,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick @ai & Feature Prompt Chips */}
-      {canSend && !isRecordingVoice && (
-        <div className="px-2.5 py-1.5 bg-white/80 dark:bg-black/80 backdrop-blur border-t border-apple-border/40 dark:border-white/5 flex items-center gap-1.5 overflow-x-auto no-scrollbar touch-pan-x select-none">
-          <button
-            type="button"
-            onClick={() => setInputText('@ai explain ')}
-            className="px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
-          >
-            <Sparkles className="w-3 h-3 text-purple-500" />
-            <span>@ai explain</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setInputText('@ai quiz me on ')}
-            className="px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
-          >
-            <HelpCircle className="w-3 h-3 text-blue-500" />
-            <span>@ai quiz me</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setInputText('@ai list all features and how to use them')}
-            className="px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
-          >
-            <span>🛠️ @ai features</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setInputText('@ai summarize our discussion in 3 key points')}
-            className="px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/50 text-[11px] font-semibold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-2xs"
-          >
-            <span>📝 @ai summarize</span>
-          </button>
-        </div>
-      )}
-
-      {/* Input Bar */}
+      {/* Clean Input Bar */}
       <div className="p-2 sm:p-2.5 bg-white/95 dark:bg-black/95 border-t border-apple-border/70 dark:border-white/10 shrink-0 pb-safe">
         {isRecordingVoice ? (
           <VoiceRecorder
@@ -627,7 +597,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           </div>
         ) : (
           <form onSubmit={handleSend} className="flex items-center gap-1.5 sm:gap-2">
-            <div className="flex items-center gap-1.5 flex-1 min-w-0 bg-apple-secondaryBg dark:bg-white/10 rounded-full px-3 py-0.5 border border-apple-border/60 dark:border-white/10 focus-within:ring-2 focus-within:ring-apple-blue transition-all">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0 bg-apple-secondaryBg dark:bg-white/10 rounded-full px-3.5 py-0.5 border border-apple-border/60 dark:border-white/10 focus-within:ring-2 focus-within:ring-apple-blue transition-all">
               <input
                 type="text"
                 value={inputText}
