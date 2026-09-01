@@ -28,7 +28,8 @@ import {
   ArrowRight,
   Triangle,
   Sparkles,
-  Layers
+  Layers,
+  Sliders
 } from 'lucide-react';
 
 interface WhiteboardModalProps {
@@ -72,13 +73,8 @@ const APPLE_PALETTE = [
   { name: 'Vibrant Fuchsia', hex: '#FF2D55' }
 ];
 
-const STROKE_WIDTHS = [
-  { label: 'Fine', size: 2 },
-  { label: 'Standard', size: 4 },
-  { label: 'Medium', size: 8 },
-  { label: 'Bold', size: 16 },
-  { label: 'Thick', size: 28 }
-];
+const PEN_PRESETS = [2, 4, 8, 16, 24];
+const HIGHLIGHTER_PRESETS = [12, 20, 32, 48, 64];
 
 export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   isOpen,
@@ -96,12 +92,14 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   const [tool, setTool] = useState<ToolType>('pen');
   const [color, setColor] = useState('#007AFF');
   const [size, setSize] = useState(4);
+  const [highlighterSize, setHighlighterSize] = useState(24);
   const [customColor, setCustomColor] = useState('#007AFF');
   const [canvasBg, setCanvasBg] = useState<CanvasBgType>('light');
   const [showRuler, setShowRuler] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false);
   const [isPenMenuOpen, setIsPenMenuOpen] = useState(false);
+  const [showSizeSlider, setShowSizeSlider] = useState(false);
 
   // Pan & Zoom Navigation
   const [zoom, setZoom] = useState(1);
@@ -119,6 +117,16 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
 
   // Cache loaded images
   const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
+
+  // Current active stroke size based on tool
+  const currentActiveSize = tool === 'highlighter' ? highlighterSize : size;
+
+  const handleToolSelect = (newTool: ToolType) => {
+    setTool(newTool);
+    if (newTool === 'highlighter' && size < 12) {
+      // Auto adjust to highlighter default width
+    }
+  };
 
   // Sync strokes from props
   useEffect(() => {
@@ -262,8 +270,6 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     if (!points || points.length === 0) return;
 
     ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
 
     // Handle Image Stroke
     if (stroke.type === 'image' && stroke.imageUrl) {
@@ -278,15 +284,46 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       return;
     }
 
+    // 1. HIGHLIGHTER (Unified Single-Path Ribbon — 0 Overlap Beads)
+    if (stroke.type === 'highlighter') {
+      ctx.globalCompositeOperation = isDarkBg ? 'screen' : 'multiply';
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.size;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (points.length === 1) {
+        ctx.beginPath();
+        ctx.arc(points[0].x, points[0].y, stroke.size / 2, 0, 2 * Math.PI);
+        ctx.fillStyle = stroke.color;
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 0; i < points.length - 1; i++) {
+          const p1 = points[i];
+          const p2 = points[i + 1];
+          const midX = (p1.x + p2.x) / 2;
+          const midY = (p1.y + p2.y) / 2;
+          ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+        }
+        const last = points[points.length - 1];
+        ctx.lineTo(last.x, last.y);
+        ctx.stroke(); // STROKE ONCE for uniform alpha without overlap dots
+      }
+
+      ctx.restore();
+      return;
+    }
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
     if (stroke.type === 'eraser') {
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = isDarkBg ? '#121212' : '#FFFFFF';
       ctx.lineWidth = stroke.size * 3;
-    } else if (stroke.type === 'highlighter') {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 0.35;
-      ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.size * 3.5;
     } else if (stroke.type === 'pencil') {
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 0.8;
@@ -296,7 +333,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 1;
       ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.size * 2;
+      ctx.lineWidth = stroke.size * 1.8;
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 1;
@@ -399,8 +436,6 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         ctx.lineWidth =
           stroke.type === 'eraser'
             ? stroke.size * 3
-            : stroke.type === 'highlighter'
-            ? stroke.size * 3.5
             : stroke.type === 'pencil'
             ? Math.max(1, stroke.size * 0.7)
             : stroke.type === 'brush'
@@ -471,7 +506,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     onEmitStroke(last);
   }, [redoStack, onEmitStroke]);
 
-  // Global Keyboard Shortcuts (Ctrl+Z, Ctrl+Y, Esc)
+  // Global Keyboard Shortcuts (Ctrl+Z, Ctrl+Y)
   useEffect(() => {
     if (!isOpen) return;
 
@@ -522,6 +557,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     }
 
     const strokeType = tool;
+    const strokeSize = strokeType === 'highlighter' ? highlighterSize : size;
 
     setIsDrawing(true);
     currentPointsRef.current = [startPoint];
@@ -533,7 +569,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         id: `temp-${Date.now()}`,
         type: strokeType,
         color,
-        size,
+        size: strokeSize,
         points: [startPoint]
       };
       ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
@@ -556,7 +592,8 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     currentPointsRef.current.push(pt);
 
     const isShape = ['rect', 'circle', 'triangle', 'diamond', 'star', 'arrow', 'line'].includes(tool);
-    const strokeType = (tool === 'pan' || tool === 'object_eraser') ? 'pen' : tool;
+    const strokeType = (tool === 'object_eraser' || tool === 'pan') ? 'pen' : tool;
+    const strokeSize = strokeType === 'highlighter' ? highlighterSize : size;
 
     if (isShape) {
       redrawCanvas();
@@ -567,7 +604,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           id: `preview-${Date.now()}`,
           type: strokeType,
           color,
-          size,
+          size: strokeSize,
           points: [currentPointsRef.current[0], pt]
         };
         ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
@@ -581,7 +618,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           id: `temp-${Date.now()}`,
           type: strokeType,
           color,
-          size,
+          size: strokeSize,
           points: currentPointsRef.current
         };
         ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
@@ -606,17 +643,18 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     setIsDrawing(false);
 
     if (currentPointsRef.current.length > 0) {
-      const strokeType = (tool === 'pan' || tool === 'object_eraser') ? 'pen' : tool;
+      const strokeType = (tool === 'object_eraser' || tool === 'pan') ? 'pen' : tool;
+      const strokeSize = strokeType === 'highlighter' ? highlighterSize : size;
       const finalStroke: WhiteboardStroke = {
         id: `stroke-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
         type: strokeType,
         color,
-        size,
+        size: strokeSize,
         points: [...currentPointsRef.current]
       };
 
       setLocalStrokes((prev) => [...prev, finalStroke]);
-      setRedoStack([]); // Clear redo upon new action
+      setRedoStack([]);
       onEmitStroke(finalStroke);
     }
 
@@ -681,7 +719,6 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     const tempCtx = tempCanvas.getContext('2d');
     if (!tempCtx) return;
 
-    // Draw solid background
     tempCtx.fillStyle = canvasBg === 'dark' ? '#121212' : '#FFFFFF';
     tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
     tempCtx.drawImage(canvas, 0, 0);
@@ -735,7 +772,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setTool('pen');
+                  handleToolSelect('pen');
                   setIsPenMenuOpen(!isPenMenuOpen);
                 }}
                 className={`p-2 rounded-lg transition-all flex items-center gap-1 ${
@@ -753,7 +790,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-[#1C1C1E] border border-apple-border/70 dark:border-white/10 rounded-xl shadow-lg p-1.5 z-40 w-36 space-y-1 animate-scale-up">
                   <button
                     onClick={() => {
-                      setTool('pen');
+                      handleToolSelect('pen');
                       setIsPenMenuOpen(false);
                     }}
                     className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-footnote ${
@@ -765,7 +802,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                   </button>
                   <button
                     onClick={() => {
-                      setTool('pencil');
+                      handleToolSelect('pencil');
                       setIsPenMenuOpen(false);
                     }}
                     className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-footnote ${
@@ -777,7 +814,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                   </button>
                   <button
                     onClick={() => {
-                      setTool('brush');
+                      handleToolSelect('brush');
                       setIsPenMenuOpen(false);
                     }}
                     className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-footnote ${
@@ -794,7 +831,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             {/* Highlighter */}
             <button
               type="button"
-              onClick={() => setTool('highlighter')}
+              onClick={() => handleToolSelect('highlighter')}
               className={`p-2 rounded-lg transition-all ${
                 tool === 'highlighter' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
               }`}
@@ -806,7 +843,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             {/* Eraser Tools */}
             <button
               type="button"
-              onClick={() => setTool(tool === 'eraser' ? 'object_eraser' : 'eraser')}
+              onClick={() => handleToolSelect(tool === 'eraser' ? 'object_eraser' : 'eraser')}
               className={`p-2 rounded-lg transition-all ${
                 tool === 'eraser' || tool === 'object_eraser'
                   ? 'bg-apple-blue text-white shadow-sm'
@@ -820,7 +857,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             {/* Pan / Move Canvas */}
             <button
               type="button"
-              onClick={() => setTool('pan')}
+              onClick={() => handleToolSelect('pan')}
               className={`p-2 rounded-lg transition-all ${
                 tool === 'pan' ? 'bg-amber-500 text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
               }`}
@@ -850,7 +887,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
               <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-[#1C1C1E] border border-apple-border/70 dark:border-white/10 rounded-2xl shadow-xl p-2 z-40 w-44 grid grid-cols-2 gap-1 animate-scale-up">
                 <button
                   onClick={() => {
-                    setTool('rect');
+                    handleToolSelect('rect');
                     setIsShapeMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
@@ -862,7 +899,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    setTool('circle');
+                    handleToolSelect('circle');
                     setIsShapeMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
@@ -874,7 +911,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    setTool('triangle');
+                    handleToolSelect('triangle');
                     setIsShapeMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
@@ -886,7 +923,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    setTool('diamond');
+                    handleToolSelect('diamond');
                     setIsShapeMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
@@ -898,7 +935,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    setTool('arrow');
+                    handleToolSelect('arrow');
                     setIsShapeMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
@@ -910,7 +947,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    setTool('line');
+                    handleToolSelect('line');
                     setIsShapeMenuOpen(false);
                   }}
                   className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
@@ -924,23 +961,44 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             )}
           </div>
 
-          {/* Stroke Width Selector */}
+          {/* StarNote-style Quick Size Presets & Slider Toggle */}
           <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-            {STROKE_WIDTHS.map((w) => (
-              <button
-                key={w.size}
-                type="button"
-                onClick={() => setSize(w.size)}
-                className={`px-2.5 py-1 rounded-lg text-caption font-semibold transition-all ${
-                  size === w.size
-                    ? 'bg-apple-secondaryBg dark:bg-white/20 text-apple-blue dark:text-white font-bold'
-                    : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-                }`}
-                title={`${w.label} (${w.size}px)`}
-              >
-                {w.label}
-              </button>
-            ))}
+            {(tool === 'highlighter' ? HIGHLIGHTER_PRESETS : PEN_PRESETS).map((pSize) => {
+              const isActive = (tool === 'highlighter' ? highlighterSize : size) === pSize;
+              return (
+                <button
+                  key={pSize}
+                  type="button"
+                  onClick={() => {
+                    if (tool === 'highlighter') {
+                      setHighlighterSize(pSize);
+                    } else {
+                      setSize(pSize);
+                    }
+                  }}
+                  className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all flex items-center gap-1 ${
+                    isActive
+                      ? 'bg-apple-secondaryBg dark:bg-white/20 text-apple-blue dark:text-white font-bold'
+                      : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+                  }`}
+                  title={`Stroke size ${pSize}px`}
+                >
+                  <span>{pSize}px</span>
+                </button>
+              );
+            })}
+
+            {/* Slider Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowSizeSlider(!showSizeSlider)}
+              className={`p-1.5 rounded-lg transition-colors ${
+                showSizeSlider ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
+              title="Custom Thickness Slider"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* Canvas Background Paper Themes */}
@@ -1101,6 +1159,49 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             </button>
           </div>
         </div>
+
+        {/* StarNote-style Thickness Customizer Drawer (Visible when toggled or adjusting) */}
+        {showSizeSlider && (
+          <div className="p-3 bg-white dark:bg-[#1C1C1E] rounded-xl border border-apple-border/70 dark:border-white/10 shadow-sm flex items-center justify-between gap-4 animate-scale-up">
+            <div className="flex items-center gap-3 flex-1">
+              <span className="text-caption font-semibold text-apple-textSecondary dark:text-white/70 w-24">
+                {tool === 'highlighter' ? 'Highlighter' : 'Stroke'} Width:
+              </span>
+              <input
+                type="range"
+                min="1"
+                max={tool === 'highlighter' ? '64' : '36'}
+                value={tool === 'highlighter' ? highlighterSize : size}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (tool === 'highlighter') {
+                    setHighlighterSize(val);
+                  } else {
+                    setSize(val);
+                  }
+                }}
+                className="flex-1 accent-apple-blue cursor-pointer"
+              />
+              <span className="text-footnote font-mono font-bold text-apple-textPrimary dark:text-white w-12 text-right">
+                {tool === 'highlighter' ? highlighterSize : size}px
+              </span>
+            </div>
+
+            {/* Live Nib Indicator */}
+            <div className="flex items-center gap-2 pl-4 border-l border-apple-border/50 dark:border-white/10 shrink-0">
+              <span className="text-caption text-apple-textSecondary">Nib Preview:</span>
+              <div
+                className="rounded-full shadow-inner border border-black/10 dark:border-white/20 transition-all"
+                style={{
+                  width: `${Math.min(32, Math.max(4, currentActiveSize))}px`,
+                  height: `${Math.min(32, Math.max(4, currentActiveSize))}px`,
+                  backgroundColor: color,
+                  opacity: tool === 'highlighter' ? 0.45 : 1
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Color Palette Swatches (Self-contained, non-clipping Apple styling) */}
         {tool !== 'eraser' && tool !== 'object_eraser' && tool !== 'pan' && (
