@@ -76,7 +76,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-apple-primaryBg dark:bg-black text-apple-textPrimary dark:text-white flex flex-col justify-between p-3.5 sm:p-6 md:p-8 select-none transition-colors">
+    <div className="min-h-screen bg-apple-primaryBg dark:bg-black text-apple-textPrimary dark:text-white flex flex-col justify-between p-3.5 sm:p-6 md:p-8 transition-colors">
       {/* Top Header */}
       <header className="flex items-center justify-between py-2 border-b border-apple-border/40 dark:border-white/10 max-w-6xl mx-auto w-full">
         <div className="flex items-center gap-2.5 sm:gap-3">
@@ -133,11 +133,6 @@ export const HomePage: React.FC<HomePageProps> = ({
           {/* Left Column: Heading & Room Action Card */}
           <div className="lg:col-span-7 space-y-5 sm:space-y-6 text-center lg:text-left">
             <div className="space-y-2.5 sm:space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-apple-blue/10 dark:bg-apple-blue/20 text-apple-blue text-caption font-bold border border-apple-blue/30 mx-auto lg:mx-0">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Zero Accounts • Self-Destructing Rooms</span>
-              </div>
-
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-apple-textPrimary dark:text-white leading-tight">
                 Disposable rooms for real-time collaboration.
               </h1>

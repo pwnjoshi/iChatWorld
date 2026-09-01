@@ -37,7 +37,7 @@ export const DeveloperDocsModal: React.FC<DeveloperDocsModalProps> = ({ isOpen, 
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="iChatWorld Developer & Platform Docs" maxWidth="max-w-4xl">
-      <div className="space-y-4 select-none">
+      <div className="space-y-4">
         {/* GitHub Star Banner Header */}
         <div className="p-5 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 border border-apple-border/70 dark:border-white/10 text-apple-textPrimary dark:text-white shadow-sm flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">

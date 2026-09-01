@@ -239,7 +239,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-apple-primaryBg dark:bg-black select-none">
+    <div className="flex flex-col h-screen overflow-hidden bg-apple-primaryBg dark:bg-black">
       {/* Header */}
       <RoomHeader
         roomCode={room.code}
