@@ -162,7 +162,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       )}
 
       {/* Messages List Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-2.5 sm:p-4 space-y-2 sm:space-y-3">
         {/* Active Poll Card Pinned at Top of Chat if exists */}
         {activePoll && (
           <PollCard
@@ -177,19 +177,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         {filteredMessages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 text-apple-textSecondary dark:text-white/40">
-            <p className="text-subhead font-medium text-apple-textPrimary dark:text-white">
+            <p className="text-subhead font-semibold text-apple-textPrimary dark:text-white">
               {searchQuery ? 'No matching messages' : 'No messages yet'}
             </p>
             <p className="text-footnote mt-1">
-              {searchQuery ? 'Try searching for something else.' : 'Say hello or share lecture notes with everyone.'}
+              {searchQuery ? 'Try searching for something else.' : 'Say hello or share notes with everyone in this room.'}
             </p>
           </div>
         ) : (
           filteredMessages.map((msg, index) => {
             if (msg.isSystem) {
               return (
-                <div key={msg.id || index} className="flex justify-center my-2">
-                  <span className="text-[12px] bg-apple-secondaryBg/80 dark:bg-white/10 text-apple-textSecondary dark:text-white/60 px-3 py-1 rounded-full text-center">
+                <div key={msg.id || index} className="flex justify-center my-1.5">
+                  <span className="text-[11px] font-medium bg-apple-secondaryBg/90 dark:bg-white/10 text-apple-textSecondary dark:text-white/60 px-3 py-0.5 rounded-full text-center max-w-sm leading-normal">
                     {msg.text}
                   </span>
                 </div>
@@ -205,19 +205,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
               return (
                 <div
                   key={msg.id || index}
-                  className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} my-1 opacity-70`}
+                  className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} my-0.5 opacity-70`}
                 >
                   <div
-                    className={`px-3.5 py-2 rounded-2xl text-footnote italic flex items-center gap-1.5 border border-dashed ${
+                    className={`px-3 py-1.5 rounded-2xl text-[12px] italic flex items-center gap-1.5 border border-dashed ${
                       isOwn
                         ? 'bg-apple-secondaryBg/40 dark:bg-white/5 border-apple-border/50 text-apple-textSecondary dark:text-white/50'
                         : 'bg-apple-secondaryBg/40 dark:bg-white/5 border-apple-border/50 text-apple-textSecondary dark:text-white/50'
                     }`}
                   >
-                    <Ban className="w-3.5 h-3.5 opacity-60" />
+                    <Ban className="w-3 h-3 opacity-60" />
                     <span>This message was deleted</span>
                   </div>
-                  <span className="text-[10px] text-apple-textSecondary/70 px-1 mt-0.5">
+                  <span className="text-[9px] text-apple-textSecondary/70 px-1 mt-0.5">
                     {formatTime(msg.timestamp)}
                   </span>
                 </div>
@@ -230,49 +230,49 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} group relative`}
               >
                 {showSender && (
-                  <div className="flex items-center gap-1.5 mb-1 px-1">
-                    <span className="text-caption font-semibold text-apple-textSecondary dark:text-white/60">
+                  <div className="flex items-center gap-1.5 mb-0.5 px-1">
+                    <span className="text-[11px] font-bold text-apple-textSecondary dark:text-white/60">
                       {msg.senderName}
                     </span>
                     {msg.isFaculty && (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/60 dark:text-amber-300 px-1.5 py-0.2 rounded">
+                      <span className="text-[9px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/60 dark:text-amber-300 px-1.5 py-0.2 rounded-full">
                         Faculty
                       </span>
                     )}
                   </div>
                 )}
 
-                <div className="flex items-end gap-1.5 max-w-[84%] relative">
+                <div className="flex items-end gap-1.5 max-w-[88%] sm:max-w-[75%] relative">
                   {!isOwn && (
                     <Avatar
                       name={msg.senderName}
                       isFaculty={msg.isFaculty}
                       size="sm"
-                      className="mb-0.5"
+                      className="mb-0.5 w-6 h-6 text-[10px] shrink-0"
                     />
                   )}
 
-                  <div className="relative">
+                  <div className="relative min-w-0">
                     {/* Inline Editing Mode */}
                     {editingMessageId === msg.id ? (
-                      <div className="p-2 bg-white dark:bg-[#1C1C1E] border border-apple-blue rounded-2xl shadow-md space-y-1.5 min-w-[240px]">
+                      <div className="p-2 bg-white dark:bg-[#1C1C1E] border border-apple-blue rounded-2xl shadow-md space-y-1.5 min-w-[220px]">
                         <input
                           type="text"
                           value={editingText}
                           onChange={(e) => setEditingText(e.target.value)}
                           autoFocus
-                          className="w-full px-3 py-1.5 bg-apple-secondaryBg dark:bg-white/10 rounded-lg text-body text-apple-textPrimary dark:text-white outline-none focus:ring-1 focus:ring-apple-blue"
+                          className="w-full px-3 py-1 bg-apple-secondaryBg dark:bg-white/10 rounded-lg text-[14px] text-apple-textPrimary dark:text-white outline-none focus:ring-1 focus:ring-apple-blue"
                         />
                         <div className="flex justify-end gap-1.5">
                           <button
                             onClick={() => setEditingMessageId(null)}
-                            className="px-2.5 py-1 text-caption text-apple-textSecondary hover:text-apple-textPrimary"
+                            className="px-2 py-0.5 text-caption text-apple-textSecondary hover:text-apple-textPrimary"
                           >
                             Cancel
                           </button>
                           <button
                             onClick={() => handleSaveEdit(msg.id)}
-                            className="px-3 py-1 rounded-full bg-apple-blue text-white text-caption font-semibold flex items-center gap-1"
+                            className="px-2.5 py-0.5 rounded-full bg-apple-blue text-white text-caption font-semibold flex items-center gap-1"
                           >
                             <Check className="w-3 h-3" />
                             <span>Save</span>
@@ -284,37 +284,37 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                       msg.senderId === 'ai' ? (
                         <div
                           onDoubleClick={() => setActiveReactionMenu(activeReactionMenu === msg.id ? null : msg.id)}
-                          className="bg-apple-secondaryBg dark:bg-white/5 border border-apple-border/70 dark:border-white/10 rounded-2xl rounded-bl-sm p-4 text-apple-textPrimary dark:text-white shadow-2xs space-y-1.5 max-w-full select-text"
+                          className="bg-apple-secondaryBg dark:bg-[#1C1C1E] border border-apple-border/70 dark:border-white/10 rounded-2xl rounded-bl-xs p-3 text-apple-textPrimary dark:text-white shadow-2xs space-y-1 select-text"
                         >
-                          <div className="flex items-center gap-1.5 text-apple-blue dark:text-blue-400 font-bold text-caption pb-1 border-b border-apple-border/40 dark:border-white/10">
-                            <Sparkles className="w-3.5 h-3.5" />
+                          <div className="flex items-center gap-1.5 text-apple-blue dark:text-blue-400 font-bold text-[11px] pb-1 border-b border-apple-border/40 dark:border-white/10">
+                            <Sparkles className="w-3 h-3" />
                             <span>iChatWorld AI Assistant</span>
                           </div>
-                          <div className="text-body whitespace-pre-wrap leading-relaxed font-sans">
+                          <div className="text-[13.5px] whitespace-pre-wrap leading-relaxed font-sans">
                             {msg.text}
                           </div>
                         </div>
                       ) : (
                         <div
                           onDoubleClick={() => setActiveReactionMenu(activeReactionMenu === msg.id ? null : msg.id)}
-                          className={`px-4 py-2.5 rounded-2xl text-body break-words select-text ${
+                          className={`px-3.5 py-2 rounded-2xl text-[14px] leading-snug break-words select-text ${
                             isOwn
-                              ? 'bg-apple-blue text-white rounded-br-sm shadow-sm'
+                              ? 'bg-apple-blue text-white rounded-br-xs shadow-2xs'
                               : msg.isFaculty
-                              ? 'bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border border-amber-200/70 dark:border-amber-800 rounded-bl-sm'
-                              : 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white border border-apple-border/50 dark:border-white/10 rounded-bl-sm shadow-sm'
+                              ? 'bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border border-amber-200/70 dark:border-amber-800 rounded-bl-xs'
+                              : 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white border border-apple-border/50 dark:border-white/10 rounded-bl-xs shadow-2xs'
                           }`}
                         >
                           {msg.isAudio && msg.audioUrl ? (
-                            <div className="flex items-center gap-2 py-1">
-                              <audio src={msg.audioUrl} controls className="h-8 max-w-[200px]" />
+                            <div className="flex items-center gap-2 py-0.5">
+                              <audio src={msg.audioUrl} controls className="h-7 max-w-[180px]" />
                             </div>
                           ) : msg.isCode ? (
-                            <pre className="p-3 bg-black/90 text-emerald-400 rounded-xl font-mono text-xs overflow-x-auto leading-relaxed">
+                            <pre className="p-2.5 bg-black/90 text-emerald-400 rounded-xl font-mono text-[12px] overflow-x-auto leading-relaxed">
                               <code>{msg.text}</code>
                             </pre>
                           ) : (
-                            <p className="leading-relaxed">{msg.text}</p>
+                            <p className="leading-snug">{msg.text}</p>
                           )}
                         </div>
                       )
@@ -329,14 +329,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             <button
                               key={reaction.emoji}
                               onClick={() => onReactToMessage(msg.id, reaction.emoji)}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption border shadow-sm transition-all ${
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] border shadow-2xs transition-all ${
                                 hasUserReacted
                                   ? 'bg-blue-50 dark:bg-blue-950/40 border-apple-blue text-apple-blue'
                                   : 'bg-white dark:bg-[#1C1C1E] border-apple-border/60 dark:border-white/10 text-apple-textPrimary dark:text-white'
                               }`}
                             >
                               <span>{reaction.emoji}</span>
-                              <span className="font-semibold text-[11px]">{reaction.count}</span>
+                              <span className="font-semibold text-[10px]">{reaction.count}</span>
                             </button>
                           );
                         })}
