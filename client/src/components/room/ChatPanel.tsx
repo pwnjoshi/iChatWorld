@@ -284,10 +284,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                       msg.senderId === 'ai' ? (
                         <div
                           onDoubleClick={() => setActiveReactionMenu(activeReactionMenu === msg.id ? null : msg.id)}
-                          className="bg-gradient-to-br from-purple-500/10 via-indigo-500/10 to-blue-500/10 dark:from-purple-950/40 dark:via-indigo-950/40 dark:to-blue-950/40 border border-purple-300/80 dark:border-purple-700/60 rounded-2xl rounded-bl-sm p-3.5 text-apple-textPrimary dark:text-white shadow-sm space-y-1.5 max-w-full select-text"
+                          className="bg-apple-secondaryBg dark:bg-white/5 border border-apple-border/70 dark:border-white/10 rounded-2xl rounded-bl-sm p-4 text-apple-textPrimary dark:text-white shadow-2xs space-y-1.5 max-w-full select-text"
                         >
-                          <div className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400 font-bold text-caption pb-1 border-b border-purple-200/50 dark:border-purple-800/40">
-                            <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                          <div className="flex items-center gap-1.5 text-apple-blue dark:text-blue-400 font-bold text-caption pb-1 border-b border-apple-border/40 dark:border-white/10">
+                            <Sparkles className="w-3.5 h-3.5" />
                             <span>iChatWorld AI Assistant</span>
                           </div>
                           <div className="text-body whitespace-pre-wrap leading-relaxed font-sans">

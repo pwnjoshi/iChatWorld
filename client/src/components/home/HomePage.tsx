@@ -133,9 +133,9 @@ export const HomePage: React.FC<HomePageProps> = ({
           {/* Left Column: Hero & Action Card */}
           <div className="lg:col-span-6 space-y-6">
             <div className="space-y-3 text-left">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-apple-textPrimary dark:text-white leading-[1.15]">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-apple-textPrimary dark:text-white leading-[1.15]">
                 Connect instantly.<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+                <span className="text-apple-blue font-semibold">
                   No login. Just a code.
                 </span>
               </h1>
@@ -308,7 +308,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
 
               {/* GitHub Banner Callout */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-purple-600/10 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30 border border-blue-200/80 dark:border-blue-800/60 flex items-center justify-between gap-3">
+              <div className="p-4 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 border border-apple-border/70 dark:border-white/10 flex items-center justify-between gap-3">
                 <div className="space-y-0.5">
                   <span className="text-xs font-bold text-apple-textPrimary dark:text-white flex items-center gap-1.5">
                     <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
@@ -322,10 +322,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                   href="https://github.com/pwnjoshi/iChatWorld"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3.5 py-1.5 rounded-full bg-apple-blue hover:bg-apple-blueHover text-white text-caption font-bold transition-all shadow-sm shrink-0 flex items-center gap-1.5 active:scale-95"
+                  className="px-3.5 py-1.5 rounded-full bg-apple-blue hover:bg-apple-blueHover text-white text-caption font-semibold transition-all shadow-sm shrink-0 flex items-center gap-1.5 active:scale-95"
                 >
                   <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                  <span>Star ⭐</span>
+                  <span>Star</span>
                 </a>
               </div>
             </div>

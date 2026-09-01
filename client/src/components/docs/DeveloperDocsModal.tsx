@@ -39,17 +39,17 @@ export const DeveloperDocsModal: React.FC<DeveloperDocsModalProps> = ({ isOpen, 
     <Modal isOpen={isOpen} onClose={onClose} title="iChatWorld Developer & Platform Docs" maxWidth="max-w-4xl">
       <div className="space-y-4 select-none">
         {/* GitHub Star Banner Header */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-md flex flex-wrap items-center justify-between gap-3">
+        <div className="p-5 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 border border-apple-border/70 dark:border-white/10 text-apple-textPrimary dark:text-white shadow-sm flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider">
+              <span className="px-2.5 py-0.5 rounded-full bg-apple-blue text-white text-[11px] font-bold uppercase tracking-wider">
                 Open Source
               </span>
-              <span className="text-white/80 text-caption font-medium">MIT Licensed</span>
+              <span className="text-apple-textSecondary dark:text-white/60 text-caption font-medium">MIT Licensed</span>
             </div>
-            <h3 className="text-headline font-bold">iChatWorld on GitHub</h3>
-            <p className="text-footnote text-white/90 max-w-lg">
-              Support development with a star ⭐, report issues, or contribute new classroom studio tools!
+            <h3 className="text-headline font-bold text-apple-textPrimary dark:text-white">iChatWorld on GitHub</h3>
+            <p className="text-footnote text-apple-textSecondary dark:text-white/70 max-w-lg">
+              Support development with a star on GitHub, report issues, or contribute new studio tools!
             </p>
           </div>
 
@@ -58,17 +58,17 @@ export const DeveloperDocsModal: React.FC<DeveloperDocsModalProps> = ({ isOpen, 
               href="https://github.com/pwnjoshi/iChatWorld"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 py-2 px-4 rounded-full bg-white text-apple-textPrimary hover:bg-yellow-300 font-bold text-footnote shadow-sm transition-all active:scale-95"
+              className="flex items-center gap-2 py-2 px-4 rounded-full bg-apple-blue text-white hover:bg-apple-blueHover font-bold text-footnote shadow-sm transition-all active:scale-95"
             >
-              <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+              <Star className="w-4 h-4 fill-amber-300 text-amber-300" />
               <span>Star on GitHub</span>
-              <ExternalLink className="w-3.5 h-3.5 text-apple-textSecondary" />
+              <ExternalLink className="w-3.5 h-3.5 text-white/80" />
             </a>
             <a
               href="https://github.com/pwnjoshi/iChatWorld/fork"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 py-2 px-3.5 rounded-full bg-white/20 hover:bg-white/30 text-white font-semibold text-footnote transition-all active:scale-95"
+              className="flex items-center gap-1.5 py-2 px-3.5 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-apple-textPrimary dark:text-white font-semibold text-footnote transition-all active:scale-95 border border-apple-border/60 dark:border-white/10"
             >
               <GitFork className="w-3.5 h-3.5" />
               <span>Fork</span>
