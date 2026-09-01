@@ -43,7 +43,6 @@ interface RoomHeaderProps {
   onOpenHandQueue: () => void;
   onOpenPollModal: () => void;
   onOpenWhiteboard: () => void;
-  onOpenCodePad: () => void;
   onOpenTimerModal: () => void;
   onOpenQAModal: () => void;
   onOpenPresenter: () => void;
@@ -72,7 +71,6 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
   onOpenHandQueue,
   onOpenPollModal,
   onOpenWhiteboard,
-  onOpenCodePad,
   onOpenTimerModal,
   onOpenQAModal,
   onOpenPresenter,
@@ -349,15 +347,6 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
             >
               <PenTool className="w-3 h-3 text-apple-blue" />
               <span>Whiteboard</span>
-            </button>
-
-            <button
-              onClick={onOpenCodePad}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary dark:text-white/70 hover:text-emerald-500 hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
-              title="Interactive Code Pad & Runner"
-            >
-              <Code2 className="w-3 h-3 text-apple-green" />
-              <span>Code Pad</span>
             </button>
 
             <button

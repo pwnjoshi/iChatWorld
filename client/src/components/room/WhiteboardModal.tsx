@@ -34,11 +34,19 @@ import {
   Feather,
   Paintbrush,
   Activity,
-  Move,
   MousePointer2,
   Scissors,
-  Sparkle
+  X
 } from 'lucide-react';
+
+interface RemoteCursor {
+  x: number;
+  y: number;
+  userName: string;
+  isFaculty: boolean;
+  isDrawing: boolean;
+  lastUpdated: number;
+}
 
 interface WhiteboardModalProps {
   isOpen: boolean;
@@ -47,6 +55,8 @@ interface WhiteboardModalProps {
   onEmitStroke: (stroke: WhiteboardStroke) => void;
   onClearWhiteboard: () => void;
   onBroadcastImage: (file: File) => Promise<any>;
+  onEmitCursor?: (x: number, y: number, isDrawing?: boolean) => void;
+  remoteCursors?: Map<string, RemoteCursor>;
 }
 
 type PenSubType = 'pen' | 'fountain' | 'pencil' | 'brush' | 'ballpoint' | 'marker';
@@ -109,7 +119,9 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   strokes,
   onEmitStroke,
   onClearWhiteboard,
-  onBroadcastImage
+  onBroadcastImage,
+  onEmitCursor,
+  remoteCursors
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -156,6 +168,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   const [isDrawing, setIsDrawing] = useState(false);
   const currentPointsRef = useRef<WhiteboardPoint[]>([]);
   const lastPointTimeRef = useRef<number>(0);
+  const lastCursorEmitTimeRef = useRef<number>(0);
 
   // Cache loaded images
   const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
@@ -237,7 +250,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     };
   };
 
-  // Redraw canvas with full transform, grids, background, strokes, and selection box
+  // Redraw canvas with full transform, grids, background, strokes, selection box, and live remote author cursors
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -350,6 +363,59 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       }
     }
 
+    // LIVE REMOTE PARTICIPANT CURSORS & AUTHOR BADGES
+    if (remoteCursors && remoteCursors.size > 0) {
+      const now = Date.now();
+      remoteCursors.forEach((c) => {
+        if (now - c.lastUpdated > 3500) return; // Fade out inactive cursors
+
+        ctx.save();
+        const cursorColor = c.isFaculty ? '#007AFF' : '#5856D6';
+
+        // 1. Drawing Ripple
+        if (c.isDrawing) {
+          ctx.beginPath();
+          ctx.arc(c.x, c.y, 10 / zoom, 0, 2 * Math.PI);
+          ctx.fillStyle = c.isFaculty ? 'rgba(0, 122, 255, 0.25)' : 'rgba(88, 86, 214, 0.25)';
+          ctx.fill();
+        }
+
+        // 2. Cursor Stylus Nib Icon
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, 4 / zoom, 0, 2 * Math.PI);
+        ctx.fillStyle = cursorColor;
+        ctx.fill();
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1.5 / zoom;
+        ctx.stroke();
+
+        // 3. Floating Author Name Badge
+        const tagText = `${c.userName} ${c.isDrawing ? '✍️' : '✏️'}`;
+        const fontSize = Math.max(10, Math.min(14, 12 / zoom));
+        ctx.font = `600 ${fontSize}px -apple-system, system-ui, sans-serif`;
+        const textMetrics = ctx.measureText(tagText);
+        const padX = 6 / zoom;
+        const padY = 3 / zoom;
+        const badgeW = textMetrics.width + padX * 2;
+        const badgeH = fontSize + padY * 2;
+        const badgeX = c.x + 8 / zoom;
+        const badgeY = c.y - 18 / zoom;
+
+        // Badge pill background
+        ctx.fillStyle = cursorColor;
+        ctx.beginPath();
+        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4 / zoom);
+        ctx.fill();
+
+        // Badge text
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(tagText, badgeX + padX, badgeY + badgeH / 2);
+
+        ctx.restore();
+      });
+    }
+
     // Optional Ruler & Coordinate Scale Overlay
     if (showRuler) {
       ctx.setTransform(1, 0, 0, 1, 0, 0); // Screen-space ruler
@@ -384,13 +450,20 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       }
       ctx.restore();
     }
-  }, [localStrokes, selectedStrokeId, zoom, pan, canvasBg, showRuler]);
+  }, [localStrokes, selectedStrokeId, zoom, pan, canvasBg, showRuler, remoteCursors]);
 
   useEffect(() => {
     if (isOpen) {
       setTimeout(redrawCanvas, 50);
     }
   }, [isOpen, redrawCanvas]);
+
+  // Periodic redraw to update remote cursor fading
+  useEffect(() => {
+    if (!isOpen || !remoteCursors || remoteCursors.size === 0) return;
+    const interval = setInterval(redrawCanvas, 300);
+    return () => clearInterval(interval);
+  }, [isOpen, remoteCursors, redrawCanvas]);
 
   // Comprehensive Stroke & Shape Renderer
   const drawSmoothStroke = (ctx: CanvasRenderingContext2D, stroke: WhiteboardStroke, isDarkBg: boolean) => {
@@ -680,11 +753,16 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     onEmitStroke(last);
   }, [redoStack, onEmitStroke]);
 
-  // Global Keyboard Shortcuts (Ctrl+Z, Ctrl+Y, Delete)
+  // Global Keyboard Shortcuts (Ctrl+Z, Ctrl+Y, Delete, Esc for Fullscreen)
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (e.shiftKey) {
@@ -709,7 +787,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, handleUndo, handleRedo, selectedStrokeId, localStrokes]);
+  }, [isOpen, handleUndo, handleRedo, selectedStrokeId, localStrokes, isFullscreen]);
 
   // Pointer Down
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -726,6 +804,9 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
 
     lastPointTimeRef.current = Date.now();
     const startPoint = getCanvasWorldCoords(e);
+
+    // Broadcast cursor position
+    onEmitCursor?.(startPoint.x, startPoint.y, true);
 
     // 1. SELECT & MOVE TOOL: Find and drag shape/stroke
     if (tool === 'select') {
@@ -813,7 +894,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     }
   };
 
-  // Pointer Move
+  // Pointer Move (Throttled Cursor Broadcast & Decimated Points)
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (isPanning) {
       setPan({
@@ -824,6 +905,13 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     }
 
     const pt = getCanvasWorldCoords(e);
+
+    // Low bandwidth cursor broadcast (max 25fps / 40ms)
+    const now = Date.now();
+    if (now - lastCursorEmitTimeRef.current > 40) {
+      onEmitCursor?.(pt.x, pt.y, isDrawing);
+      lastCursorEmitTimeRef.current = now;
+    }
 
     // 1. Dragging Selected Shape/Stroke Across Canvas
     if (tool === 'select' && isDraggingSelected && selectedStrokeId && initialStrokeSnapshotRef.current) {
@@ -844,6 +932,13 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     }
 
     if (!isDrawing) return;
+
+    // Point decimation: skip redundant jitter points within 1.5px
+    const lastPt = currentPointsRef.current[currentPointsRef.current.length - 1];
+    if (lastPt && Math.hypot(pt.x - lastPt.x, pt.y - lastPt.y) < 1.5) {
+      return;
+    }
+
     currentPointsRef.current.push(pt);
 
     const isShape = ['rect', 'circle', 'triangle', 'diamond', 'star', 'arrow', 'line', 'area_eraser'].includes(tool);
@@ -896,7 +991,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       return;
     }
 
-    // 1. Finished Dragging Selected Shape -> Sync with room
+    // Finished Dragging Selected Shape -> Sync with room
     if (tool === 'select' && isDraggingSelected && selectedStrokeId) {
       setIsDraggingSelected(false);
       const moved = localStrokes.find((s) => s.id === selectedStrokeId);
@@ -910,7 +1005,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     if (!isDrawing) return;
     setIsDrawing(false);
 
-    // 2. Area Lasso Eraser Completion -> Delete all strokes enclosed
+    // Area Lasso Eraser Completion -> Delete all strokes enclosed
     if (tool === 'area_eraser' && currentPointsRef.current.length >= 2) {
       const start = currentPointsRef.current[0];
       const end = currentPointsRef.current[currentPointsRef.current.length - 1];
@@ -931,7 +1026,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       return;
     }
 
-    // 3. Normal Stroke Completion
+    // Normal Stroke Completion
     if (currentPointsRef.current.length > 0) {
       const strokeType = tool as WhiteboardStroke['type'];
       const strokeSize = strokeType === 'highlighter' ? highlighterSize : isCurrentToolEraser ? eraserSize : size;
@@ -1044,14 +1139,755 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   const ActivePenIcon = currentPenMeta.icon;
   const ActiveEraserIcon = currentEraserMeta.icon;
 
+  // Render Inner Studio Toolbar & Controls
+  const renderStudioToolbar = () => (
+    <>
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 p-2 bg-apple-secondaryBg dark:bg-white/5 rounded-2xl border border-apple-border/70 dark:border-white/10 shadow-2xs">
+        {/* Left: Tools Group (Select/Move, Pen, Highlighter, Erasers, Hand) */}
+        <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+          {/* 1. SELECT & MOVE TOOL */}
+          <button
+            type="button"
+            onClick={() => {
+              setTool('select');
+              setIsPenMenuOpen(false);
+              setIsEraserMenuOpen(false);
+            }}
+            className={`p-2 rounded-lg transition-all flex items-center gap-1 ${
+              tool === 'select'
+                ? 'bg-apple-blue text-white shadow-sm font-semibold'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            }`}
+            title="Select & Move Shape (Click & drag any drawn shape/stroke)"
+          >
+            <MousePointer2 className="w-4 h-4" />
+          </button>
+
+          {/* 2. PEN TOOLS DROPDOWN */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleMainPenButtonClick}
+              className={`p-2 rounded-lg transition-all flex items-center gap-1.5 ${
+                isCurrentToolPen
+                  ? 'bg-apple-blue text-white shadow-sm'
+                  : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
+              title={`Current Pen: ${currentPenMeta.label} (Click to open menu)`}
+            >
+              <ActivePenIcon className="w-4 h-4" />
+              <ChevronDown className="w-3 h-3 opacity-80" />
+            </button>
+
+            {/* Full Notes-Style Pen Selection Dropdown */}
+            {isPenMenuOpen && (
+              <div className="absolute left-0 top-full mt-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-64 space-y-1 animate-scale-up">
+                <div className="px-2 py-1 border-b border-apple-border/40 dark:border-white/10 flex items-center justify-between">
+                  <span className="text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
+                    Pen Studio
+                  </span>
+                  <span className="text-[10px] font-mono text-apple-blue font-semibold">
+                    {size}px
+                  </span>
+                </div>
+
+                <div className="space-y-1 pt-1">
+                  {PEN_TOOLS.map((p) => {
+                    const Icon = p.icon;
+                    const isSelected = activePenType === p.id && isCurrentToolPen;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => handleSelectPenSubtool(p.id)}
+                        className={`w-full flex items-start gap-2.5 p-2 rounded-xl text-left transition-all ${
+                          isSelected
+                            ? 'bg-apple-blue text-white font-semibold shadow-2xs'
+                            : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                        }`}
+                      >
+                        <div className={`p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-white/20' : 'bg-apple-secondaryBg dark:bg-white/5'}`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="space-y-0.5 overflow-hidden">
+                          <div className="text-footnote font-semibold flex items-center gap-1.5">
+                            <span>{p.label}</span>
+                          </div>
+                          <p className={`text-[11px] leading-tight line-clamp-1 ${isSelected ? 'text-white/80' : 'text-apple-textSecondary dark:text-white/50'}`}>
+                            {p.desc}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 3. HIGHLIGHTER */}
+          <button
+            type="button"
+            onClick={() => {
+              setTool('highlighter');
+              setSelectedStrokeId(null);
+            }}
+            className={`p-2 rounded-lg transition-all ${
+              tool === 'highlighter' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            }`}
+            title="Neon Highlighter (Clean Ribbon)"
+          >
+            <Highlighter className="w-4 h-4" />
+          </button>
+
+          {/* 4. MULTI-ERASER SUITE DROPDOWN */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleMainEraserButtonClick}
+              className={`p-2 rounded-lg transition-all flex items-center gap-1.5 ${
+                isCurrentToolEraser
+                  ? 'bg-apple-blue text-white shadow-sm'
+                  : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
+              title={`Current Eraser: ${currentEraserMeta.label} (Click to open menu)`}
+            >
+              <ActiveEraserIcon className="w-4 h-4" />
+              <ChevronDown className="w-3 h-3 opacity-80" />
+            </button>
+
+            {/* Eraser Suite Dropdown Menu */}
+            {isEraserMenuOpen && (
+              <div className="absolute left-0 top-full mt-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-64 space-y-1 animate-scale-up">
+                <div className="px-2 py-1 border-b border-apple-border/40 dark:border-white/10 flex items-center justify-between">
+                  <span className="text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
+                    Eraser Suite
+                  </span>
+                  <span className="text-[10px] font-mono text-apple-blue font-semibold">
+                    {eraserSize}px
+                  </span>
+                </div>
+
+                <div className="space-y-1 pt-1">
+                  {ERASER_TOOLS.map((e) => {
+                    const Icon = e.icon;
+                    const isSelected = activeEraserType === e.id && isCurrentToolEraser;
+                    return (
+                      <button
+                        key={e.id}
+                        type="button"
+                        onClick={() => handleSelectEraserSubtool(e.id)}
+                        className={`w-full flex items-start gap-2.5 p-2 rounded-xl text-left transition-all ${
+                          isSelected
+                            ? 'bg-apple-blue text-white font-semibold shadow-2xs'
+                            : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                        }`}
+                      >
+                        <div className={`p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-white/20' : 'bg-apple-secondaryBg dark:bg-white/5'}`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="space-y-0.5 overflow-hidden">
+                          <div className="text-footnote font-semibold flex items-center gap-1.5">
+                            <span>{e.label}</span>
+                          </div>
+                          <p className={`text-[11px] leading-tight line-clamp-1 ${isSelected ? 'text-white/80' : 'text-apple-textSecondary dark:text-white/50'}`}>
+                            {e.desc}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 5. PAN / HAND TOOL */}
+          <button
+            type="button"
+            onClick={() => {
+              setTool('pan');
+              setSelectedStrokeId(null);
+            }}
+            className={`p-2 rounded-lg transition-all ${
+              tool === 'pan' ? 'bg-amber-500 text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            }`}
+            title="Pan / Hand Tool (Drag canvas view)"
+          >
+            <Hand className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Shapes Menu Group */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsShapeMenuOpen(!isShapeMenuOpen)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-[#1C1C1E] border border-apple-border/60 dark:border-white/10 shadow-sm text-footnote font-semibold transition-all ${
+              ['rect', 'circle', 'triangle', 'diamond', 'star', 'arrow', 'line'].includes(tool)
+                ? 'text-apple-blue border-apple-blue dark:border-apple-blue'
+                : 'text-apple-textPrimary dark:text-white'
+            }`}
+          >
+            <Square className="w-4 h-4" />
+            <span>Shapes</span>
+            <ChevronDown className="w-3 h-3 opacity-60" />
+          </button>
+
+          {isShapeMenuOpen && (
+            <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-[#1C1C1E] border border-apple-border/70 dark:border-white/10 rounded-2xl shadow-xl p-2 z-40 w-44 grid grid-cols-2 gap-1 animate-scale-up">
+              <button
+                onClick={() => {
+                  setTool('rect');
+                  setIsShapeMenuOpen(false);
+                  setSelectedStrokeId(null);
+                }}
+                className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
+                  tool === 'rect' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                }`}
+              >
+                <Square className="w-3.5 h-3.5" />
+                <span>Rectangle</span>
+              </button>
+              <button
+                onClick={() => {
+                  setTool('circle');
+                  setIsShapeMenuOpen(false);
+                  setSelectedStrokeId(null);
+                }}
+                className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
+                  tool === 'circle' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                }`}
+              >
+                <Circle className="w-3.5 h-3.5" />
+                <span>Circle</span>
+              </button>
+              <button
+                onClick={() => {
+                  setTool('triangle');
+                  setIsShapeMenuOpen(false);
+                  setSelectedStrokeId(null);
+                }}
+                className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
+                  tool === 'triangle' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                }`}
+              >
+                <Triangle className="w-3.5 h-3.5" />
+                <span>Triangle</span>
+              </button>
+              <button
+                onClick={() => {
+                  setTool('diamond');
+                  setIsShapeMenuOpen(false);
+                  setSelectedStrokeId(null);
+                }}
+                className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
+                  tool === 'diamond' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Diamond</span>
+              </button>
+              <button
+                onClick={() => {
+                  setTool('arrow');
+                  setIsShapeMenuOpen(false);
+                  setSelectedStrokeId(null);
+                }}
+                className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
+                  tool === 'arrow' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                }`}
+              >
+                <ArrowRight className="w-3.5 h-3.5" />
+                <span>Arrow</span>
+              </button>
+              <button
+                onClick={() => {
+                  setTool('line');
+                  setIsShapeMenuOpen(false);
+                  setSelectedStrokeId(null);
+                }}
+                className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
+                  tool === 'line' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                }`}
+              >
+                <Minus className="w-3.5 h-3.5" />
+                <span>Line</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Quick Size Presets & Customizer Toggle */}
+        <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+          {(tool === 'highlighter' ? HIGHLIGHTER_PRESETS : isCurrentToolEraser ? ERASER_PRESETS : PEN_PRESETS).map((pSize) => {
+            const isActive = (tool === 'highlighter' ? highlighterSize : isCurrentToolEraser ? eraserSize : size) === pSize;
+            return (
+              <button
+                key={pSize}
+                type="button"
+                onClick={() => {
+                  if (tool === 'highlighter') {
+                    setHighlighterSize(pSize);
+                  } else if (isCurrentToolEraser) {
+                    setEraserSize(pSize);
+                  } else {
+                    setSize(pSize);
+                  }
+                }}
+                className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all flex items-center gap-1 ${
+                  isActive
+                    ? 'bg-apple-secondaryBg dark:bg-white/20 text-apple-blue dark:text-white font-bold'
+                    : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+                }`}
+                title={`Stroke size ${pSize}px`}
+              >
+                <span>{pSize}px</span>
+              </button>
+            );
+          })}
+
+          {/* StarNote Tool Customizer Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowToolCustomizer(!showToolCustomizer)}
+            className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${
+              showToolCustomizer
+                ? 'bg-apple-blue text-white font-semibold'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            }`}
+            title="Open Thickness, Opacity & Pressure Customizer"
+          >
+            <Sliders className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Paper Themes */}
+        <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setCanvasBg('light')}
+            className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
+              canvasBg === 'light' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            }`}
+            title="Plain White Paper"
+          >
+            <Sun className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setCanvasBg('dark')}
+            className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
+              canvasBg === 'dark' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            }`}
+            title="Dark Obsidian Paper"
+          >
+            <Moon className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setCanvasBg('grid')}
+            className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
+              canvasBg === 'grid' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            }`}
+            title="Math Grid Paper"
+          >
+            <Grid className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setCanvasBg('dots')}
+            className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
+              canvasBg === 'dots' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            }`}
+            title="Dot Graph Paper"
+          >
+            <span className="text-[10px] font-bold px-1">DOTS</span>
+          </button>
+        </div>
+
+        {/* Undo / Redo / Ruler Controls */}
+        <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+          <button
+            type="button"
+            onClick={handleUndo}
+            disabled={localStrokes.length === 0}
+            className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white disabled:opacity-30 transition-colors"
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleRedo}
+            disabled={redoStack.length === 0}
+            className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white disabled:opacity-30 transition-colors"
+            title="Redo (Ctrl+Y)"
+          >
+            <Redo2 className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowRuler(!showRuler)}
+            className={`p-1.5 rounded-lg transition-colors ${
+              showRuler ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            }`}
+            title="Toggle Measurement Ruler"
+          >
+            <Ruler className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Actions: Insert Image, Zoom, Export, Fullscreen, Clear */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => imageInputRef.current?.click()}
+            className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
+            title="Insert Image / Diagram onto Canvas"
+          >
+            <ImageIcon className="w-4 h-4" />
+          </button>
+
+          {/* Pan & Zoom Navigation Controls */}
+          <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleResetView}
+              className="px-2 py-0.5 rounded-lg text-caption font-mono font-semibold text-apple-textSecondary hover:text-apple-blue"
+              title="Reset View (100%)"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleExportPNG}
+            className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
+            title="Save as High-Res PNG"
+          >
+            <Download className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={handleBroadcastSnapshot}
+            className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-blue transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
+            title="Broadcast Snapshot to Room Files"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className={`p-2 rounded-xl transition-colors border shadow-sm ${
+              isFullscreen
+                ? 'bg-apple-blue text-white border-apple-blue'
+                : 'bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white border-apple-border/60 dark:border-white/10'
+            }`}
+            title={isFullscreen ? 'Exit Full Screen (Esc)' : 'Enter Full Screen Canvas'}
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm('Clear all drawings on the whiteboard?')) {
+                onClearWhiteboard();
+                setLocalStrokes([]);
+                setRedoStack([]);
+                setSelectedStrokeId(null);
+              }
+            }}
+            className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-red-50 dark:hover:bg-red-950 text-apple-red transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
+            title="Clear Canvas"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* StarNote / Apple Pencil Tool Customizer Drawer */}
+      {showToolCustomizer && (
+        <div className="shrink-0 p-3.5 bg-white dark:bg-[#1C1C1E] rounded-2xl border border-apple-border/80 dark:border-white/15 shadow-md flex flex-wrap items-center justify-between gap-4 animate-scale-up">
+          {/* 1. Thickness Slider */}
+          <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+            <span className="text-caption font-semibold text-apple-textSecondary dark:text-white/70 w-24">
+              {tool === 'highlighter' ? 'Highlighter' : isCurrentToolEraser ? 'Eraser' : 'Stroke'} Width:
+            </span>
+            <input
+              type="range"
+              min="1"
+              max={tool === 'highlighter' ? '64' : isCurrentToolEraser ? '100' : '48'}
+              value={tool === 'highlighter' ? highlighterSize : isCurrentToolEraser ? eraserSize : size}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                if (tool === 'highlighter') {
+                  setHighlighterSize(val);
+                } else if (isCurrentToolEraser) {
+                  setEraserSize(val);
+                } else {
+                  setSize(val);
+                }
+              }}
+              className="flex-1 accent-apple-blue cursor-pointer"
+            />
+            <span className="text-footnote font-mono font-bold text-apple-textPrimary dark:text-white w-10 text-right">
+              {tool === 'highlighter' ? highlighterSize : isCurrentToolEraser ? eraserSize : size}px
+            </span>
+          </div>
+
+          {/* 2. Opacity Slider */}
+          {!isCurrentToolEraser && (
+            <div className="flex items-center gap-3 flex-1 min-w-[180px] pl-3 border-l border-apple-border/50 dark:border-white/10">
+              <span className="text-caption font-semibold text-apple-textSecondary dark:text-white/70 w-16">
+                Opacity:
+              </span>
+              <input
+                type="range"
+                min="20"
+                max="100"
+                value={opacity}
+                onChange={(e) => setOpacity(parseInt(e.target.value, 10))}
+                className="flex-1 accent-apple-blue cursor-pointer"
+              />
+              <span className="text-footnote font-mono font-bold text-apple-textPrimary dark:text-white w-10 text-right">
+                {opacity}%
+              </span>
+            </div>
+          )}
+
+          {/* 3. Pressure Mode Selector */}
+          {!isCurrentToolEraser && (
+            <div className="flex items-center gap-1.5 pl-3 border-l border-apple-border/50 dark:border-white/10 shrink-0">
+              <Activity className="w-3.5 h-3.5 text-apple-blue" />
+              <span className="text-caption font-semibold text-apple-textSecondary dark:text-white/70 mr-1">
+                Pressure:
+              </span>
+              <button
+                type="button"
+                onClick={() => setPressureMode('stylus')}
+                className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all ${
+                  pressureMode === 'stylus'
+                    ? 'bg-apple-blue text-white shadow-2xs'
+                    : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textSecondary hover:text-apple-textPrimary'
+                }`}
+                title="Hardware Stylus & Apple Pencil Pressure"
+              >
+                Stylus
+              </button>
+              <button
+                type="button"
+                onClick={() => setPressureMode('speed')}
+                className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all ${
+                  pressureMode === 'speed'
+                    ? 'bg-apple-blue text-white shadow-2xs'
+                    : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textSecondary hover:text-apple-textPrimary'
+                }`}
+                title="Speed Dynamic (Simulated Stylus for Mouse/Touch)"
+              >
+                Speed
+              </button>
+              <button
+                type="button"
+                onClick={() => setPressureMode('fixed')}
+                className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all ${
+                  pressureMode === 'fixed'
+                    ? 'bg-apple-blue text-white shadow-2xs'
+                    : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textSecondary hover:text-apple-textPrimary'
+                }`}
+                title="Fixed Precision"
+              >
+                Fixed
+              </button>
+            </div>
+          )}
+
+          {/* 4. Live Nib Indicator */}
+          <div className="flex items-center gap-2 pl-3 border-l border-apple-border/50 dark:border-white/10 shrink-0">
+            <span className="text-caption text-apple-textSecondary">Nib:</span>
+            <div
+              className="rounded-full shadow-inner border border-black/10 dark:border-white/20 transition-all flex items-center justify-center"
+              style={{
+                width: `${Math.min(32, Math.max(6, currentActiveSize))}px`,
+                height: `${Math.min(32, Math.max(6, currentActiveSize))}px`,
+                backgroundColor: isCurrentToolEraser ? (canvasBg === 'dark' ? '#121212' : '#FFFFFF') : color,
+                opacity: tool === 'highlighter' ? 0.45 : isCurrentToolEraser ? 1 : opacity / 100
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Color Palette Swatches */}
+      {!isCurrentToolEraser && tool !== 'pan' && tool !== 'select' && (
+        <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-white dark:bg-[#1C1C1E] rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            {APPLE_PALETTE.map((c) => {
+              const isSelected = color.toLowerCase() === c.hex.toLowerCase();
+              return (
+                <button
+                  key={c.hex}
+                  type="button"
+                  onClick={() => setColor(c.hex)}
+                  className={`w-7 h-7 rounded-full transition-all shrink-0 flex items-center justify-center ${
+                    isSelected ? 'bg-apple-blue/15 dark:bg-white/15 p-0.5' : 'p-0.5 hover:scale-105'
+                  }`}
+                  title={c.name}
+                >
+                  <span
+                    className={`w-full h-full rounded-full flex items-center justify-center shadow-2xs border ${
+                      isSelected ? 'border-apple-blue dark:border-white' : 'border-black/10 dark:border-white/20'
+                    }`}
+                    style={{ backgroundColor: c.hex }}
+                  >
+                    {isSelected && (
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          c.hex === '#1C1C1E' || c.hex === '#5856D6' || c.hex === '#007AFF' || c.hex === '#FF3B30'
+                            ? 'bg-white'
+                            : 'bg-black'
+                        }`}
+                      />
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Custom Color Picker Swatch */}
+          <div className="flex items-center gap-1.5 shrink-0 pl-2.5 border-l border-apple-border/50 dark:border-white/10">
+            <label className="flex items-center gap-1.5 text-caption font-semibold text-apple-textSecondary dark:text-white/70 hover:text-apple-blue dark:hover:text-apple-blue cursor-pointer">
+              <Palette className="w-3.5 h-3.5 text-apple-blue" />
+              <span>Custom</span>
+              <input
+                type="color"
+                value={customColor}
+                onChange={(e) => {
+                  setCustomColor(e.target.value);
+                  setColor(e.target.value);
+                }}
+                className="w-5 h-5 rounded cursor-pointer border-none bg-transparent"
+              />
+            </label>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  // Render Canvas Component
+  const renderCanvasViewport = () => (
+    <div
+      ref={containerRef}
+      className="relative flex-1 min-h-0 w-full bg-white dark:bg-black rounded-2xl overflow-hidden border border-apple-border/80 dark:border-white/10 shadow-inner flex items-center justify-center"
+    >
+      <canvas
+        ref={canvasRef}
+        width={1920}
+        height={1080}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        className={`w-full h-full object-contain touch-none block ${
+          tool === 'pan' || isPanning
+            ? 'cursor-grab active:cursor-grabbing'
+            : tool === 'select'
+            ? isDraggingSelected
+              ? 'cursor-grabbing'
+              : 'cursor-grab'
+            : isCurrentToolEraser
+            ? 'cursor-cell'
+            : 'cursor-crosshair'
+        }`}
+      />
+    </div>
+  );
+
+  // 1. TRUE IMMERSIVE FULL-SCREEN VIEWPORT
+  if (isFullscreen) {
+    return (
+      <div className="fixed inset-0 z-[100] w-screen h-screen bg-[#0E0E10] text-white flex flex-col p-3 gap-2 select-none overflow-hidden animate-fade-in">
+        {/* Hidden Image Input */}
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageUpload}
+        />
+
+        {/* Top Fullscreen Header with Exit Button */}
+        <div className="shrink-0 flex items-center justify-between px-3 py-1.5 bg-white/10 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/15 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-apple-green animate-pulse" />
+            <span className="font-bold text-footnote tracking-wide text-white">
+              Full Screen Collaborative Whiteboard
+            </span>
+            <span className="text-caption text-white/50 hidden sm:inline">
+              (Press Esc to exit)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(false)}
+              className="px-3 py-1 rounded-lg bg-apple-blue hover:bg-apple-blueHover text-white font-semibold text-caption flex items-center gap-1.5 shadow-sm transition-all"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+              <span>Exit Full Screen</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-lg hover:bg-white/15 text-white/70 hover:text-white transition-colors"
+              title="Close Whiteboard"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Toolbar */}
+        {renderStudioToolbar()}
+
+        {/* Canvas */}
+        {renderCanvasViewport()}
+      </div>
+    );
+  }
+
+  // 2. STANDARD FITTED MODAL VIEWPORT (Strictly Fits in Viewport without Clipping Behind Header)
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title="Collaborative Whiteboard Studio"
-      maxWidth={isFullscreen ? 'max-w-full !m-0 !h-screen !rounded-none' : 'max-w-6xl'}
+      maxWidth="max-w-6xl"
     >
-      <div className="space-y-3 select-none flex flex-col h-full">
+      <div className="select-none flex flex-col h-[76vh] max-h-[750px] space-y-2.5 overflow-hidden">
         {/* Hidden Image Input */}
         <input
           ref={imageInputRef}
@@ -1062,682 +1898,10 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         />
 
         {/* Primary Studio Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-apple-secondaryBg dark:bg-white/5 rounded-2xl border border-apple-border/70 dark:border-white/10 shadow-2xs">
-          {/* Left: Tools Group (Select/Move, Pen, Highlighter, Erasers, Hand) */}
-          <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-            {/* 1. SELECT & MOVE TOOL */}
-            <button
-              type="button"
-              onClick={() => {
-                setTool('select');
-                setIsPenMenuOpen(false);
-                setIsEraserMenuOpen(false);
-              }}
-              className={`p-2 rounded-lg transition-all flex items-center gap-1 ${
-                tool === 'select'
-                  ? 'bg-apple-blue text-white shadow-sm font-semibold'
-                  : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-              }`}
-              title="Select & Move Shape (Click & drag any drawn shape/stroke)"
-            >
-              <MousePointer2 className="w-4 h-4" />
-            </button>
-
-            {/* 2. PEN TOOLS DROPDOWN */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={handleMainPenButtonClick}
-                className={`p-2 rounded-lg transition-all flex items-center gap-1.5 ${
-                  isCurrentToolPen
-                    ? 'bg-apple-blue text-white shadow-sm'
-                    : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-                }`}
-                title={`Current Pen: ${currentPenMeta.label} (Click to open menu)`}
-              >
-                <ActivePenIcon className="w-4 h-4" />
-                <ChevronDown className="w-3 h-3 opacity-80" />
-              </button>
-
-              {/* Full Notes-Style Pen Selection Dropdown */}
-              {isPenMenuOpen && (
-                <div className="absolute left-0 top-full mt-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-64 space-y-1 animate-scale-up">
-                  <div className="px-2 py-1 border-b border-apple-border/40 dark:border-white/10 flex items-center justify-between">
-                    <span className="text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
-                      Pen Studio
-                    </span>
-                    <span className="text-[10px] font-mono text-apple-blue font-semibold">
-                      {size}px
-                    </span>
-                  </div>
-
-                  <div className="space-y-1 pt-1">
-                    {PEN_TOOLS.map((p) => {
-                      const Icon = p.icon;
-                      const isSelected = activePenType === p.id && isCurrentToolPen;
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => handleSelectPenSubtool(p.id)}
-                          className={`w-full flex items-start gap-2.5 p-2 rounded-xl text-left transition-all ${
-                            isSelected
-                              ? 'bg-apple-blue text-white font-semibold shadow-2xs'
-                              : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                          }`}
-                        >
-                          <div className={`p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-white/20' : 'bg-apple-secondaryBg dark:bg-white/5'}`}>
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <div className="space-y-0.5 overflow-hidden">
-                            <div className="text-footnote font-semibold flex items-center gap-1.5">
-                              <span>{p.label}</span>
-                            </div>
-                            <p className={`text-[11px] leading-tight line-clamp-1 ${isSelected ? 'text-white/80' : 'text-apple-textSecondary dark:text-white/50'}`}>
-                              {p.desc}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 3. HIGHLIGHTER */}
-            <button
-              type="button"
-              onClick={() => {
-                setTool('highlighter');
-                setSelectedStrokeId(null);
-              }}
-              className={`p-2 rounded-lg transition-all ${
-                tool === 'highlighter' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-              }`}
-              title="Neon Highlighter (Clean Ribbon)"
-            >
-              <Highlighter className="w-4 h-4" />
-            </button>
-
-            {/* 4. MULTI-ERASER SUITE DROPDOWN */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={handleMainEraserButtonClick}
-                className={`p-2 rounded-lg transition-all flex items-center gap-1.5 ${
-                  isCurrentToolEraser
-                    ? 'bg-apple-blue text-white shadow-sm'
-                    : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-                }`}
-                title={`Current Eraser: ${currentEraserMeta.label} (Click to open menu)`}
-              >
-                <ActiveEraserIcon className="w-4 h-4" />
-                <ChevronDown className="w-3 h-3 opacity-80" />
-              </button>
-
-              {/* Eraser Suite Dropdown Menu */}
-              {isEraserMenuOpen && (
-                <div className="absolute left-0 top-full mt-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-64 space-y-1 animate-scale-up">
-                  <div className="px-2 py-1 border-b border-apple-border/40 dark:border-white/10 flex items-center justify-between">
-                    <span className="text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
-                      Eraser Suite
-                    </span>
-                    <span className="text-[10px] font-mono text-apple-blue font-semibold">
-                      {eraserSize}px
-                    </span>
-                  </div>
-
-                  <div className="space-y-1 pt-1">
-                    {ERASER_TOOLS.map((e) => {
-                      const Icon = e.icon;
-                      const isSelected = activeEraserType === e.id && isCurrentToolEraser;
-                      return (
-                        <button
-                          key={e.id}
-                          type="button"
-                          onClick={() => handleSelectEraserSubtool(e.id)}
-                          className={`w-full flex items-start gap-2.5 p-2 rounded-xl text-left transition-all ${
-                            isSelected
-                              ? 'bg-apple-blue text-white font-semibold shadow-2xs'
-                              : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                          }`}
-                        >
-                          <div className={`p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-white/20' : 'bg-apple-secondaryBg dark:bg-white/5'}`}>
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <div className="space-y-0.5 overflow-hidden">
-                            <div className="text-footnote font-semibold flex items-center gap-1.5">
-                              <span>{e.label}</span>
-                            </div>
-                            <p className={`text-[11px] leading-tight line-clamp-1 ${isSelected ? 'text-white/80' : 'text-apple-textSecondary dark:text-white/50'}`}>
-                              {e.desc}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 5. PAN / HAND TOOL */}
-            <button
-              type="button"
-              onClick={() => {
-                setTool('pan');
-                setSelectedStrokeId(null);
-              }}
-              className={`p-2 rounded-lg transition-all ${
-                tool === 'pan' ? 'bg-amber-500 text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-              }`}
-              title="Pan / Hand Tool (Drag canvas view)"
-            >
-              <Hand className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Shapes Menu Group */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsShapeMenuOpen(!isShapeMenuOpen)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-[#1C1C1E] border border-apple-border/60 dark:border-white/10 shadow-sm text-footnote font-semibold transition-all ${
-                ['rect', 'circle', 'triangle', 'diamond', 'star', 'arrow', 'line'].includes(tool)
-                  ? 'text-apple-blue border-apple-blue dark:border-apple-blue'
-                  : 'text-apple-textPrimary dark:text-white'
-              }`}
-            >
-              <Square className="w-4 h-4" />
-              <span>Shapes</span>
-              <ChevronDown className="w-3 h-3 opacity-60" />
-            </button>
-
-            {isShapeMenuOpen && (
-              <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-[#1C1C1E] border border-apple-border/70 dark:border-white/10 rounded-2xl shadow-xl p-2 z-40 w-44 grid grid-cols-2 gap-1 animate-scale-up">
-                <button
-                  onClick={() => {
-                    setTool('rect');
-                    setIsShapeMenuOpen(false);
-                    setSelectedStrokeId(null);
-                  }}
-                  className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
-                    tool === 'rect' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                  }`}
-                >
-                  <Square className="w-3.5 h-3.5" />
-                  <span>Rectangle</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setTool('circle');
-                    setIsShapeMenuOpen(false);
-                    setSelectedStrokeId(null);
-                  }}
-                  className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
-                    tool === 'circle' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                  }`}
-                >
-                  <Circle className="w-3.5 h-3.5" />
-                  <span>Circle</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setTool('triangle');
-                    setIsShapeMenuOpen(false);
-                    setSelectedStrokeId(null);
-                  }}
-                  className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
-                    tool === 'triangle' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                  }`}
-                >
-                  <Triangle className="w-3.5 h-3.5" />
-                  <span>Triangle</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setTool('diamond');
-                    setIsShapeMenuOpen(false);
-                    setSelectedStrokeId(null);
-                  }}
-                  className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
-                    tool === 'diamond' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Diamond</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setTool('arrow');
-                    setIsShapeMenuOpen(false);
-                    setSelectedStrokeId(null);
-                  }}
-                  className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
-                    tool === 'arrow' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                  }`}
-                >
-                  <ArrowRight className="w-3.5 h-3.5" />
-                  <span>Arrow</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setTool('line');
-                    setIsShapeMenuOpen(false);
-                    setSelectedStrokeId(null);
-                  }}
-                  className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
-                    tool === 'line' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                  }`}
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                  <span>Line</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Quick Size Presets & Customizer Toggle */}
-          <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-            {(tool === 'highlighter' ? HIGHLIGHTER_PRESETS : isCurrentToolEraser ? ERASER_PRESETS : PEN_PRESETS).map((pSize) => {
-              const isActive = (tool === 'highlighter' ? highlighterSize : isCurrentToolEraser ? eraserSize : size) === pSize;
-              return (
-                <button
-                  key={pSize}
-                  type="button"
-                  onClick={() => {
-                    if (tool === 'highlighter') {
-                      setHighlighterSize(pSize);
-                    } else if (isCurrentToolEraser) {
-                      setEraserSize(pSize);
-                    } else {
-                      setSize(pSize);
-                    }
-                  }}
-                  className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all flex items-center gap-1 ${
-                    isActive
-                      ? 'bg-apple-secondaryBg dark:bg-white/20 text-apple-blue dark:text-white font-bold'
-                      : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-                  }`}
-                  title={`Stroke size ${pSize}px`}
-                >
-                  <span>{pSize}px</span>
-                </button>
-              );
-            })}
-
-            {/* StarNote Tool Customizer Toggle */}
-            <button
-              type="button"
-              onClick={() => setShowToolCustomizer(!showToolCustomizer)}
-              className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${
-                showToolCustomizer
-                  ? 'bg-apple-blue text-white font-semibold'
-                  : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-              }`}
-              title="Open Thickness, Opacity & Pressure Customizer"
-            >
-              <Sliders className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Paper Themes */}
-          <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setCanvasBg('light')}
-              className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
-                canvasBg === 'light' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-              }`}
-              title="Plain White Paper"
-            >
-              <Sun className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setCanvasBg('dark')}
-              className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
-                canvasBg === 'dark' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-              }`}
-              title="Dark Obsidian Paper"
-            >
-              <Moon className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setCanvasBg('grid')}
-              className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
-                canvasBg === 'grid' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-              }`}
-              title="Math Grid Paper"
-            >
-              <Grid className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setCanvasBg('dots')}
-              className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
-                canvasBg === 'dots' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-              }`}
-              title="Dot Graph Paper"
-            >
-              <span className="text-[10px] font-bold px-1">DOTS</span>
-            </button>
-          </div>
-
-          {/* Undo / Redo / Ruler Controls */}
-          <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-            <button
-              type="button"
-              onClick={handleUndo}
-              disabled={localStrokes.length === 0}
-              className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white disabled:opacity-30 transition-colors"
-              title="Undo (Ctrl+Z)"
-            >
-              <Undo2 className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={handleRedo}
-              disabled={redoStack.length === 0}
-              className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white disabled:opacity-30 transition-colors"
-              title="Redo (Ctrl+Y)"
-            >
-              <Redo2 className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowRuler(!showRuler)}
-              className={`p-1.5 rounded-lg transition-colors ${
-                showRuler ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-              }`}
-              title="Toggle Measurement Ruler"
-            >
-              <Ruler className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Actions: Insert Image, Zoom, Export, Fullscreen, Clear */}
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => imageInputRef.current?.click()}
-              className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-              title="Insert Image / Diagram onto Canvas"
-            >
-              <ImageIcon className="w-4 h-4" />
-            </button>
-
-            {/* Pan & Zoom Navigation Controls */}
-            <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-              <button
-                type="button"
-                onClick={handleZoomOut}
-                className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
-                title="Zoom Out"
-              >
-                <ZoomOut className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={handleResetView}
-                className="px-2 py-0.5 rounded-lg text-caption font-mono font-semibold text-apple-textSecondary hover:text-apple-blue"
-                title="Reset View (100%)"
-              >
-                {Math.round(zoom * 100)}%
-              </button>
-              <button
-                type="button"
-                onClick={handleZoomIn}
-                className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
-                title="Zoom In"
-              >
-                <ZoomIn className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleExportPNG}
-              className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-              title="Save as High-Res PNG"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleBroadcastSnapshot}
-              className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-blue transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-              title="Broadcast Snapshot to Room Files"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-              title={isFullscreen ? 'Exit Full Screen' : 'Full Screen Canvas'}
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (window.confirm('Clear all drawings on the whiteboard?')) {
-                  onClearWhiteboard();
-                  setLocalStrokes([]);
-                  setRedoStack([]);
-                  setSelectedStrokeId(null);
-                }
-              }}
-              className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-red-50 dark:hover:bg-red-950 text-apple-red transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-              title="Clear Canvas"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* StarNote / Apple Pencil Tool Customizer Drawer */}
-        {showToolCustomizer && (
-          <div className="p-3.5 bg-white dark:bg-[#1C1C1E] rounded-2xl border border-apple-border/80 dark:border-white/15 shadow-md flex flex-wrap items-center justify-between gap-4 animate-scale-up">
-            {/* 1. Thickness Slider */}
-            <div className="flex items-center gap-3 flex-1 min-w-[200px]">
-              <span className="text-caption font-semibold text-apple-textSecondary dark:text-white/70 w-24">
-                {tool === 'highlighter' ? 'Highlighter' : isCurrentToolEraser ? 'Eraser' : 'Stroke'} Width:
-              </span>
-              <input
-                type="range"
-                min="1"
-                max={tool === 'highlighter' ? '64' : isCurrentToolEraser ? '100' : '48'}
-                value={tool === 'highlighter' ? highlighterSize : isCurrentToolEraser ? eraserSize : size}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  if (tool === 'highlighter') {
-                    setHighlighterSize(val);
-                  } else if (isCurrentToolEraser) {
-                    setEraserSize(val);
-                  } else {
-                    setSize(val);
-                  }
-                }}
-                className="flex-1 accent-apple-blue cursor-pointer"
-              />
-              <span className="text-footnote font-mono font-bold text-apple-textPrimary dark:text-white w-10 text-right">
-                {tool === 'highlighter' ? highlighterSize : isCurrentToolEraser ? eraserSize : size}px
-              </span>
-            </div>
-
-            {/* 2. Opacity Slider */}
-            {!isCurrentToolEraser && (
-              <div className="flex items-center gap-3 flex-1 min-w-[180px] pl-3 border-l border-apple-border/50 dark:border-white/10">
-                <span className="text-caption font-semibold text-apple-textSecondary dark:text-white/70 w-16">
-                  Opacity:
-                </span>
-                <input
-                  type="range"
-                  min="20"
-                  max="100"
-                  value={opacity}
-                  onChange={(e) => setOpacity(parseInt(e.target.value, 10))}
-                  className="flex-1 accent-apple-blue cursor-pointer"
-                />
-                <span className="text-footnote font-mono font-bold text-apple-textPrimary dark:text-white w-10 text-right">
-                  {opacity}%
-                </span>
-              </div>
-            )}
-
-            {/* 3. Pressure Mode Selector */}
-            {!isCurrentToolEraser && (
-              <div className="flex items-center gap-1.5 pl-3 border-l border-apple-border/50 dark:border-white/10 shrink-0">
-                <Activity className="w-3.5 h-3.5 text-apple-blue" />
-                <span className="text-caption font-semibold text-apple-textSecondary dark:text-white/70 mr-1">
-                  Pressure:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setPressureMode('stylus')}
-                  className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all ${
-                    pressureMode === 'stylus'
-                      ? 'bg-apple-blue text-white shadow-2xs'
-                      : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textSecondary hover:text-apple-textPrimary'
-                  }`}
-                  title="Hardware Stylus & Apple Pencil Pressure"
-                >
-                  Stylus
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPressureMode('speed')}
-                  className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all ${
-                    pressureMode === 'speed'
-                      ? 'bg-apple-blue text-white shadow-2xs'
-                      : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textSecondary hover:text-apple-textPrimary'
-                  }`}
-                  title="Speed Dynamic (Simulated Stylus for Mouse/Touch)"
-                >
-                  Speed
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPressureMode('fixed')}
-                  className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all ${
-                    pressureMode === 'fixed'
-                      ? 'bg-apple-blue text-white shadow-2xs'
-                      : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textSecondary hover:text-apple-textPrimary'
-                  }`}
-                  title="Fixed Precision"
-                >
-                  Fixed
-                </button>
-              </div>
-            )}
-
-            {/* 4. Live Nib Indicator */}
-            <div className="flex items-center gap-2 pl-3 border-l border-apple-border/50 dark:border-white/10 shrink-0">
-              <span className="text-caption text-apple-textSecondary">Nib:</span>
-              <div
-                className="rounded-full shadow-inner border border-black/10 dark:border-white/20 transition-all flex items-center justify-center"
-                style={{
-                  width: `${Math.min(32, Math.max(6, currentActiveSize))}px`,
-                  height: `${Math.min(32, Math.max(6, currentActiveSize))}px`,
-                  backgroundColor: isCurrentToolEraser ? (canvasBg === 'dark' ? '#121212' : '#FFFFFF') : color,
-                  opacity: tool === 'highlighter' ? 0.45 : isCurrentToolEraser ? 1 : opacity / 100
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Color Palette Swatches */}
-        {!isCurrentToolEraser && tool !== 'pan' && tool !== 'select' && (
-          <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-white dark:bg-[#1C1C1E] rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-              {APPLE_PALETTE.map((c) => {
-                const isSelected = color.toLowerCase() === c.hex.toLowerCase();
-                return (
-                  <button
-                    key={c.hex}
-                    type="button"
-                    onClick={() => setColor(c.hex)}
-                    className={`w-7 h-7 rounded-full transition-all shrink-0 flex items-center justify-center ${
-                      isSelected ? 'bg-apple-blue/15 dark:bg-white/15 p-0.5' : 'p-0.5 hover:scale-105'
-                    }`}
-                    title={c.name}
-                  >
-                    <span
-                      className={`w-full h-full rounded-full flex items-center justify-center shadow-2xs border ${
-                        isSelected ? 'border-apple-blue dark:border-white' : 'border-black/10 dark:border-white/20'
-                      }`}
-                      style={{ backgroundColor: c.hex }}
-                    >
-                      {isSelected && (
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            c.hex === '#1C1C1E' || c.hex === '#5856D6' || c.hex === '#007AFF' || c.hex === '#FF3B30'
-                              ? 'bg-white'
-                              : 'bg-black'
-                          }`}
-                        />
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Custom Color Picker Swatch */}
-            <div className="flex items-center gap-1.5 shrink-0 pl-2.5 border-l border-apple-border/50 dark:border-white/10">
-              <label className="flex items-center gap-1.5 text-caption font-semibold text-apple-textSecondary dark:text-white/70 hover:text-apple-blue dark:hover:text-apple-blue cursor-pointer">
-                <Palette className="w-3.5 h-3.5 text-apple-blue" />
-                <span>Custom</span>
-                <input
-                  type="color"
-                  value={customColor}
-                  onChange={(e) => {
-                    setCustomColor(e.target.value);
-                    setColor(e.target.value);
-                  }}
-                  className="w-5 h-5 rounded cursor-pointer border-none bg-transparent"
-                />
-              </label>
-            </div>
-          </div>
-        )}
+        {renderStudioToolbar()}
 
         {/* The Collaborative Canvas Viewport */}
-        <div
-          ref={containerRef}
-          className={`relative flex-1 w-full bg-white dark:bg-black rounded-2xl overflow-hidden border border-apple-border/80 dark:border-white/10 shadow-inner flex items-center justify-center ${
-            isFullscreen ? 'h-[80vh]' : 'h-[58vh] min-h-[420px]'
-          }`}
-        >
-          <canvas
-            ref={canvasRef}
-            width={1920}
-            height={1080}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-            className={`w-full h-full object-contain touch-none ${
-              tool === 'pan' || isPanning
-                ? 'cursor-grab active:cursor-grabbing'
-                : tool === 'select'
-                ? isDraggingSelected
-                  ? 'cursor-grabbing'
-                  : 'cursor-grab'
-                : isCurrentToolEraser
-                ? 'cursor-cell'
-                : 'cursor-crosshair'
-            }`}
-          />
-        </div>
+        {renderCanvasViewport()}
       </div>
     </Modal>
   );

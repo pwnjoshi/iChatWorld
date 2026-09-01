@@ -14,7 +14,7 @@ import {
   Folder,
   PenTool,
   Presentation,
-  Code2,
+  Mail,
   HelpCircle,
   BarChart2,
   ShieldCheck
@@ -246,10 +246,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3 p-2.5 rounded-xl bg-apple-secondaryBg/70 dark:bg-white/5">
-                  <Code2 className="w-4 h-4 text-apple-blue shrink-0" />
+                  <Mail className="w-4 h-4 text-apple-blue shrink-0" />
                   <div>
-                    <p className="font-semibold text-apple-textPrimary dark:text-white leading-tight">CodePad & Runner</p>
-                    <p className="text-caption text-apple-textSecondary dark:text-white/60">Multi-language code execution and 1-tap broadcast to chat.</p>
+                    <p className="font-semibold text-apple-textPrimary dark:text-white leading-tight">Export Notes & Homework</p>
+                    <p className="text-caption text-apple-textSecondary dark:text-white/60">6-digit OTP verified delivery with whiteboard PNGs & assignments.</p>
                   </div>
                 </div>
               </div>

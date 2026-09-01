@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   RoomState,
   Member,
@@ -21,7 +21,6 @@ import { RoomSwitcherModal } from './RoomSwitcherModal.js';
 import { HandRaiseModal } from './HandRaiseQueue.js';
 import { PollModal } from './PollModal.js';
 import { WhiteboardModal } from './WhiteboardModal.js';
-import { CodePadModal } from './CodePadModal.js';
 import { ClassroomTimerModal } from './ClassroomTimer.js';
 import { QAQueueModal } from './QAQueueModal.js';
 import { SlidePresenterModal } from './SlidePresenterModal.js';
@@ -34,11 +33,13 @@ import {
   Folder,
   Shield,
   PenTool,
-  Code2,
   HelpCircle,
   Presentation,
   BarChart2,
   Clock,
+  Play,
+  Pause,
+  X,
   Monitor,
   Sparkles,
   Users
@@ -69,6 +70,8 @@ interface RoomViewProps {
   onSendTyping: (isTyping: boolean) => void;
   onEmitWhiteboardStroke: (stroke: WhiteboardStroke) => void;
   onClearWhiteboard: () => void;
+  onEmitWhiteboardCursor?: (x: number, y: number, isDrawing?: boolean) => void;
+  remoteWhiteboardCursors?: Map<string, { x: number; y: number; userName: string; isFaculty: boolean; isDrawing: boolean; lastUpdated: number }>;
   onUpdateTimerState: (state: ClassroomTimerState | null) => Promise<boolean>;
   onAskQAQuestion: (text: string, isAnonymous: boolean) => Promise<boolean>;
   onEditQAQuestion?: (questionId: string, text: string) => Promise<boolean>;
@@ -124,6 +127,8 @@ export const RoomView: React.FC<RoomViewProps> = ({
   onSendTyping,
   onEmitWhiteboardStroke,
   onClearWhiteboard,
+  onEmitWhiteboardCursor,
+  remoteWhiteboardCursors,
   onUpdateTimerState,
   onAskQAQuestion,
   onEditQAQuestion,
@@ -161,7 +166,6 @@ export const RoomView: React.FC<RoomViewProps> = ({
   const [isHandQueueOpen, setIsHandQueueOpen] = useState(false);
   const [isPollModalOpen, setIsPollModalOpen] = useState(false);
   const [isWhiteboardOpen, setIsWhiteboardOpen] = useState(false);
-  const [isCodePadOpen, setIsCodePadOpen] = useState(false);
   const [isTimerModalOpen, setIsTimerModalOpen] = useState(false);
   const [isQAModalOpen, setIsQAModalOpen] = useState(false);
   const [isPresenterModalOpen, setIsPresenterModalOpen] = useState(false);
@@ -170,6 +174,28 @@ export const RoomView: React.FC<RoomViewProps> = ({
   const [isElevateModalOpen, setIsElevateModalOpen] = useState(false);
   const [elevatePassphrase, setElevatePassphrase] = useState('');
   const [elevateError, setElevateError] = useState('');
+
+  // Real-time local timer computation
+  const [timerSecondsLeft, setTimerSecondsLeft] = useState<number>(0);
+  useEffect(() => {
+    if (!room?.timerState) {
+      setTimerSecondsLeft(0);
+      return;
+    }
+    const timer = room.timerState;
+    if (!timer.isRunning) {
+      setTimerSecondsLeft(timer.remainingSec);
+      return;
+    }
+    const update = () => {
+      const elapsed = Math.floor((Date.now() - (timer.startedAt || Date.now())) / 1000);
+      const left = Math.max(0, timer.remainingSec - elapsed);
+      setTimerSecondsLeft(left);
+    };
+    update();
+    const interval = setInterval(update, 500);
+    return () => clearInterval(interval);
+  }, [room?.timerState]);
 
   const isFacultyOrHost = currentMember?.isFaculty || currentMember?.isCreator;
   const isHandRaised = currentMember && room.handsRaised?.some(h => h.socketId === currentMember.socketId);
@@ -194,7 +220,6 @@ export const RoomView: React.FC<RoomViewProps> = ({
       setIsElevateModalOpen(false);
       setElevatePassphrase('');
       setElevateError('');
-      setIsFacultySlideOverOpen(true);
     } else {
       setElevateError('Invalid faculty passphrase');
     }
@@ -214,7 +239,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen w-full max-w-7xl mx-auto bg-apple-bg dark:bg-black border-x border-apple-border/50 dark:border-white/10 shadow-lg selection:bg-apple-blue selection:text-white transition-colors">
+    <div className="flex flex-col h-screen overflow-hidden bg-apple-primaryBg dark:bg-black select-none">
       {/* Header */}
       <RoomHeader
         roomCode={room.code}
@@ -232,7 +257,6 @@ export const RoomView: React.FC<RoomViewProps> = ({
         onOpenHandQueue={() => setIsHandQueueOpen(true)}
         onOpenPollModal={() => setIsPollModalOpen(true)}
         onOpenWhiteboard={() => setIsWhiteboardOpen(true)}
-        onOpenCodePad={() => setIsCodePadOpen(true)}
         onOpenTimerModal={() => setIsTimerModalOpen(true)}
         onOpenQAModal={() => setIsQAModalOpen(true)}
         onOpenPresenter={() => setIsPresenterModalOpen(true)}
@@ -244,6 +268,75 @@ export const RoomView: React.FC<RoomViewProps> = ({
         onEndRoom={onEndRoom}
         onElevatePrompt={() => setIsElevateModalOpen(true)}
       />
+
+      {/* Prominent Synchronized Focus Timer Island */}
+      {room.timerState && (
+        <div className="shrink-0 px-4 py-2 bg-gradient-to-r from-apple-blue/10 via-purple-500/10 to-apple-blue/10 dark:from-white/5 dark:via-white/10 dark:to-white/5 border-b border-apple-border/60 dark:border-white/10 flex items-center justify-between gap-3 animate-fade-in shadow-2xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`p-1.5 rounded-xl shrink-0 ${timerSecondsLeft === 0 ? 'bg-red-500 text-white animate-bounce' : room.timerState.isRunning ? 'bg-apple-blue text-white animate-pulse' : 'bg-apple-secondaryBg dark:bg-white/10 text-apple-textSecondary'}`}>
+              <Clock className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-black text-body tracking-wider text-apple-textPrimary dark:text-white">
+                  {Math.floor(timerSecondsLeft / 60).toString().padStart(2, '0')}:{(timerSecondsLeft % 60).toString().padStart(2, '0')}
+                </span>
+                <span className="text-caption font-semibold text-apple-textSecondary dark:text-white/60 truncate">
+                  • {room.timerState.label || 'Focus Session'}
+                </span>
+                {timerSecondsLeft === 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                    Time's Up! ⏰
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Timer Controls */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {isFacultyOrHost && (
+              <>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!room.timerState) return;
+                    await onUpdateTimerState({
+                      ...room.timerState,
+                      remainingSec: timerSecondsLeft,
+                      isRunning: !room.timerState.isRunning,
+                      startedAt: room.timerState.isRunning ? null : Date.now()
+                    });
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textPrimary dark:text-white font-semibold text-caption border border-apple-border/70 dark:border-white/10 shadow-2xs transition-all flex items-center gap-1"
+                >
+                  {room.timerState.isRunning ? <Pause className="w-3 h-3 text-amber-500" /> : <Play className="w-3 h-3 text-apple-green" />}
+                  <span>{room.timerState.isRunning ? 'Pause' : 'Resume'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await onUpdateTimerState(null);
+                  }}
+                  className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 text-apple-textSecondary hover:text-apple-red transition-colors"
+                  title="Dismiss Timer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setIsTimerModalOpen(true)}
+              className="px-2.5 py-1 rounded-lg bg-apple-blue hover:bg-apple-blueHover text-white font-semibold text-caption shadow-2xs transition-all"
+            >
+              Open Controls
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* DESKTOP SPLIT-SCREEN WORKSPACE (lg & xl screens) */}
       <div className="hidden lg:grid lg:grid-cols-12 flex-1 min-h-0 overflow-hidden divide-x divide-apple-border/50 dark:divide-white/10">
@@ -319,12 +412,12 @@ export const RoomView: React.FC<RoomViewProps> = ({
               </button>
 
               <button
-                onClick={() => setIsCodePadOpen(true)}
+                onClick={() => setIsExportNotesOpen(true)}
                 className="p-2.5 rounded-xl bg-white dark:bg-[#2C2C2E] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-apple-border/50 dark:border-white/10 text-left transition-all active:scale-95 shadow-2xs group"
               >
-                <Code2 className="w-4 h-4 text-emerald-500 mb-1 transition-transform group-hover:scale-110" />
-                <p className="text-caption font-bold text-apple-textPrimary dark:text-white leading-tight">Code Pad</p>
-                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Live Runner</p>
+                <Sparkles className="w-4 h-4 text-emerald-500 mb-1 transition-transform group-hover:scale-110" />
+                <p className="text-caption font-bold text-apple-textPrimary dark:text-white leading-tight">Export</p>
+                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Notes & OTP</p>
               </button>
 
               <button
@@ -471,12 +564,8 @@ export const RoomView: React.FC<RoomViewProps> = ({
         onBroadcastImage={async (file: File) => {
           await onUploadFile(file, true);
         }}
-      />
-
-      <CodePadModal
-        isOpen={isCodePadOpen}
-        onClose={() => setIsCodePadOpen(false)}
-        onShareToChat={handleShareCodeToChat}
+        onEmitCursor={onEmitWhiteboardCursor}
+        remoteCursors={remoteWhiteboardCursors}
       />
 
       <ClassroomTimerModal

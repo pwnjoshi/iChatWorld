@@ -30,6 +30,8 @@ export const App: React.FC = () => {
     sendTyping,
     emitWhiteboardStroke,
     clearWhiteboard,
+    emitWhiteboardCursor,
+    remoteWhiteboardCursors,
     updateTimerState,
     askQAQuestion,
     editQAQuestion,
@@ -228,6 +230,8 @@ export const App: React.FC = () => {
           onSendTyping={sendTyping}
           onEmitWhiteboardStroke={emitWhiteboardStroke}
           onClearWhiteboard={clearWhiteboard}
+          onEmitWhiteboardCursor={emitWhiteboardCursor}
+          remoteWhiteboardCursors={remoteWhiteboardCursors}
           onUpdateTimerState={updateTimerState}
           onAskQAQuestion={askQAQuestion}
           onEditQAQuestion={editQAQuestion}

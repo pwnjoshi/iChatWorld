@@ -604,6 +604,22 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     if (typeof callback === 'function') callback({ success: true });
   });
 
+  // Live Whiteboard Cursor & Author Presence (Low Bandwidth)
+  socket.on('whiteboard:cursor-moved', (data: { x: number; y: number; isDrawing?: boolean }) => {
+    const roomCode = (socket as any).roomCode;
+    const member = (socket as any).memberData as Member;
+    if (roomCode && member) {
+      socket.to(roomCode).emit('whiteboard:cursor-received', {
+        socketId: socket.id,
+        userName: member.displayName,
+        isFaculty: !!member.isFaculty,
+        x: data.x,
+        y: data.y,
+        isDrawing: !!data.isDrawing
+      });
+    }
+  });
+
   // Disconnect
   socket.on('disconnect', async () => {
     const roomCode = (socket as any).roomCode;

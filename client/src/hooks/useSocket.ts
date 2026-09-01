@@ -28,6 +28,7 @@ export function useSocket() {
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
   const [screenPresenterName, setScreenPresenterName] = useState<string>('');
   const [laserPos, setLaserPos] = useState<{ x: number; y: number } | null>(null);
+  const [remoteWhiteboardCursors, setRemoteWhiteboardCursors] = useState<Map<string, { x: number; y: number; userName: string; isFaculty: boolean; isDrawing: boolean; lastUpdated: number }>>(new Map());
 
   const webrtcManagerRef = useRef<WebRTCManager | null>(null);
 
@@ -105,6 +106,21 @@ export function useSocket() {
 
     socketInstance.on('whiteboard:cleared', () => {
       setRoom(prev => prev ? { ...prev, whiteboardStrokes: [] } : null);
+    });
+
+    socketInstance.on('whiteboard:cursor-received', (data: { socketId: string; userName: string; isFaculty: boolean; x: number; y: number; isDrawing: boolean }) => {
+      setRemoteWhiteboardCursors(prev => {
+        const next = new Map(prev);
+        next.set(data.socketId, {
+          x: data.x,
+          y: data.y,
+          userName: data.userName,
+          isFaculty: data.isFaculty,
+          isDrawing: data.isDrawing,
+          lastUpdated: Date.now()
+        });
+        return next;
+      });
     });
 
     // Timer events
@@ -424,6 +440,11 @@ export function useSocket() {
       setRoom(prev => prev ? { ...prev, whiteboardStrokes: [] } : null);
       socket.emit('whiteboard:clear');
     }
+  }, [socket]);
+
+  const emitWhiteboardCursor = useCallback((x: number, y: number, isDrawing?: boolean) => {
+    if (!socket) return;
+    socket.emit('whiteboard:cursor-moved', { x, y, isDrawing });
   }, [socket]);
 
   // Timer Actions
@@ -746,6 +767,8 @@ export function useSocket() {
     sendTyping,
     emitWhiteboardStroke,
     clearWhiteboard,
+    emitWhiteboardCursor,
+    remoteWhiteboardCursors,
     updateTimerState,
     askQAQuestion,
     editQAQuestion,

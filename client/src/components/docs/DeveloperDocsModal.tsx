@@ -182,7 +182,7 @@ export const DeveloperDocsModal: React.FC<DeveloperDocsModalProps> = ({ isOpen, 
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-apple-green shrink-0" /> Synchronized Focus Timer & Presets</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-apple-green shrink-0" /> Live Polls with 1-Tap Deletion</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-apple-green shrink-0" /> Anonymous Upvotable Q&A Queue</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-apple-green shrink-0" /> Interactive In-Browser CodePad</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-apple-green shrink-0" /> OTP Verified Notes & Homework Export</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-apple-green shrink-0" /> Draggable Floating Screen Share PiP</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-apple-green shrink-0" /> Direct WebRTC P2P File Transfers</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-apple-green shrink-0" /> Faculty Passphrase Moderation</li>
