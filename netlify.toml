@@ -8,5 +8,13 @@
   to = "/index.html"
   status = 200
 
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Content-Security-Policy = "upgrade-insecure-requests"
+
 [build.environment]
   NODE_VERSION = "20"

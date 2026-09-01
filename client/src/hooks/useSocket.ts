@@ -35,9 +35,11 @@ export function useSocket() {
   useEffect(() => {
     const socketTarget = BACKEND_URL || window.location.origin;
     const socketInstance = io(socketTarget, {
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      transports: ['polling', 'websocket'],
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000
     });
 
     socketInstance.on('connect', () => {
