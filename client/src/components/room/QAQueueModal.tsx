@@ -243,7 +243,7 @@ export const QAQueueModal: React.FC<QAQueueModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Action Buttons: Upvote & Edit */}
+                    {/* Action Buttons: Upvote, Edit & Delete */}
                     <div className="flex items-center gap-1.5 shrink-0">
                       {isAuthor && editingQuestionId !== q.id && (
                         <button
@@ -252,6 +252,20 @@ export const QAQueueModal: React.FC<QAQueueModalProps> = ({
                           title="Edit Question"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      {(isAuthor || isFaculty) && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Delete this Q&A question?')) {
+                              onDeleteQuestion?.(q.id);
+                            }
+                          }}
+                          className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-apple-textSecondary hover:text-apple-red transition-colors"
+                          title="Delete Question"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
 
