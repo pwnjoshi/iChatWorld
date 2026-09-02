@@ -677,19 +677,17 @@ export const RoomView: React.FC<RoomViewProps> = ({
                 <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Focus Clock</span>
               </button>
 
-              {isFacultyOrHost && (
-                <button
-                  onClick={() => {
-                    setIsMobileToolsOpen(false);
-                    setIsPollModalOpen(true);
-                  }}
-                  className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
-                >
-                  <BarChart2 className="w-5 h-5 text-emerald-500" />
-                  <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Polls</span>
-                  <span className="text-[10px] text-apple-textSecondary dark:text-white/50">Live Vote</span>
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setIsMobileToolsOpen(false);
+                  setIsPollModalOpen(true);
+                }}
+                className="p-3 rounded-2xl bg-apple-secondaryBg dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-apple-border/50 dark:border-white/10 flex flex-col items-center gap-1.5 text-center transition-all active:scale-95 shadow-2xs"
+              >
+                <BarChart2 className="w-5 h-5 text-emerald-500" />
+                <span className="text-caption font-bold text-apple-textPrimary dark:text-white">Polls</span>
+                <span className="text-[10px] text-apple-textSecondary dark:text-white/50">{room.activePoll && room.activePoll.isOpen ? 'Live Vote Now' : 'Create / View'}</span>
+              </button>
 
               <button
                 onClick={() => {

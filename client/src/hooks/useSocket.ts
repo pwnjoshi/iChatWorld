@@ -297,6 +297,9 @@ export function useSocket() {
 
     // Initialize WebRTC Manager
     const rtc = new WebRTCManager(socketInstance);
+    rtc.setOnRemoteStream((stream) => {
+      setScreenStream(stream);
+    });
     webrtcManagerRef.current = rtc;
 
     setSocket(socketInstance);
@@ -565,11 +568,21 @@ export function useSocket() {
   // Screen Share Actions
   const startScreenShare = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { cursor: 'always' } as any,
+        audio: true
+      });
       setScreenStream(stream);
+      setScreenPresenterName(currentMember?.displayName || 'You');
 
-      if (socket && currentMember) {
+      if (socket && currentMember && room) {
         socket.emit('screen:start', { presenterName: currentMember.displayName });
+        const peerSocketIds = (room.members || [])
+          .filter(m => m.socketId !== socket.id)
+          .map(m => m.socketId);
+        if (webrtcManagerRef.current && peerSocketIds.length > 0) {
+          webrtcManagerRef.current.broadcastMediaStream(stream, peerSocketIds);
+        }
       }
 
       stream.getVideoTracks()[0].onended = () => {
@@ -578,17 +591,24 @@ export function useSocket() {
     } catch (e) {
       console.error('Screen sharing cancelled or failed:', e);
     }
-  }, [socket, currentMember]);
+  }, [socket, currentMember, room]);
 
   const stopScreenShare = useCallback(() => {
     if (screenStream) {
       screenStream.getTracks().forEach(t => t.stop());
       setScreenStream(null);
     }
+    setScreenPresenterName('');
     if (socket) {
+      if (room && webrtcManagerRef.current) {
+        const peerSocketIds = (room.members || [])
+          .filter(m => m.socketId !== socket.id)
+          .map(m => m.socketId);
+        webrtcManagerRef.current.stopBroadcastMediaStream(peerSocketIds);
+      }
       socket.emit('screen:stop');
     }
-  }, [screenStream, socket]);
+  }, [screenStream, room, socket]);
 
   const raiseHand = useCallback((): Promise<boolean> => {
     return new Promise((resolve) => {

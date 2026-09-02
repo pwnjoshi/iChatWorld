@@ -401,16 +401,18 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               <span>Timer</span>
             </button>
 
-            {isFacultyOrHost && (
-              <button
-                onClick={onOpenPollModal}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary dark:text-white/70 hover:text-apple-blue hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
-                title="Classroom Poll"
-              >
-                <BarChart2 className="w-3 h-3 text-apple-blue" />
-                <span>Poll</span>
-              </button>
-            )}
+            <button
+              onClick={onOpenPollModal}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all shrink-0 ${
+                activePoll && activePoll.isOpen
+                  ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 animate-pulse'
+                  : 'text-apple-textSecondary dark:text-white/70 hover:text-apple-blue hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+              }`}
+              title={activePoll && activePoll.isOpen ? 'Live Poll in Progress (Click to view)' : 'Create Classroom Poll'}
+            >
+              <BarChart2 className={`w-3 h-3 ${activePoll && activePoll.isOpen ? 'text-amber-600 dark:text-amber-400' : 'text-apple-blue'}`} />
+              <span>Poll{activePoll && activePoll.isOpen ? ' (Live)' : ''}</span>
+            </button>
 
             <button
               onClick={onStartScreenShare}

@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { store } from '../store/index.js';
-import { Member, HandRaise, Poll, WhiteboardStroke, QAQuestion, QAAnswer, ClassroomTimerState, PresenterState } from '../types/index.js';
+import { Member, Message, HandRaise, Poll, WhiteboardStroke, QAQuestion, QAAnswer, ClassroomTimerState, PresenterState } from '../types/index.js';
 import { CONFIG } from '../config.js';
 import { aiService } from '../services/aiService.js';
 
@@ -407,7 +407,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
   socket.on('poll:create', async (data: { question: string; options: string[] }, callback) => {
     const roomCode = (socket as any).roomCode;
     const member = (socket as any).memberData as Member;
-    if (!roomCode || (!member?.isFaculty && !member?.isCreator)) {
+    if (!roomCode || !member) {
       return callback && callback({ success: false, error: 'Unauthorized' });
     }
 
@@ -432,6 +432,18 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
 
     const createdPoll = await store.createPoll(roomCode, poll);
     io.to(roomCode).emit('poll:created', createdPoll);
+
+    const pollMsg: Message = {
+      id: `sys-poll-${Date.now()}`,
+      senderId: 'system',
+      senderName: 'System',
+      isFaculty: false,
+      isSystem: true,
+      text: `📊 ${member.displayName} started a live poll: "${poll.question}"`,
+      timestamp: Date.now()
+    };
+    await store.addMessage(roomCode, pollMsg);
+    io.to(roomCode).emit('chat:message', pollMsg);
 
     if (typeof callback === 'function') callback({ success: true, poll: createdPoll });
   });

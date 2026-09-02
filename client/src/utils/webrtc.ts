@@ -36,10 +36,69 @@ export class WebRTCManager {
     onComplete?: (blob: Blob) => void;
   }> = new Map();
   private localFiles: Map<string, File> = new Map();
+  private onRemoteStreamCallback?: (stream: MediaStream, senderSocketId: string) => void;
+  private localSenders: Map<string, RTCRtpSender[]> = new Map();
+  private activeLocalStream: MediaStream | null = null;
 
   constructor(socket: Socket) {
     this.socket = socket;
     this.setupSocketListeners();
+  }
+
+  public setOnRemoteStream(callback: (stream: MediaStream, senderSocketId: string) => void) {
+    this.onRemoteStreamCallback = callback;
+  }
+
+  public async broadcastMediaStream(stream: MediaStream, targetSocketIds: string[]) {
+    this.activeLocalStream = stream;
+    for (const targetSocketId of targetSocketIds) {
+      if (!targetSocketId) continue;
+      try {
+        const pc = this.getOrCreatePeerConnection(targetSocketId);
+        
+        // Remove any old track senders for this peer
+        const oldSenders = this.localSenders.get(targetSocketId) || [];
+        oldSenders.forEach(s => {
+          try { pc.removeTrack(s); } catch (e) {}
+        });
+
+        const newSenders: RTCRtpSender[] = [];
+        stream.getTracks().forEach(track => {
+          try {
+            const sender = pc.addTrack(track, stream);
+            newSenders.push(sender);
+          } catch (e) {
+            console.warn('[WebRTC] addTrack warning:', e);
+          }
+        });
+        this.localSenders.set(targetSocketId, newSenders);
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        this.socket.emit('rtc:signal', {
+          targetSocketId,
+          type: 'offer',
+          payload: offer
+        });
+      } catch (err) {
+        console.error('[WebRTC] broadcastMediaStream error for target', targetSocketId, err);
+      }
+    }
+  }
+
+  public stopBroadcastMediaStream(targetSocketIds: string[]) {
+    this.activeLocalStream = null;
+    for (const targetSocketId of targetSocketIds) {
+      const pc = this.peerConnections.get(targetSocketId);
+      if (pc) {
+        const senders = this.localSenders.get(targetSocketId) || [];
+        senders.forEach(s => {
+          try { pc.removeTrack(s); } catch (e) {}
+        });
+        this.localSenders.delete(targetSocketId);
+      }
+    }
   }
 
   public registerLocalFile(fileId: string, file: File) {
@@ -82,9 +141,28 @@ export class WebRTCManager {
         }
       };
 
+      pc.ontrack = (event) => {
+        const stream = event.streams && event.streams[0] ? event.streams[0] : new MediaStream([event.track]);
+        if (this.onRemoteStreamCallback) {
+          this.onRemoteStreamCallback(stream, targetSocketId);
+        }
+      };
+
       pc.ondatachannel = (event) => {
         this.setupDataChannel(targetSocketId, event.channel);
       };
+
+      // If we are currently sharing a stream, add its tracks to this newly created peer connection
+      if (this.activeLocalStream) {
+        const newSenders: RTCRtpSender[] = [];
+        this.activeLocalStream.getTracks().forEach(track => {
+          try {
+            const sender = pc!.addTrack(track, this.activeLocalStream!);
+            newSenders.push(sender);
+          } catch (e) {}
+        });
+        this.localSenders.set(targetSocketId, newSenders);
+      }
 
       this.peerConnections.set(targetSocketId, pc);
     }
