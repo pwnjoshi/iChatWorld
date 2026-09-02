@@ -528,7 +528,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
         isOpen={isHandQueueOpen}
         onClose={() => setIsHandQueueOpen(false)}
         handsRaised={room.handsRaised || []}
-        isFaculty={!!isFacultyOrHost}
+        isHost={!!currentMember?.isCreator}
         onLowerHand={onLowerHand}
         onLowerAllHands={onLowerAllHands}
       />
@@ -556,7 +556,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
         isOpen={isTimerModalOpen}
         onClose={() => setIsTimerModalOpen(false)}
         timerState={room.timerState}
-        isFaculty={!!isFacultyOrHost}
+        isHost={!!currentMember?.isCreator}
         onUpdateTimer={onUpdateTimerState}
       />
 

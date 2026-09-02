@@ -28,7 +28,7 @@ export const FilePanel: React.FC<FilePanelProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const isFaculty = currentMember?.isFaculty || currentMember?.isCreator;
+  const isHost = !!currentMember?.isCreator;
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -133,7 +133,7 @@ export const FilePanel: React.FC<FilePanelProps> = ({
                 transfer={transfers.get(file.id)}
                 downloadedBlobUrl={downloadedBlobs.get(file.id)}
                 isOwn={file.senderId === currentMember?.socketId}
-                canDelete={file.senderId === currentMember?.socketId || !!isFaculty}
+                canDelete={file.senderId === currentMember?.socketId || isHost}
                 onDownload={() => onDownloadFile(file)}
                 onDelete={onDeleteFile ? () => onDeleteFile(file.id) : undefined}
                 onShareInChat={onShareInChat ? () => onShareInChat(file) : undefined}
@@ -169,7 +169,7 @@ export const FilePanel: React.FC<FilePanelProps> = ({
                 transfer={transfers.get(file.id)}
                 downloadedBlobUrl={downloadedBlobs.get(file.id)}
                 isOwn={file.senderId === currentMember?.socketId}
-                canDelete={file.senderId === currentMember?.socketId || !!isFaculty}
+                canDelete={file.senderId === currentMember?.socketId || isHost}
                 onDownload={() => onDownloadFile(file)}
                 onDelete={onDeleteFile ? () => onDeleteFile(file.id) : undefined}
                 onShareInChat={onShareInChat ? () => onShareInChat(file) : undefined}

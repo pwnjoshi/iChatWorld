@@ -8,7 +8,8 @@ interface ClassroomTimerModalProps {
   onClose: () => void;
   timerState?: ClassroomTimerState | null;
   onUpdateTimer: (state: ClassroomTimerState | null) => Promise<boolean>;
-  isFaculty: boolean;
+  isHost: boolean;
+  isFaculty?: boolean;
 }
 
 export const ClassroomTimerModal: React.FC<ClassroomTimerModalProps> = ({
@@ -16,7 +17,7 @@ export const ClassroomTimerModal: React.FC<ClassroomTimerModalProps> = ({
   onClose,
   timerState,
   onUpdateTimer,
-  isFaculty
+  isHost
 }) => {
   const [minutes, setMinutes] = useState(5);
   const [label, setLabel] = useState('Class Quiz');
@@ -64,7 +65,7 @@ export const ClassroomTimerModal: React.FC<ClassroomTimerModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Classroom Focus Timer">
       <div className="space-y-5 text-center">
         {/* Preset Quick Buttons */}
-        {isFaculty && (
+        {isHost && (
           <div className="space-y-2">
             <label className="block text-footnote font-medium text-apple-textSecondary dark:text-white/70 text-left">
               Quick Presets
@@ -84,7 +85,7 @@ export const ClassroomTimerModal: React.FC<ClassroomTimerModalProps> = ({
         )}
 
         {/* Custom Configuration */}
-        {isFaculty && (
+        {isHost && (
           <div className="p-4 bg-apple-secondaryBg/70 dark:bg-white/5 rounded-ios-card border border-apple-border/50 dark:border-white/10 space-y-3 text-left">
             <label className="block text-footnote font-medium text-apple-textSecondary dark:text-white/70">
               Custom Duration & Label
@@ -102,21 +103,21 @@ export const ClassroomTimerModal: React.FC<ClassroomTimerModalProps> = ({
                 type="text"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder="Timer label (e.g. Exam Break)"
-                className="flex-1 px-3 py-2 bg-white dark:bg-[#1C1C1E] rounded-ios-input text-footnote text-apple-textPrimary dark:text-white border border-apple-border dark:border-white/10 outline-none focus:ring-2 focus:ring-apple-blue"
+                placeholder="Label"
+                className="flex-1 px-3.5 py-2 bg-white dark:bg-[#1C1C1E] rounded-ios-input text-body text-apple-textPrimary dark:text-white border border-apple-border dark:border-white/10 outline-none focus:ring-2 focus:ring-apple-blue"
               />
             </div>
             <button
-              onClick={() => handleStartPreset(minutes, label || 'Focus Session')}
-              className="w-full py-2.5 px-4 rounded-full bg-apple-blue hover:bg-apple-blueHover text-white font-semibold text-footnote transition-colors shadow-sm"
+              onClick={() => handleStartPreset(minutes, label || `${minutes} Min Timer`)}
+              className="w-full py-2.5 rounded-xl bg-apple-blue hover:bg-apple-blueHover text-white font-semibold text-footnote transition-colors shadow-xs"
             >
-              Start Synchronized Timer
+              Start Focus Session
             </button>
           </div>
         )}
 
-        {/* Timer Control Buttons */}
-        {timerState && isFaculty && (
+        {/* Active Timer Controls */}
+        {timerState && isHost && (
           <div className="flex gap-2 pt-2 border-t border-apple-border/50 dark:border-white/10">
             <button
               onClick={handleTogglePlay}

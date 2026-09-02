@@ -4,8 +4,8 @@ import { Sparkles } from 'lucide-react';
 
 interface AvatarProps {
   name: string;
-  isFaculty?: boolean;
   isCreator?: boolean;
+  isFaculty?: boolean;
   isAI?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -13,7 +13,6 @@ interface AvatarProps {
 
 export const Avatar: React.FC<AvatarProps> = ({
   name,
-  isFaculty = false,
   isCreator = false,
   isAI = false,
   size = 'md',
@@ -41,20 +40,13 @@ export const Avatar: React.FC<AvatarProps> = ({
         )}
       </div>
 
-      {isFaculty && (
+      {isCreator && (
         <span
-          title="Faculty"
+          title="Room Host"
           className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-amber-400 border-2 border-white dark:border-black rounded-full flex items-center justify-center text-[7px] text-amber-950 font-bold shadow-xs"
         >
           ★
         </span>
-      )}
-
-      {!isFaculty && isCreator && (
-        <span
-          title="Host"
-          className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-apple-blue border-2 border-white dark:border-black rounded-full shadow-xs"
-        />
       )}
     </div>
   );

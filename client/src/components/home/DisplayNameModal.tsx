@@ -5,10 +5,9 @@ import { Sparkles, Shield, User, Clock } from 'lucide-react';
 interface DisplayNameModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (displayName: string, isFaculty: boolean, passphrase?: string, lifespanHours?: number) => void;
+  onSubmit: (displayName: string, lifespanHours?: number) => void;
   title: string;
   actionText: string;
-  defaultIsFaculty?: boolean;
 }
 
 const PRESET_NAMES = [
@@ -29,12 +28,9 @@ export const DisplayNameModal: React.FC<DisplayNameModalProps> = ({
   onClose,
   onSubmit,
   title,
-  actionText,
-  defaultIsFaculty = false
+  actionText
 }) => {
   const [name, setName] = useState('');
-  const [isFaculty, setIsFaculty] = useState(defaultIsFaculty);
-  const [passphrase, setPassphrase] = useState('');
   const [lifespanHours, setLifespanHours] = useState(24);
   const [error, setError] = useState('');
 
@@ -52,13 +48,9 @@ export const DisplayNameModal: React.FC<DisplayNameModalProps> = ({
       setError('Please enter a display name');
       return;
     }
-    if (isFaculty && !passphrase.trim()) {
-      setError('Please enter the faculty passphrase');
-      return;
-    }
 
     setError('');
-    onSubmit(cleanName, isFaculty, isFaculty ? passphrase.trim() : undefined, isCreating ? lifespanHours : undefined);
+    onSubmit(cleanName, isCreating ? lifespanHours : undefined);
   };
 
   return (
@@ -93,7 +85,7 @@ export const DisplayNameModal: React.FC<DisplayNameModalProps> = ({
             </button>
           </div>
           <p className="text-caption text-apple-textSecondary dark:text-white/50 mt-1">
-            Visible only in this session. Never saved.
+            Visible only in this session. Never permanently saved.
           </p>
         </div>
 
@@ -134,40 +126,6 @@ export const DisplayNameModal: React.FC<DisplayNameModalProps> = ({
             </p>
           </div>
         )}
-
-        {/* Faculty Toggle */}
-        <div className="p-3 bg-apple-secondaryBg/80 dark:bg-white/5 rounded-ios-btn border border-apple-border/40 dark:border-white/10">
-          <label className="flex items-center justify-between cursor-pointer select-none">
-            <div className="flex items-center gap-2">
-              <Shield className={`w-4 h-4 ${isFaculty ? 'text-amber-500' : 'text-apple-textSecondary dark:text-white/50'}`} />
-              <span className="text-subhead font-medium text-apple-textPrimary dark:text-white">I'm Faculty / Instructor</span>
-            </div>
-            <input
-              type="checkbox"
-              checked={isFaculty}
-              onChange={(e) => setIsFaculty(e.target.checked)}
-              className="w-4 h-4 accent-apple-blue rounded cursor-pointer"
-            />
-          </label>
-
-          {isFaculty && (
-            <div className="mt-2.5 pt-2.5 border-t border-apple-border/50 dark:border-white/10 animate-fade-in">
-              <label className="block text-footnote text-apple-textSecondary dark:text-white/70 mb-1">
-                Faculty Passphrase
-              </label>
-              <input
-                type="password"
-                value={passphrase}
-                onChange={(e) => {
-                  setPassphrase(e.target.value);
-                  setError('');
-                }}
-                placeholder="Enter passphrase (default: faculty123)"
-                className="w-full px-3.5 py-2 bg-white dark:bg-[#1C1C1E] rounded-ios-input text-body text-apple-textPrimary dark:text-white placeholder:text-apple-textSecondary/50 dark:placeholder:text-white/30 outline-none border border-apple-border dark:border-white/10 focus:ring-2 focus:ring-apple-blue/80 transition-all text-sm"
-              />
-            </div>
-          )}
-        </div>
 
         {error && (
           <p className="text-footnote text-apple-red font-medium animate-shake">

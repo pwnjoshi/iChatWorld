@@ -200,13 +200,13 @@ export const FacultySlideOver: React.FC<FacultySlideOverProps> = ({
                     className="flex items-center justify-between p-2 rounded-lg bg-white border border-apple-border/40"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <Avatar name={m.displayName} isFaculty={m.isFaculty} isCreator={m.isCreator} size="sm" />
+                      <Avatar name={m.displayName} isCreator={m.isCreator} size="sm" />
                       <span className="text-footnote font-medium text-apple-textPrimary truncate">
                         {m.displayName} {isSelf ? '(You)' : ''}
                       </span>
                     </div>
 
-                    {!isSelf && !m.isFaculty && (
+                    {!isSelf && !m.isCreator && (
                       <button
                         onClick={() => {
                           if (window.confirm(`Remove ${m.displayName} from this room?`)) {

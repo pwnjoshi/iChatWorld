@@ -5,6 +5,7 @@ import { BarChart2, Check, Lock, Trash2 } from 'lucide-react';
 interface PollCardProps {
   poll: Poll;
   currentSocketId?: string;
+  isHost?: boolean;
   isFaculty?: boolean;
   onVote: (pollId: string, optionId: string) => Promise<boolean>;
   onClosePoll: (pollId: string) => Promise<boolean>;
@@ -14,14 +15,14 @@ interface PollCardProps {
 export const PollCard: React.FC<PollCardProps> = ({
   poll,
   currentSocketId,
-  isFaculty,
+  isHost,
   onVote,
   onClosePoll,
   onDeletePoll
 }) => {
   const userVotedOption = poll.options.find(opt => currentSocketId && opt.votes.includes(currentSocketId));
   const isCreator = currentSocketId && poll.creatorId === currentSocketId;
-  const canManage = isFaculty || isCreator;
+  const canManage = isHost || isCreator;
 
   const handleDelete = () => {
     if (onDeletePoll && window.confirm('Delete this poll from the room?')) {

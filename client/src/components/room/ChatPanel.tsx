@@ -281,8 +281,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const isFacultyOrHost = currentMember?.isFaculty || currentMember?.isCreator;
-  const canSend = !chatMuted || isFacultyOrHost;
+  const isHost = !!currentMember?.isCreator;
+  const canSend = !chatMuted || isHost;
 
   useEffect(() => {
     if (!searchQuery && !editingMessageId) {
@@ -392,7 +392,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           <PollCard
             poll={activePoll}
             currentSocketId={currentMember?.socketId}
-            isFaculty={isFacultyOrHost}
+            isFaculty={isHost}
             onVote={onVotePoll}
             onClosePoll={onClosePoll}
             onDeletePoll={onDeletePoll}
@@ -422,7 +422,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
             const isOwn = msg.senderId === currentMember?.socketId;
             const isAI = msg.senderId === 'ai';
-            const canModerateDelete = isFacultyOrHost || isOwn;
+            const canModerateDelete = isHost || isOwn;
             const showSender = !isOwn && (index === 0 || messages[index - 1].senderId !== msg.senderId);
 
             // Deleted message state
@@ -457,11 +457,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         <span className="text-[12px] font-bold text-apple-textPrimary dark:text-white">
                           {msg.senderName}
                         </span>
-                        {msg.isFaculty && (
-                          <span className="text-[9px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/60 dark:text-amber-300 px-1.5 py-0.2 rounded-full">
-                            Faculty
-                          </span>
-                        )}
                       </>
                     )}
                   </div>
@@ -471,7 +466,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                   {!isOwn && (
                     <Avatar
                       name={msg.senderName}
-                      isFaculty={msg.isFaculty}
                       isAI={isAI}
                       size="sm"
                       className="mt-0.5 shrink-0"
@@ -514,8 +508,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             ? 'bg-apple-blue text-white rounded-br-xs'
                             : isAI
                             ? 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white border border-purple-200/60 dark:border-purple-900/40 rounded-bl-xs'
-                            : msg.isFaculty
-                            ? 'bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border border-amber-200/70 dark:border-amber-800 rounded-bl-xs'
                             : 'bg-white dark:bg-[#1C1C1E] text-apple-textPrimary dark:text-white border border-apple-border/50 dark:border-white/10 rounded-bl-xs'
                         }`}
                       >
@@ -725,10 +717,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             onSendAudio={onSendAudio}
             onCancel={() => setIsRecordingVoice(false)}
           />
-        ) : chatMuted && !isFacultyOrHost ? (
+        ) : chatMuted && !isHost ? (
           <div className="flex items-center justify-center gap-2 py-2 px-3 bg-apple-secondaryBg dark:bg-white/10 rounded-2xl text-apple-textSecondary text-footnote">
             <VolumeX className="w-4 h-4 text-apple-textSecondary" />
-            <span>Chat is muted by faculty</span>
+            <span>Chat is muted by room host</span>
           </div>
         ) : (
           <form onSubmit={handleSend} className="space-y-1.5">

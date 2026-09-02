@@ -131,15 +131,15 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  const handleCreateRoom = async (displayName: string, isFaculty: boolean, passphrase?: string, lifespanHours?: number) => {
-    const result = await createRoom(displayName, isFaculty, passphrase, lifespanHours);
+  const handleCreateRoom = async (displayName: string, lifespanHours?: number) => {
+    const result = await createRoom(displayName, false, undefined, lifespanHours);
     if (result.success && result.code) {
       window.history.replaceState(null, '', `?code=${result.code}`);
     }
   };
 
-  const handleJoinRoom = async (code: string, displayName: string, isFaculty: boolean, passphrase?: string) => {
-    const result = await joinRoom(code, displayName, isFaculty, passphrase);
+  const handleJoinRoom = async (code: string, displayName: string) => {
+    const result = await joinRoom(code, displayName, false);
     if (result.success) {
       window.history.replaceState(null, '', `?code=${code}`);
     }
@@ -148,9 +148,8 @@ export const App: React.FC = () => {
   const handleSwitchRoom = async (targetCode: string) => {
     const target = activeRooms.find(r => r.code === targetCode);
     const displayName = target ? target.displayName : (currentMember?.displayName || 'User');
-    const isFaculty = target ? target.isFaculty : false;
 
-    const result = await switchRoom(targetCode, displayName, isFaculty);
+    const result = await switchRoom(targetCode, displayName, false);
     if (result.success) {
       window.history.replaceState(null, '', `?code=${targetCode}`);
     } else {
@@ -160,12 +159,12 @@ export const App: React.FC = () => {
 
   const handleJoinNewRoomFromInside = (code: string) => {
     const displayName = currentMember?.displayName || 'User';
-    handleJoinRoom(code, displayName, false);
+    handleJoinRoom(code, displayName);
   };
 
   const handleCreateNewRoomFromInside = () => {
     const displayName = currentMember?.displayName || 'User';
-    handleCreateRoom(displayName, currentMember?.isFaculty || false);
+    handleCreateRoom(displayName);
   };
 
   const handleRemoveRoomFromHistory = (code: string) => {

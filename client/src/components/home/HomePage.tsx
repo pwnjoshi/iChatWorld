@@ -19,8 +19,8 @@ import {
 } from 'lucide-react';
 
 interface HomePageProps {
-  onCreateRoom: (displayName: string, isFaculty: boolean, passphrase?: string, lifespanHours?: number) => Promise<void>;
-  onJoinRoom: (code: string, displayName: string, isFaculty: boolean, passphrase?: string) => Promise<void>;
+  onCreateRoom: (displayName: string, lifespanHours?: number) => Promise<void>;
+  onJoinRoom: (code: string, displayName: string) => Promise<void>;
   initialCode?: string;
   isDarkMode?: boolean;
   onToggleDarkMode?: () => void;
@@ -64,11 +64,11 @@ export const HomePage: React.FC<HomePageProps> = ({
     setModalMode('join');
   };
 
-  const handleModalSubmit = async (displayName: string, isFaculty: boolean, passphrase?: string, lifespanHours?: number) => {
+  const handleModalSubmit = async (displayName: string, lifespanHours?: number) => {
     if (modalMode === 'create') {
-      await onCreateRoom(displayName, isFaculty, passphrase, lifespanHours);
+      await onCreateRoom(displayName, lifespanHours);
     } else if (modalMode === 'join') {
-      await onJoinRoom(formatRoomCode(codeInput), displayName, isFaculty, passphrase);
+      await onJoinRoom(formatRoomCode(codeInput), displayName);
     }
     setModalMode(null);
   };

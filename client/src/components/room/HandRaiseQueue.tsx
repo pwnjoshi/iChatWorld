@@ -11,7 +11,7 @@ interface HandRaiseModalProps {
   handsRaised: HandRaise[];
   onLowerHand: (targetSocketId?: string) => Promise<boolean>;
   onLowerAllHands: () => Promise<boolean>;
-  isFaculty?: boolean;
+  isHost?: boolean;
 }
 
 export const HandRaiseModal: React.FC<HandRaiseModalProps> = ({
@@ -20,7 +20,7 @@ export const HandRaiseModal: React.FC<HandRaiseModalProps> = ({
   handsRaised,
   onLowerHand,
   onLowerAllHands,
-  isFaculty
+  isHost
 }) => {
   if (!isOpen) return null;
 
@@ -35,7 +35,7 @@ export const HandRaiseModal: React.FC<HandRaiseModalProps> = ({
             </span>
           </div>
 
-          {isFaculty && handsRaised.length > 0 && (
+          {isHost && handsRaised.length > 0 && (
             <button
               onClick={onLowerAllHands}
               className="text-caption font-semibold text-apple-red hover:text-red-700 transition-colors flex items-center gap-1"
@@ -73,7 +73,7 @@ export const HandRaiseModal: React.FC<HandRaiseModalProps> = ({
                   </div>
                 </div>
 
-                {isFaculty && (
+                {isHost && (
                   <button
                     onClick={() => onLowerHand(hand.socketId)}
                     className="p-2 rounded-full bg-white hover:bg-apple-green hover:text-white text-apple-green border border-apple-border shadow-sm transition-colors text-caption font-medium flex items-center gap-1 shrink-0"
