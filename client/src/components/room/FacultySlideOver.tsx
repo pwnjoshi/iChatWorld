@@ -75,10 +75,10 @@ export const FacultySlideOver: React.FC<FacultySlideOverProps> = ({
             </div>
             <div>
               <h3 className="text-headline font-semibold text-apple-textPrimary">
-                Faculty Controls
+                Host Controls
               </h3>
               <p className="text-caption text-apple-textSecondary">
-                Moderation and classroom tools
+                Moderation and room management
               </p>
             </div>
           </div>

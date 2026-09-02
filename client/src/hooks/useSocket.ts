@@ -35,11 +35,12 @@ export function useSocket() {
   useEffect(() => {
     const socketTarget = BACKEND_URL || window.location.origin;
     const socketInstance = io(socketTarget, {
-      transports: ['polling', 'websocket'],
+      transports: ['websocket', 'polling'],  // WebSocket first — avoids stale polling 400s
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      timeout: 20000
+      timeout: 20000,
+      forceNew: true,
     });
 
     socketInstance.on('connect', () => {

@@ -55,7 +55,6 @@ interface RoomHeaderProps {
   onToggleRaiseHand: () => void;
   onLeaveRoom: () => void;
   onEndRoom: () => void;
-  onElevatePrompt: () => void;
 }
 
 export const RoomHeader: React.FC<RoomHeaderProps> = ({
@@ -83,8 +82,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
   onStartScreenShare,
   onToggleRaiseHand,
   onLeaveRoom,
-  onEndRoom,
-  onElevatePrompt
+  onEndRoom
 }) => {
   const [copied, setCopied] = useState(false);
   const [showMemberList, setShowMemberList] = useState(false);
@@ -291,9 +289,9 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                               {member.displayName} {member.socketId === currentMember?.socketId && '(You)'}
                             </span>
                           </div>
-                          {member.isFaculty && (
+                          {(member.isFaculty || member.isCreator) && (
                             <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/60 dark:text-amber-300 px-1.5 py-0.5 rounded-full">
-                              Faculty
+                              Host
                             </span>
                           )}
                         </div>
@@ -304,23 +302,15 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               )}
             </div>
 
-            {/* Faculty Controls */}
-            {isFacultyOrHost ? (
+            {/* Host Controls — only visible to the room creator/host */}
+            {isFacultyOrHost && (
               <button
                 onClick={onOpenFacultyPanel}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold text-caption transition-colors"
-                title="Faculty Moderation Controls"
+                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-800/60 text-amber-900 dark:text-amber-200 font-semibold text-caption transition-colors border border-amber-200/60 dark:border-amber-700/40"
+                title="Host Moderation Controls"
               >
-                <Shield className="w-3 h-3 text-amber-700" />
-                <span className="hidden sm:inline">Controls</span>
-              </button>
-            ) : (
-              <button
-                onClick={onElevatePrompt}
-                title="Unlock Faculty Controls"
-                className="p-1.5 rounded-full text-apple-textSecondary hover:text-amber-600 transition-colors"
-              >
-                <Shield className="w-3.5 h-3.5" />
+                <Shield className="w-3 h-3 text-amber-700 dark:text-amber-300" />
+                <span className="hidden sm:inline">Host</span>
               </button>
             )}
 

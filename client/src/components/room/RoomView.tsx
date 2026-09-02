@@ -173,11 +173,6 @@ export const RoomView: React.FC<RoomViewProps> = ({
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isExportNotesOpen, setIsExportNotesOpen] = useState(false);
   const [isMobileToolsOpen, setIsMobileToolsOpen] = useState(false);
-  const [isElevateModalOpen, setIsElevateModalOpen] = useState(false);
-  const [elevatePassphrase, setElevatePassphrase] = useState('');
-  const [elevateError, setElevateError] = useState('');
-
-  // Real-time local timer computation
   const [timerSecondsLeft, setTimerSecondsLeft] = useState<number>(0);
   useEffect(() => {
     if (!room?.timerState) {
@@ -207,23 +202,6 @@ export const RoomView: React.FC<RoomViewProps> = ({
       await onLowerHand();
     } else {
       await onRaiseHand();
-    }
-  };
-
-  const handleElevateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!elevatePassphrase.trim()) {
-      setElevateError('Please enter passphrase');
-      return;
-    }
-
-    const success = await onElevateFaculty(elevatePassphrase.trim());
-    if (success) {
-      setIsElevateModalOpen(false);
-      setElevatePassphrase('');
-      setElevateError('');
-    } else {
-      setElevateError('Invalid faculty passphrase');
     }
   };
 
@@ -269,7 +247,6 @@ export const RoomView: React.FC<RoomViewProps> = ({
         onToggleRaiseHand={handleToggleRaiseHand}
         onLeaveRoom={onLeaveRoom}
         onEndRoom={onEndRoom}
-        onElevatePrompt={() => setIsElevateModalOpen(true)}
       />
 
       {/* Prominent Synchronized Focus Timer Island */}
@@ -679,53 +656,6 @@ export const RoomView: React.FC<RoomViewProps> = ({
         room={room}
         currentMember={currentMember}
       />
-
-      {/* Elevate to Faculty Passphrase Modal */}
-      <Modal
-        isOpen={isElevateModalOpen}
-        onClose={() => {
-          setIsElevateModalOpen(false);
-          setElevatePassphrase('');
-          setElevateError('');
-        }}
-        title="Unlock Faculty Controls"
-      >
-        <form onSubmit={handleElevateSubmit} className="space-y-4">
-          <p className="text-footnote text-apple-textSecondary dark:text-white/60">
-            Enter the institutional faculty passphrase to access moderation controls, chat mute, and announcement pinning.
-          </p>
-
-          <div className="space-y-1">
-            <input
-              type="password"
-              value={elevatePassphrase}
-              onChange={(e) => setElevatePassphrase(e.target.value)}
-              placeholder="Enter faculty passphrase"
-              className="w-full px-4 py-3 bg-apple-secondaryBg dark:bg-white/10 rounded-ios-input text-body text-apple-textPrimary dark:text-white placeholder:text-apple-textSecondary/50 outline-none focus:ring-2 focus:ring-apple-blue"
-              autoFocus
-            />
-            {elevateError && (
-              <p className="text-caption text-apple-red font-medium">{elevateError}</p>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setIsElevateModalOpen(false)}
-              className="px-4 py-2 rounded-ios-btn text-footnote font-medium text-apple-textSecondary hover:bg-apple-secondaryBg"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 rounded-ios-btn bg-apple-blue hover:bg-apple-blueHover text-white font-medium text-footnote shadow-sm"
-            >
-              Unlock
-            </button>
-          </div>
-        </form>
-      </Modal>
 
       {/* Native Mobile iOS Studio Tools Bottom Sheet Drawer */}
       {isMobileToolsOpen && (
