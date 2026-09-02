@@ -185,10 +185,9 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
             {/* Mobile Studio Tools Trigger Button */}
             <button
               onClick={onOpenTools}
-              className="flex md:hidden items-center gap-1.5 px-3 py-1 rounded-full bg-apple-blue text-white font-bold text-caption shadow-sm active:scale-95 transition-all"
+              className="flex md:hidden items-center px-3 py-1 rounded-full bg-apple-blue text-white font-bold text-caption shadow-sm active:scale-95 transition-all"
               title="Open Studio Tools"
             >
-              <Sparkles className="w-3.5 h-3.5" />
               <span>Tools</span>
             </button>
 
