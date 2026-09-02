@@ -219,29 +219,114 @@ def dfs(graph, start, visited=None):
 \`\`\``;
     }
 
-    // 2. Binary Search & Searching
-    if (cleanQ.includes('binary search') || cleanQ.includes('bsearch')) {
-      return `### 🔍 Binary Search Algorithm
+    // 2. Code Generation (Java / Python / C++ / TypeScript / PPO / Web)
+    if (cleanQ.includes('code') || cleanQ.includes('java') || cleanQ.includes('python') || cleanQ.includes('c++') || cleanQ.includes('ppo') || cleanQ.includes('reinforcement learning') || cleanQ.includes('algorithm')) {
+      if (cleanQ.includes('ppo') || cleanQ.includes('proximal policy')) {
+        if (cleanQ.includes('java')) {
+          return `### 🤖 Proximal Policy Optimization (PPO) in Java
 
-Binary search finds an element in a **sorted array** in logarithmic time by repeatedly dividing the search interval in half.
+Here is a clean implementation of a **PPO Policy & Value Network Agent** in Java:
 
-\`\`\`python
-def binary_search(arr: list[int], target: int) -> int:
-    left, right = 0, len(arr) - 1
-    while left <= right:
-        mid = (left + right) // 2
-        if arr[mid] == target:
-            return mid
-        elif arr[mid] < target:
-            left = mid + 1
-        else:
-            right = mid - 1
-    return -1  # Target not found
+\`\`\`java
+import java.util.Arrays;
+import java.util.Random;
+
+public class PPOAgent {
+    private final double clipEpsilon = 0.2;
+    private final double learningRate = 0.001;
+    private final Random random = new Random();
+
+    // Calculate PPO Clipped Surrogate Objective
+    public double computePPOLoss(double advantage, double oldLogProb, double newLogProb) {
+        double ratio = Math.exp(newLogProb - oldLogProb);
+        double surr1 = ratio * advantage;
+        double surr2 = Math.max(1.0 - clipEpsilon, Math.min(1.0 + clipEpsilon, ratio)) * advantage;
+        return -Math.min(surr1, surr2); // Minimize negative objective
+    }
+
+    // Example Action Sampling with Gaussian Policy
+    public double selectAction(double stateMean, double stateStd) {
+        return stateMean + random.nextGaussian() * stateStd;
+    }
+
+    public static void main(String[] args) {
+        PPOAgent agent = new PPOAgent();
+        double advantage = 1.45;
+        double oldLogProb = -0.52;
+        double newLogProb = -0.48;
+
+        double loss = agent.computePPOLoss(advantage, oldLogProb, newLogProb);
+        System.out.printf("PPO Loss: %.4f%n", loss);
+        System.out.printf("Sampled Action: %.4f%n", agent.selectAction(0.0, 1.0));
+    }
+}
 \`\`\`
 
-* **Time Complexity**: $O(\\log n)$
-* **Space Complexity**: $O(1)$ auxiliary
-* **Key Requirement**: The array MUST be sorted beforehand.`;
+* **Core Innovation**: Clips the probability ratio $r_t(\\theta) = \\frac{\\pi_\\theta(a_t|s_t)}{\\pi_{\\theta_{old}}(a_t|s_t)}$ within $[1-\\epsilon, 1+\\epsilon]$ to prevent destructively large policy updates.
+* **Complexity**: $O(E \\cdot N)$ where $E$ is training epochs and $N$ is minibatch size.`;
+        }
+
+        return `### 🤖 Proximal Policy Optimization (PPO) in Python (PyTorch)
+
+\`\`\`python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+class PPOActorCritic(nn.Module):
+    def __init__(self, state_dim, action_dim, clip_eps=0.2):
+        super().__init__()
+        self.clip_eps = clip_eps
+        
+        # Actor network (Policy)
+        self.actor = nn.Sequential(
+            nn.Linear(state_dim, 64),
+            nn.Tanh(),
+            nn.Linear(64, action_dim),
+            nn.Softmax(dim=-1)
+        )
+        # Critic network (Value function)
+        self.critic = nn.Sequential(
+            nn.Linear(state_dim, 64),
+            nn.Tanh(),
+            nn.Linear(64, 1)
+        )
+
+    def evaluate(self, states, actions, old_log_probs, advantages):
+        action_probs = self.actor(states)
+        dist = torch.distributions.Categorical(action_probs)
+        new_log_probs = dist.log_prob(actions)
+        
+        # Calculate clipped surrogate ratio
+        ratios = torch.exp(new_log_probs - old_log_probs)
+        surr1 = ratios * advantages
+        surr2 = torch.clamp(ratios, 1 - self.clip_eps, 1 + self.clip_eps) * advantages
+        
+        actor_loss = -torch.min(surr1, surr2).mean()
+        return actor_loss
+\`\`\``;
+      }
+
+      if (cleanQ.includes('java')) {
+        return `### ☕ Java Implementation
+
+\`\`\`java
+package com.ichatworld.demo;
+
+import java.util.*;
+
+public class Solution {
+    public static void main(String[] args) {
+        System.out.println("Executing Java Solution...");
+        
+        List<String> items = Arrays.asList("Spring Boot", "WebRTC", "Socket.IO", "React");
+        items.forEach(item -> System.out.println("• Feature: " + item));
+    }
+}
+\`\`\`
+
+Let me know what specific algorithm, data structure, or web framework (Spring Boot / HTTP / WebSockets) you would like to implement in Java!`;
+      }
     }
 
     // 3. WebRTC / P2P / Networking
