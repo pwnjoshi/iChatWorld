@@ -300,7 +300,7 @@ export const Counter: React.FC = () => {
     // 6. Dynamic Live Knowledge Lookup (Wikipedia Global OpenSearch & Summary API)
     try {
       const cleanSearch = cleanQ
-        .replace(/^(can you )?(please )?(tell|tell me|what is|what are|explain|who is|who was|define|describe|about|can you tell me about)\s+(about\s+)?/i, '')
+        .replace(/^(can you\s+)?(please\s+)?(tell\s+me\s+about|tell\s+about|tell\s+me|tell|what\s+is\s+a|what\s+is\s+an|what\s+is|what\s+are|explain\s+about|explain|who\s+is|who\s+was|define|describe|about)\s+/i, '')
         .replace(/[\?\!\.\,\;\:]+$/g, '')
         .trim();
 
