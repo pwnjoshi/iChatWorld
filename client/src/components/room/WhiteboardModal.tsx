@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Modal } from '../common/Modal.js';
+import { ConfirmDialog } from '../common/ConfirmDialog.js';
 import { WhiteboardStroke, WhiteboardPoint } from '../../types/index.js';
 import {
   Pen,
@@ -72,7 +73,6 @@ type ToolType =
   | EraserSubType
   | 'select'
   | 'text'
-  | 'note'
   | 'rect'
   | 'circle'
   | 'triangle'
@@ -102,15 +102,6 @@ const DEFAULT_PEN_BOX: PenBoxSlot[] = [
   { id: 'p4', type: 'pencil', color: '#34C759', size: 3, opacity: 85, label: '2.0' },
   { id: 'p5', type: 'brush', color: '#FF9500', size: 10, opacity: 95, label: '1.75' },
   { id: 'p6', type: 'ballpoint', color: '#1C1C1E', size: 2, opacity: 100, label: '0.6' }
-];
-
-const NOTE_COLORS = [
-  { id: 'yellow', name: 'Canary Yellow', bg: '#FEF08A', border: '#FACC15', text: '#713F12' },
-  { id: 'green', name: 'Mint Green', bg: '#BBF7D0', border: '#4ADE80', text: '#14532D' },
-  { id: 'blue', name: 'Sky Blue', bg: '#BAE6FD', border: '#38BDF8', text: '#0C4A6E' },
-  { id: 'purple', name: 'Lavender', bg: '#E9D5FF', border: '#C084FC', text: '#581C87' },
-  { id: 'pink', name: 'Coral Pink', bg: '#FECDD3', border: '#FB7185', text: '#881337' },
-  { id: 'orange', name: 'Peach', bg: '#FED7AA', border: '#FB923C', text: '#7C2D12' }
 ];
 
 const APPLE_PALETTE = [
@@ -189,16 +180,12 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   const [textFontSize, setTextFontSize] = useState(24);
   const [isTextBold, setIsTextBold] = useState(true);
 
-  // Sticky Note Modal / Input State
-  const [noteInputPos, setNoteInputPos] = useState<WhiteboardPoint | null>(null);
-  const [noteTitle, setNoteTitle] = useState('Idea Note');
-  const [noteText, setNoteText] = useState('');
-  const [noteColor, setNoteColor] = useState(NOTE_COLORS[0].bg);
-
   // Menu Dropdowns
   const [isPenMenuOpen, setIsPenMenuOpen] = useState(false);
   const [isEraserMenuOpen, setIsEraserMenuOpen] = useState(false);
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false);
+  const [isCanvasSettingsOpen, setIsCanvasSettingsOpen] = useState(false);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [showToolCustomizer, setShowToolCustomizer] = useState(false);
 
   // Shape Move & Selection state
@@ -669,14 +656,18 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     // Base Opacity
     const baseAlpha = stroke.opacity !== undefined ? stroke.opacity / 100 : 1;
 
-    // Handle Text Label Stroke
+    // Handle Text Label Stroke (Direct In-Canvas Text)
     if (stroke.type === 'text' && stroke.text) {
       const p = points[0];
       const fontSize = stroke.fontSize || 24;
-      ctx.font = `${stroke.fontStyle === 'bold' ? 'bold' : '600'} ${fontSize}px -apple-system, system-ui, sans-serif`;
+      ctx.font = `${stroke.fontStyle === 'bold' ? 'bold' : '500'} ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
       ctx.fillStyle = stroke.color;
       ctx.globalAlpha = baseAlpha;
-      ctx.fillText(stroke.text, p.x, p.y);
+      ctx.textBaseline = 'top';
+      const lines = stroke.text.split('\n');
+      lines.forEach((l, idx) => {
+        ctx.fillText(l, p.x, p.y + idx * (fontSize * 1.25));
+      });
       ctx.restore();
       return;
     }
@@ -693,77 +684,6 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       ctx.restore();
       return;
     }
-    // Handle Sticky Note Card
-    if (stroke.type === 'note') {
-      const p = points[0];
-      const w = stroke.noteWidth || 220;
-      const h = stroke.noteHeight || 180;
-      const bgColor = stroke.noteColor || '#FEF08A';
-      const title = stroke.noteTitle || 'Sticky Note';
-      const text = stroke.noteText || '';
-
-      // 1. Drop shadow
-      ctx.save();
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
-      ctx.shadowBlur = 12;
-      ctx.shadowOffsetY = 4;
-
-      // 2. Note card background
-      ctx.fillStyle = bgColor;
-      ctx.beginPath();
-      ctx.roundRect(p.x, p.y, w, h, 12);
-      ctx.fill();
-      ctx.restore();
-
-      // 3. Top header accent strip
-      ctx.save();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-      ctx.beginPath();
-      ctx.roundRect(p.x, p.y, w, 28, [12, 12, 0, 0]);
-      ctx.fill();
-
-      // 4. Dog-ear folded corner at bottom right
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
-      ctx.beginPath();
-      ctx.moveTo(p.x + w - 16, p.y + h);
-      ctx.lineTo(p.x + w, p.y + h - 16);
-      ctx.lineTo(p.x + w - 16, p.y + h - 16);
-      ctx.closePath();
-      ctx.fill();
-
-      // 5. Note Title
-      ctx.font = 'bold 13px -apple-system, system-ui, sans-serif';
-      ctx.fillStyle = '#1C1C1E';
-      ctx.fillText(title, p.x + 12, p.y + 19);
-
-      // 6. Note Body Text with automatic word-wrap
-      ctx.font = '500 12px -apple-system, system-ui, sans-serif';
-      ctx.fillStyle = '#2C2C2E';
-      const maxTextW = w - 24;
-      const words = text.split(/\s+/);
-      let line = '';
-      let lineY = p.y + 46;
-      for (const word of words) {
-        const testLine = line + (line ? ' ' : '') + word;
-        const metrics = ctx.measureText(testLine);
-        if (metrics.width > maxTextW && line !== '') {
-          ctx.fillText(line, p.x + 12, lineY);
-          line = word;
-          lineY += 16;
-          if (lineY > p.y + h - 20) break;
-        } else {
-          line = testLine;
-        }
-      }
-      if (line && lineY <= p.y + h - 20) {
-        ctx.fillText(line, p.x + 12, lineY);
-      }
-
-      ctx.restore();
-      ctx.restore();
-      return;
-    }
-
     // 1. HIGHLIGHTER (Unified Single-Path Ribbon — 0 Overlap Beads)
     if (stroke.type === 'highlighter') {
       ctx.globalCompositeOperation = isDarkBg ? 'screen' : 'multiply';
@@ -781,15 +701,12 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       } else {
         ctx.beginPath();
         ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 0; i < points.length - 1; i++) {
-          const p1 = points[i];
-          const p2 = points[i + 1];
-          const midX = (p1.x + p2.x) / 2;
-          const midY = (p1.y + p2.y) / 2;
-          ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+        for (let i = 1; i < points.length - 1; i++) {
+          const midX = (points[i].x + points[i + 1].x) / 2;
+          const midY = (points[i].y + points[i + 1].y) / 2;
+          ctx.quadraticCurveTo(points[i].x, points[i].y, midX, midY);
         }
-        const last = points[points.length - 1];
-        ctx.lineTo(last.x, last.y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
         ctx.stroke();
       }
 
@@ -808,15 +725,15 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 0.95 * baseAlpha;
       ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.size;
+      ctx.lineWidth = Math.max(1, stroke.size);
     } else if (stroke.type === 'pencil') {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 0.65 * baseAlpha;
+      ctx.globalAlpha = 0.7 * baseAlpha;
       ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = Math.max(1, stroke.size * 0.7);
+      ctx.lineWidth = Math.max(1, stroke.size * 0.75);
     } else if (stroke.type === 'brush') {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 0.88 * baseAlpha;
+      ctx.globalAlpha = 0.9 * baseAlpha;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size * 1.5;
     } else if (stroke.type === 'fountain') {
@@ -826,11 +743,11 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       ctx.lineWidth = stroke.size;
     } else if (stroke.type === 'marker') {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 0.6 * baseAlpha;
+      ctx.globalAlpha = 0.65 * baseAlpha;
       ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.size * 1.5;
+      ctx.lineWidth = stroke.size * 1.4;
       ctx.shadowColor = stroke.color;
-      ctx.shadowBlur = 3;
+      ctx.shadowBlur = 2;
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = baseAlpha;
@@ -921,55 +838,84 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       ctx.arc(p.x, p.y, Math.max(1, r), 0, 2 * Math.PI);
       ctx.fillStyle = stroke.type === 'eraser' ? (isDarkBg ? '#121212' : '#FFFFFF') : stroke.color;
       ctx.fill();
-    } else {
-      // Dynamic Pen Bézier Spline with Pressure Curves
-      for (let i = 0; i < points.length - 1; i++) {
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        const midX = (p1.x + p2.x) / 2;
-        const midY = (p1.y + p2.y) / 2;
+    } else if (stroke.type === 'fountain' || stroke.type === 'brush') {
+      // ── Calligraphic Liquid Ink Fountain Pen & Brush Ribbon ──
+      const isFountain = stroke.type === 'fountain';
+      const pFactor = pressureSensitivity / 100;
+      const leftPts: WhiteboardPoint[] = [];
+      const rightPts: WhiteboardPoint[] = [];
 
-        const pressure = ((p1.pressure ?? 0.5) + (p2.pressure ?? 0.5)) / 2;
-        const pFactor = (pressureSensitivity / 100);
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        const next = points[i + 1] || p;
+        const prev = points[i - 1] || p;
+        const dx = next.x - prev.x;
+        const dy = next.y - prev.y;
+        const angle = Math.atan2(dy, dx);
+        const perp = angle + Math.PI / 2;
 
-        if (stroke.type === 'eraser') {
-          ctx.lineWidth = stroke.size * 2.5;
-        } else if (stroke.type === 'ballpoint') {
-          // Ballpoint: strictly uniform crisp line
-          ctx.lineWidth = Math.max(1, stroke.size);
-        } else if (stroke.type === 'fountain') {
-          // Fountain Pen: calligraphic angle-sensitive nib with expressive stroke taper
-          const dx = p2.x - p1.x;
-          const dy = p2.y - p1.y;
-          const angle = Math.atan2(dy, dx);
+        const pressure = p.pressure ?? 0.5;
+        let halfW = stroke.size / 2;
+
+        if (isFountain) {
           const angleMod = 0.35 + 0.65 * Math.abs(Math.sin(angle - Math.PI / 4));
-          ctx.lineWidth = Math.max(1, stroke.size * (0.25 + pressure * 1.6 * angleMod * pFactor));
-        } else if (stroke.type === 'pencil') {
-          // Pencil: softer, thinner graphite sketch line
-          ctx.lineWidth = Math.max(1, stroke.size * (0.4 + pressure * 0.5 * pFactor));
-        } else if (stroke.type === 'brush') {
-          // Art Brush: dynamic wide responsive sweep
-          ctx.lineWidth = Math.max(2, stroke.size * (0.2 + pressure * 2.2 * pFactor));
-        } else if (stroke.type === 'marker') {
-          // Marker: soft, wide, luminous
-          ctx.lineWidth = Math.max(2, stroke.size * 1.5);
+          halfW = Math.max(0.75, (stroke.size / 2) * (0.35 + 1.2 * angleMod * (0.5 + 0.9 * pressure * pFactor)));
         } else {
-          // Standard Ink Pen: natural smooth ink line
-          ctx.lineWidth = Math.max(1, stroke.size * (0.5 + pressure * 0.8 * pFactor));
+          halfW = Math.max(1, (stroke.size / 2) * (0.3 + 1.5 * pressure * pFactor));
         }
 
-        ctx.beginPath();
-        if (i === 0) {
-          ctx.moveTo(p1.x, p1.y);
-          ctx.lineTo(midX, midY);
-        } else {
-          const prevMidX = (points[i - 1].x + p1.x) / 2;
-          const prevMidY = (points[i - 1].y + p1.y) / 2;
-          ctx.moveTo(prevMidX, prevMidY);
-          ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
-        }
-        ctx.stroke();
+        leftPts.push({
+          x: p.x + Math.cos(perp) * halfW,
+          y: p.y + Math.sin(perp) * halfW
+        });
+        rightPts.push({
+          x: p.x - Math.cos(perp) * halfW,
+          y: p.y - Math.sin(perp) * halfW
+        });
       }
+
+      ctx.beginPath();
+      ctx.fillStyle = stroke.color;
+      ctx.moveTo(leftPts[0].x, leftPts[0].y);
+
+      for (let i = 1; i < leftPts.length - 1; i++) {
+        const midX = (leftPts[i].x + leftPts[i + 1].x) / 2;
+        const midY = (leftPts[i].y + leftPts[i + 1].y) / 2;
+        ctx.quadraticCurveTo(leftPts[i].x, leftPts[i].y, midX, midY);
+      }
+      ctx.lineTo(leftPts[leftPts.length - 1].x, leftPts[leftPts.length - 1].y);
+      ctx.lineTo(rightPts[rightPts.length - 1].x, rightPts[rightPts.length - 1].y);
+
+      for (let i = rightPts.length - 2; i >= 1; i--) {
+        const midX = (rightPts[i].x + rightPts[i - 1].x) / 2;
+        const midY = (rightPts[i].y + rightPts[i - 1].y) / 2;
+        ctx.quadraticCurveTo(rightPts[i].x, rightPts[i].y, midX, midY);
+      }
+      ctx.lineTo(rightPts[0].x, rightPts[0].y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Rounded caps at stroke start & end
+      ctx.beginPath();
+      ctx.arc(points[0].x, points[0].y, Math.max(0.8, stroke.size * 0.25), 0, 2 * Math.PI);
+      ctx.arc(points[points.length - 1].x, points[points.length - 1].y, Math.max(0.8, stroke.size * 0.25), 0, 2 * Math.PI);
+      ctx.fill();
+    } else {
+      // ── Ultra-Smooth Continuous Spline for Ink Pen, Ballpoint, Pencil & Eraser ──
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+
+      if (points.length === 2) {
+        ctx.lineTo(points[1].x, points[1].y);
+      } else {
+        for (let i = 1; i < points.length - 1; i++) {
+          const midX = (points[i].x + points[i + 1].x) / 2;
+          const midY = (points[i].y + points[i + 1].y) / 2;
+          ctx.quadraticCurveTo(points[i].x, points[i].y, midX, midY);
+        }
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+      }
+      ctx.stroke();
     }
 
     ctx.restore();
@@ -1097,18 +1043,10 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     // Broadcast cursor position
     onEmitCursor?.(startPoint.x, startPoint.y, true);
 
-    // 1. TEXT TOOL: Spawn text note placement
+    // 1. TEXT TOOL: Spawn in-place canvas text placement
     if (tool === 'text') {
       setTextInputPos(startPoint);
       setTextInputString('');
-      return;
-    }
-
-    // 1.5 STICKY NOTE TOOL: Spawn sticky note placement
-    if (tool === 'note') {
-      setNoteInputPos(startPoint);
-      setNoteTitle('Quick Note');
-      setNoteText('');
       return;
     }
 
@@ -1396,35 +1334,6 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     setTool('select');
   };
 
-  // Submit Sticky Note onto Canvas
-  const handleCommitNote = () => {
-    if (!noteInputPos || (!noteTitle.trim() && !noteText.trim())) {
-      setNoteInputPos(null);
-      return;
-    }
-    const noteStroke: WhiteboardStroke = {
-      id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-      type: 'note',
-      color: '#1C1C1E',
-      size: 1,
-      opacity: 100,
-      points: [noteInputPos],
-      noteTitle: noteTitle.trim() || 'Sticky Note',
-      noteText: noteText.trim(),
-      noteColor: noteColor,
-      noteWidth: 220,
-      noteHeight: 180
-    };
-
-    setLocalStrokes((prev) => [...prev, noteStroke]);
-    onEmitStroke(noteStroke);
-    setSelectedStrokeId(noteStroke.id);
-    setNoteInputPos(null);
-    setNoteTitle('Quick Note');
-    setNoteText('');
-    setTool('select');
-  };
-
   // Zoom Controls
   const handleZoomIn = () => setZoom((prev) => Math.min(3, prev + 0.2));
   const handleZoomOut = () => setZoom((prev) => Math.max(0.4, prev - 0.2));
@@ -1645,30 +1554,9 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             className={`p-2 rounded-lg transition-all ${
               tool === 'text' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
             }`}
-            title="Text Label (Click canvas to type)"
+            title="Text Tool (Click canvas to type directly)"
           >
             <Type className="w-4 h-4" />
-          </button>
-
-          {/* 5.5 STICKY NOTE TOOL */}
-          <button
-            type="button"
-            onClick={() => {
-              setTool('note');
-              setSelectedStrokeId(null);
-              // Open note popover at center of view or ready to click
-              setNoteInputPos({ x: (320 - pan.x) / zoom, y: (200 - pan.y) / zoom });
-              setNoteTitle('Quick Note');
-              setNoteText('');
-            }}
-            className={`p-2 rounded-lg transition-all ${
-              tool === 'note' || noteInputPos !== null
-                ? 'bg-amber-400 text-amber-950 font-bold shadow-sm'
-                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Add Sticky Note (Yellow, Green, Blue, Purple, Pink)"
-          >
-            <StickyNote className="w-4 h-4" />
           </button>
 
           {/* 6. PAN / HAND TOOL */}
@@ -1831,88 +1719,120 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           </button>
         </div>
 
-        {/* 1. Theme Mode: Light / Dark */}
-        <div className="flex items-center gap-0.5 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+        {/* 1. Theme & Canvas Pattern Popover Dropdown (Consolidated to eliminate crowding) */}
+        <div className="relative">
           <button
             type="button"
-            onClick={() => setCanvasTheme('light')}
-            className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
-              canvasTheme === 'light'
-                ? 'bg-apple-blue text-white shadow-2xs'
-                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            onClick={() => setIsCanvasSettingsOpen(!isCanvasSettingsOpen)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#1C1C1E] border border-apple-border/60 dark:border-white/10 shadow-sm text-caption font-semibold transition-all ${
+              isCanvasSettingsOpen ? 'border-apple-blue text-apple-blue' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
             }`}
-            title="Light Theme Whiteboard"
+            title="Canvas Theme & Grid Settings"
           >
-            <Sun className="w-3.5 h-3.5" />
+            {canvasTheme === 'dark' ? <Moon className="w-3.5 h-3.5 text-blue-400" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
+            <span className="capitalize">{canvasTheme} • {canvasPattern}</span>
+            <ChevronDown className="w-3 h-3 opacity-60" />
           </button>
-          <button
-            type="button"
-            onClick={() => setCanvasTheme('dark')}
-            className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
-              canvasTheme === 'dark'
-                ? 'bg-apple-blue text-white shadow-2xs'
-                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Dark Theme Whiteboard"
-          >
-            <Moon className="w-3.5 h-3.5" />
-          </button>
-        </div>
 
-        {/* 2. Pattern Overlay: Blank / Grid / Dots / Lines */}
-        <div className="flex items-center gap-0.5 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-          <button
-            type="button"
-            onClick={() => setCanvasPattern('plain')}
-            className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all ${
-              canvasPattern === 'plain'
-                ? 'bg-apple-blue text-white shadow-2xs font-bold'
-                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Plain Blank Canvas"
-          >
-            <span className="text-[11px]">Blank</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setCanvasPattern('grid')}
-            className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
-              canvasPattern === 'grid'
-                ? 'bg-apple-blue text-white shadow-2xs'
-                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Math Grid (Selectable in Light & Dark Mode)"
-          >
-            <Grid className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setCanvasPattern('dots')}
-            className={`px-2 py-1 rounded-lg text-caption font-bold transition-all ${
-              canvasPattern === 'dots'
-                ? 'bg-apple-blue text-white shadow-2xs'
-                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Dot Graph Paper (Selectable in Light & Dark Mode)"
-          >
-            <span className="text-[10.5px]">DOTS</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setCanvasPattern('lines')}
-            className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
-              canvasPattern === 'lines'
-                ? 'bg-apple-blue text-white shadow-2xs'
-                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Ruled Notebook Lines (Selectable in Light & Dark Mode)"
-          >
-            <Minus className="w-3.5 h-3.5" />
-          </button>
+          {isCanvasSettingsOpen && (
+            <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-xl p-2.5 z-50 w-52 space-y-2 animate-scale-up">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50 block mb-1">
+                  Theme Mode
+                </span>
+                <div className="grid grid-cols-2 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCanvasTheme('light');
+                      setIsCanvasSettingsOpen(false);
+                    }}
+                    className={`flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-caption font-semibold transition-all ${
+                      canvasTheme === 'light' ? 'bg-apple-blue text-white shadow-xs' : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
+                    }`}
+                  >
+                    <Sun className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Light</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCanvasTheme('dark');
+                      setIsCanvasSettingsOpen(false);
+                    }}
+                    className={`flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-caption font-semibold transition-all ${
+                      canvasTheme === 'dark' ? 'bg-apple-blue text-white shadow-xs' : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
+                    }`}
+                  >
+                    <Moon className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Dark</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-t border-apple-border/40 dark:border-white/10 pt-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50 block mb-1">
+                  Grid Background
+                </span>
+                <div className="grid grid-cols-2 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCanvasPattern('plain');
+                      setIsCanvasSettingsOpen(false);
+                    }}
+                    className={`py-1.5 px-2 rounded-xl text-caption font-semibold transition-all ${
+                      canvasPattern === 'plain' ? 'bg-apple-blue text-white shadow-xs' : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
+                    }`}
+                  >
+                    Blank
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCanvasPattern('grid');
+                      setIsCanvasSettingsOpen(false);
+                    }}
+                    className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl text-caption font-semibold transition-all ${
+                      canvasPattern === 'grid' ? 'bg-apple-blue text-white shadow-xs' : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
+                    }`}
+                  >
+                    <Grid className="w-3 h-3" />
+                    <span>Grid</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCanvasPattern('dots');
+                      setIsCanvasSettingsOpen(false);
+                    }}
+                    className={`py-1.5 px-2 rounded-xl text-caption font-semibold transition-all ${
+                      canvasPattern === 'dots' ? 'bg-apple-blue text-white shadow-xs' : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
+                    }`}
+                  >
+                    Dots
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCanvasPattern('lines');
+                      setIsCanvasSettingsOpen(false);
+                    }}
+                    className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl text-caption font-semibold transition-all ${
+                      canvasPattern === 'lines' ? 'bg-apple-blue text-white shadow-xs' : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
+                    }`}
+                  >
+                    <Minus className="w-3 h-3" />
+                    <span>Lines</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Undo / Redo / Ruler Controls */}
-        <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+        <div className="flex items-center gap-0.5 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
           <button
             type="button"
             onClick={handleUndo}
@@ -1920,7 +1840,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white disabled:opacity-30 transition-colors"
             title="Undo (Ctrl+Z)"
           >
-            <Undo2 className="w-4 h-4" />
+            <Undo2 className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"
@@ -1929,7 +1849,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white disabled:opacity-30 transition-colors"
             title="Redo (Ctrl+Y)"
           >
-            <Redo2 className="w-4 h-4" />
+            <Redo2 className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"
@@ -1937,96 +1857,89 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             className={`p-1.5 rounded-lg transition-colors ${
               showRuler ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
             }`}
-            title="Toggle Measurement Ruler"
+            title="Toggle Ruler"
           >
-            <Ruler className="w-4 h-4" />
+            <Ruler className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Actions: Insert Image, Zoom, Export, Fullscreen, Clear */}
+        {/* Canvas Navigation & Actions */}
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={() => imageInputRef.current?.click()}
-            className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-            title="Insert Image / Diagram onto Canvas"
+            className="p-1.5 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
+            title="Insert Image / Diagram"
           >
-            <ImageIcon className="w-4 h-4" />
+            <ImageIcon className="w-3.5 h-3.5" />
           </button>
 
-          {/* Pan & Zoom Navigation Controls */}
-          <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+          {/* Pan & Zoom Navigation */}
+          <div className="flex items-center gap-0.5 bg-white dark:bg-[#1C1C1E] p-0.5 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
             <button
               type="button"
               onClick={handleZoomOut}
-              className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
+              className="p-1 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
               title="Zoom Out"
             >
-              <ZoomOut className="w-3.5 h-3.5" />
+              <ZoomOut className="w-3 h-3" />
             </button>
             <button
               type="button"
               onClick={handleResetView}
-              className="px-2 py-0.5 rounded-lg text-caption font-mono font-semibold text-apple-textSecondary hover:text-apple-blue"
-              title="Reset View (100%)"
+              className="px-1.5 py-0.5 rounded-lg text-[11px] font-mono font-semibold text-apple-textSecondary hover:text-apple-blue"
+              title="Reset View"
             >
               {Math.round(zoom * 100)}%
             </button>
             <button
               type="button"
               onClick={handleZoomIn}
-              className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
+              className="p-1 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
               title="Zoom In"
             >
-              <ZoomIn className="w-3.5 h-3.5" />
+              <ZoomIn className="w-3 h-3" />
             </button>
           </div>
 
           <button
             type="button"
             onClick={handleExportPNG}
-            className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-            title="Save as High-Res PNG"
+            className="p-1.5 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
+            title="Save PNG"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5" />
           </button>
 
           <button
             type="button"
             onClick={handleBroadcastSnapshot}
-            className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-blue transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-            title="Broadcast Snapshot to Room Files"
+            className="p-1.5 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-blue transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
+            title="Share to Room Files"
           >
-            <Share2 className="w-4 h-4" />
+            <Share2 className="w-3.5 h-3.5" />
           </button>
 
           <button
             type="button"
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className={`p-2 rounded-xl transition-colors border shadow-sm ${
+            className={`p-1.5 rounded-xl transition-colors border shadow-sm ${
               isFullscreen
                 ? 'bg-apple-blue text-white border-apple-blue'
                 : 'bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white border-apple-border/60 dark:border-white/10'
             }`}
-            title={isFullscreen ? 'Exit Full Screen (Esc)' : 'Enter Full Screen Canvas'}
+            title={isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
           >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
 
           <button
             type="button"
-            onClick={() => {
-              if (window.confirm('Clear all drawings on the whiteboard?')) {
-                onClearWhiteboard();
-                setLocalStrokes([]);
-                setRedoStack([]);
-                setSelectedStrokeId(null);
-              }
-            }}
-            className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-red-50 dark:hover:bg-red-950 text-apple-red transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
+            onClick={() => setConfirmClearOpen(true)}
+            className="p-1.5 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-red-50 dark:hover:bg-red-950 text-apple-red transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
             title="Clear Canvas"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -2160,149 +2073,104 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         }`}
       />
 
-      {/* Floating Inline Text Input Popover */}
+      {/* Direct MS Paint / Figma-Style In-Canvas Text Editor */}
       {textInputPos && (
         <div
           style={{
             position: 'absolute',
             left: `${textInputPos.x * zoom + pan.x}px`,
             top: `${textInputPos.y * zoom + pan.y}px`,
-            transform: 'translate(0, -100%)'
+            zIndex: 60
           }}
-          className="z-50 p-2.5 bg-white dark:bg-[#1C1C1E] rounded-2xl border border-apple-border shadow-2xl space-y-2 animate-scale-up"
+          className="animate-scale-up select-none flex flex-col items-start gap-1"
         >
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              autoFocus
-              value={textInputString}
-              onChange={(e) => setTextInputString(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCommitText();
-                if (e.key === 'Escape') setTextInputPos(null);
-              }}
-              placeholder="Type note or equation..."
-              className="px-3 py-1.5 bg-apple-secondaryBg dark:bg-white/10 rounded-xl text-footnote font-semibold text-apple-textPrimary dark:text-white outline-none focus:ring-2 focus:ring-apple-blue"
-            />
+          {/* Mini Formatting Toolbar (Size, Bold, Done) */}
+          <div className="flex items-center gap-1.5 p-1 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-md rounded-xl border border-apple-border/80 dark:border-white/20 shadow-xl text-caption">
+            <div className="flex items-center gap-0.5">
+              {[14, 20, 28, 40].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setTextFontSize(s)}
+                  className={`px-1.5 py-0.5 rounded-md font-mono text-[11px] font-semibold transition-all ${
+                    textFontSize === s ? 'bg-apple-blue text-white shadow-2xs' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-px h-3.5 bg-apple-border dark:bg-white/10" />
+
             <button
               type="button"
-              onClick={handleCommitText}
-              className="p-2 rounded-xl bg-apple-blue text-white shadow-sm"
-              title="Add text to whiteboard"
-            >
-              <Check className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setTextInputPos(null)}
-              className="p-2 rounded-xl hover:bg-apple-secondaryBg text-apple-textSecondary"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex items-center gap-2 text-caption">
-            <span className="text-apple-textSecondary">Size:</span>
-            <input
-              type="range"
-              min="14"
-              max="64"
-              value={textFontSize}
-              onChange={(e) => setTextFontSize(parseInt(e.target.value, 10))}
-              className="w-24 accent-apple-blue"
-            />
-            <span className="font-mono text-apple-textPrimary dark:text-white">{textFontSize}px</span>
-            <button
-              type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => setIsTextBold(!isTextBold)}
-              className={`px-2 py-0.5 rounded font-bold ${isTextBold ? 'bg-apple-blue text-white' : 'bg-apple-secondaryBg text-apple-textSecondary'}`}
+              className={`w-6 h-6 rounded-lg font-bold text-[12px] flex items-center justify-center transition-all ${
+                isTextBold ? 'bg-apple-blue text-white shadow-2xs' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              }`}
+              title="Toggle Bold"
             >
               B
             </button>
-          </div>
-        </div>
-      )}
 
-      {/* Floating Sticky Note Creator Popover */}
-      {noteInputPos && (
-        <div
-          style={{
-            position: 'absolute',
-            left: `${Math.max(10, Math.min(noteInputPos.x * zoom + pan.x, (containerRef.current?.clientWidth || 600) - 300))}px`,
-            top: `${Math.max(10, Math.min(noteInputPos.y * zoom + pan.y, (containerRef.current?.clientHeight || 400) - 250))}px`,
-            transform: 'translate(0, 0)'
-          }}
-          className="z-50 p-4 bg-white dark:bg-[#1C1C1E] rounded-2xl border border-apple-border shadow-2xl space-y-3 animate-scale-up w-72"
-        >
-          <div className="flex items-center justify-between pb-1 border-b border-apple-border/40 dark:border-white/10">
-            <span className="font-bold text-footnote text-apple-textPrimary dark:text-white flex items-center gap-1.5">
-              <StickyNote className="w-4 h-4 text-amber-500" />
-              <span>Add Sticky Note</span>
-            </span>
+            <div className="w-px h-3.5 bg-apple-border dark:bg-white/10" />
+
             <button
               type="button"
-              onClick={() => setNoteInputPos(null)}
-              className="p-1 rounded-lg hover:bg-apple-secondaryBg text-apple-textSecondary"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Note Color Swatches */}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold text-apple-textSecondary">Color:</span>
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-              {NOTE_COLORS.map((nc) => (
-                <button
-                  key={nc.id}
-                  type="button"
-                  onClick={() => setNoteColor(nc.bg)}
-                  className={`w-6 h-6 rounded-full transition-all shrink-0 border ${
-                    noteColor === nc.bg ? 'ring-2 ring-apple-blue ring-offset-2 scale-110' : 'hover:scale-105'
-                  }`}
-                  style={{ backgroundColor: nc.bg, borderColor: nc.border }}
-                  title={nc.name}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Title Input */}
-          <input
-            type="text"
-            value={noteTitle}
-            onChange={(e) => setNoteTitle(e.target.value)}
-            placeholder="Note Title (optional)"
-            className="w-full px-3 py-1.5 bg-apple-secondaryBg dark:bg-white/10 rounded-xl text-caption font-bold text-apple-textPrimary dark:text-white outline-none focus:ring-2 focus:ring-apple-blue"
-          />
-
-          {/* Body Textarea */}
-          <textarea
-            autoFocus
-            rows={3}
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
-            placeholder="Write your note, idea or task..."
-            className="w-full px-3 py-2 bg-apple-secondaryBg dark:bg-white/10 rounded-xl text-caption font-medium text-apple-textPrimary dark:text-white outline-none focus:ring-2 focus:ring-apple-blue resize-none"
-          />
-
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setNoteInputPos(null)}
-              className="px-3 py-1.5 rounded-xl text-caption font-semibold text-apple-textSecondary hover:bg-apple-secondaryBg"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleCommitNote}
-              className="px-3.5 py-1.5 rounded-xl bg-apple-blue hover:bg-apple-blueHover text-white font-bold text-caption shadow-sm transition-all flex items-center gap-1.5"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleCommitText}
+              className="p-1 rounded-lg bg-apple-blue text-white hover:bg-apple-blueHover transition-colors shadow-2xs"
+              title="Commit Text (Enter)"
             >
               <Check className="w-3.5 h-3.5" />
-              <span>Place Note</span>
+            </button>
+
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setTextInputPos(null)}
+              className="p-1 rounded-lg hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary transition-colors"
+              title="Cancel (Esc)"
+            >
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {/* Inline Canvas Text Input (MS Paint style) */}
+          <textarea
+            autoFocus
+            rows={1}
+            value={textInputString}
+            onChange={(e) => {
+              setTextInputString(e.target.value);
+              // Auto-expand height
+              e.target.style.height = 'auto';
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
+            onBlur={handleCommitText}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleCommitText();
+              }
+              if (e.key === 'Escape') {
+                setTextInputPos(null);
+              }
+            }}
+            placeholder="Type text here..."
+            style={{
+              color: color,
+              fontSize: `${Math.max(12, textFontSize * zoom)}px`,
+              fontWeight: isTextBold ? 'bold' : 'normal',
+              lineHeight: 1.25,
+              minWidth: '140px',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+            }}
+            className="bg-transparent border-2 border-dashed border-apple-blue dark:border-blue-400/80 rounded-md p-1.5 outline-none resize-none shadow-sm"
+          />
         </div>
       )}
 
@@ -2414,6 +2282,24 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
 
         {/* Canvas */}
         {renderCanvasViewport()}
+
+        {/* Clear Canvas Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={confirmClearOpen}
+          onClose={() => setConfirmClearOpen(false)}
+          onConfirm={() => {
+            onClearWhiteboard();
+            setLocalStrokes([]);
+            setRedoStack([]);
+            setSelectedStrokeId(null);
+          }}
+          title="Clear Whiteboard?"
+          message="This will instantly erase all drawings and annotations for everyone in the room."
+          confirmText="Clear All"
+          cancelText="Cancel"
+          variant="danger"
+          iconType="delete"
+        />
       </div>
     );
   }
@@ -2441,6 +2327,24 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
 
         {/* The Collaborative Canvas Viewport */}
         {renderCanvasViewport()}
+
+        {/* Clear Canvas Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={confirmClearOpen}
+          onClose={() => setConfirmClearOpen(false)}
+          onConfirm={() => {
+            onClearWhiteboard();
+            setLocalStrokes([]);
+            setRedoStack([]);
+            setSelectedStrokeId(null);
+          }}
+          title="Clear Whiteboard?"
+          message="This will instantly erase all drawings and annotations for everyone in the room."
+          confirmText="Clear All"
+          cancelText="Cancel"
+          variant="danger"
+          iconType="delete"
+        />
       </div>
     </Modal>
   );

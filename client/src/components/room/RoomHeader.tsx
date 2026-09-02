@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 
 import { BrandLogo } from '../common/BrandLogo.js';
+import { ConfirmDialog } from '../common/ConfirmDialog.js';
 
 interface RoomHeaderProps {
   roomCode: string;
@@ -88,6 +89,8 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
   const [copied, setCopied] = useState(false);
   const [showMemberList, setShowMemberList] = useState(false);
   const [timerSecondsLeft, setTimerSecondsLeft] = useState<number>(0);
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
+  const [confirmEndOpen, setConfirmEndOpen] = useState(false);
 
   const isFacultyOrHost = currentMember?.isFaculty || currentMember?.isCreator;
   const isHandRaised = currentMember && handsRaised.some(h => h.socketId === currentMember.socketId);
@@ -336,11 +339,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
             {/* Leave / End — Only creator can delete/end room, others can only leave */}
             {currentMember?.isCreator ? (
               <button
-                onClick={() => {
-                  if (window.confirm('End this room session for everyone? All data will be permanently erased.')) {
-                    onEndRoom();
-                  }
-                }}
+                onClick={() => setConfirmEndOpen(true)}
                 title="End Room (Creator)"
                 className="p-1.5 rounded-full text-apple-red hover:bg-red-50 dark:hover:bg-red-950 transition-colors shrink-0"
               >
@@ -348,11 +347,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               </button>
             ) : (
               <button
-                onClick={() => {
-                  if (window.confirm('Leave this room?')) {
-                    onLeaveRoom();
-                  }
-                }}
+                onClick={() => setConfirmLeaveOpen(true)}
                 title="Leave Room"
                 className="p-1.5 rounded-full text-apple-textSecondary hover:text-apple-red transition-colors shrink-0"
               >
@@ -362,9 +357,9 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
           </div>
         </div>
 
-        {/* Secondary Tool Ribbon (Visible on Desktop / Tablet only to keep mobile pristine) */}
-        <div className="hidden md:flex items-center justify-between gap-1 overflow-x-auto no-scrollbar py-0.5 border-t border-apple-border/40 dark:border-white/5">
-          <div className="flex items-center gap-1 shrink-0">
+        {/* Secondary Tool Ribbon (Always visible & smoothly scrollable on mobile & desktop) */}
+        <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar py-1 px-0.5 border-t border-apple-border/40 dark:border-white/5 touch-pan-x">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={onOpenWhiteboard}
               className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold text-apple-textSecondary dark:text-white/70 hover:text-apple-blue hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors shrink-0"
@@ -436,6 +431,32 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Leave Room Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmLeaveOpen}
+        onClose={() => setConfirmLeaveOpen(false)}
+        onConfirm={onLeaveRoom}
+        title="Leave Room?"
+        message="Are you sure you want to leave this session? You can rejoin anytime using the room code."
+        confirmText="Leave Room"
+        cancelText="Stay"
+        variant="danger"
+        iconType="leave"
+      />
+
+      {/* End Room Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmEndOpen}
+        onClose={() => setConfirmEndOpen(false)}
+        onConfirm={onEndRoom}
+        title="Terminate Room Session?"
+        message="This will permanently end the room for all participants. All ephemeral chat messages, whiteboard drawings, and shared files will be deleted."
+        confirmText="End for Everyone"
+        cancelText="Cancel"
+        variant="danger"
+        iconType="delete"
+      />
     </header>
   );
 };
