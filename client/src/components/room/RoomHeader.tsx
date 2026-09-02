@@ -24,6 +24,7 @@ import {
   Mail,
   Sparkles,
   MoreHorizontal,
+  Share2,
   X
 } from 'lucide-react';
 
@@ -109,13 +110,31 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
     return () => clearInterval(interval);
   }, [timerState]);
 
-  const handleCopyCode = async () => {
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/?code=${roomCode}` : `https://ichatworld.xyz/?code=${roomCode}`;
+
+  const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(roomCode);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (e) {
-      console.error('Failed to copy', e);
+      console.error('Failed to copy link', e);
+    }
+  };
+
+  const handleShare = async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `iChatWorld — Room ${roomCode}`,
+          text: `Join real-time workspace on iChatWorld:`,
+          url: shareUrl
+        });
+      } catch (e) {
+        // User cancelled
+      }
+    } else {
+      handleCopyLink();
     }
   };
 
@@ -126,37 +145,38 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 dark:bg-black/95 backdrop-blur-md border-b border-apple-border/70 dark:border-white/10 px-3 md:px-6 py-2 transition-colors">
+    <header className="sticky top-0 z-30 bg-white/95 dark:bg-black/95 backdrop-blur-md border-b border-apple-border/70 dark:border-white/10 px-2.5 sm:px-4 md:px-6 py-2 transition-colors">
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-1.5">
         {/* Top Row: Room Code, Switcher, Timer Pill, Main Actions */}
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-1.5 sm:gap-2">
           {/* Left: Switcher & Room Code */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <BrandLogo size="sm" />
 
             <button
               onClick={onOpenRoomSwitcher}
               title="Switch between rooms"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-apple-textPrimary dark:text-white transition-colors shadow-2xs"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-apple-secondaryBg dark:bg-white/10 hover:bg-apple-tertiaryBg text-apple-textPrimary dark:text-white transition-colors shadow-2xs shrink-0"
             >
               <Layers className="w-3.5 h-3.5 text-apple-blue shrink-0" />
-              <span className="font-mono font-bold tracking-wider text-xs md:text-sm">
+              <span className="font-mono font-bold tracking-wider text-xs md:text-sm whitespace-nowrap">
                 {roomCode}
               </span>
             </button>
 
+            {/* Quick Share / Copy Link Button */}
             <button
-              onClick={handleCopyCode}
-              title="Copy code"
-              className="hidden sm:flex p-1.5 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary transition-colors"
+              onClick={handleShare}
+              title={copied ? 'Link Copied!' : 'Share or Copy Room Link'}
+              className="flex p-1.5 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary hover:text-apple-blue dark:hover:text-apple-blue transition-colors shrink-0"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-apple-green" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-apple-green" /> : <Share2 className="w-3.5 h-3.5" />}
             </button>
 
             <button
               onClick={onOpenQR}
               title="Show QR Code"
-              className="hidden sm:flex p-1.5 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors"
+              className="hidden sm:flex p-1.5 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors shrink-0"
             >
               <QrCode className="w-3.5 h-3.5" />
             </button>
@@ -301,11 +321,11 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               )}
             </div>
 
-            {/* Host Controls — only visible to the room creator/host */}
-            {isFacultyOrHost && (
+            {/* Host Controls — only visible strictly to the room creator */}
+            {currentMember?.isCreator && (
               <button
                 onClick={onOpenFacultyPanel}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-800/60 text-amber-900 dark:text-amber-200 font-semibold text-caption transition-colors border border-amber-200/60 dark:border-amber-700/40"
+                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-800/60 text-amber-900 dark:text-amber-200 font-semibold text-caption transition-colors border border-amber-200/60 dark:border-amber-700/40 shrink-0"
                 title="Host Moderation Controls"
               >
                 <Shield className="w-3 h-3 text-amber-700 dark:text-amber-300" />
@@ -313,16 +333,16 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
               </button>
             )}
 
-            {/* Leave / End */}
-            {isFacultyOrHost ? (
+            {/* Leave / End — Only creator can delete/end room, others can only leave */}
+            {currentMember?.isCreator ? (
               <button
                 onClick={() => {
-                  if (window.confirm('End this room session for everyone? All data will be deleted.')) {
+                  if (window.confirm('End this room session for everyone? All data will be permanently erased.')) {
                     onEndRoom();
                   }
                 }}
-                title="End Room"
-                className="p-1.5 rounded-full text-apple-red hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                title="End Room (Creator)"
+                className="p-1.5 rounded-full text-apple-red hover:bg-red-50 dark:hover:bg-red-950 transition-colors shrink-0"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -334,7 +354,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                   }
                 }}
                 title="Leave Room"
-                className="p-1.5 rounded-full text-apple-textSecondary hover:text-apple-red transition-colors"
+                className="p-1.5 rounded-full text-apple-textSecondary hover:text-apple-red transition-colors shrink-0"
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>

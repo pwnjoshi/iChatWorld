@@ -37,6 +37,7 @@ export interface IStore {
   clearWhiteboard(code: string): Promise<void>;
   addQAQuestion(code: string, question: QAQuestion): Promise<QAQuestion>;
   editQAQuestion(code: string, questionId: string, newText: string, editorId: string): Promise<QAQuestion | null>;
+  deleteQAQuestion(code: string, questionId: string, authorSocketId: string, isFacultyOrHost: boolean): Promise<boolean>;
   upvoteQAQuestion(code: string, questionId: string, socketId: string): Promise<QAQuestion | null>;
   toggleAnswerQAQuestion(code: string, questionId: string): Promise<QAQuestion | null>;
   addQAAnswer(code: string, questionId: string, answer: QAAnswer): Promise<QAQuestion | null>;

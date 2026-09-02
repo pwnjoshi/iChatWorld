@@ -230,6 +230,22 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     }
   });
 
+  // Delete Question (Author or Host/Faculty)
+  socket.on('qa:delete', async (data: { questionId: string }, callback) => {
+    const roomCode = (socket as any).roomCode;
+    const member = (socket as any).memberData as Member;
+    if (!roomCode || !data.questionId) return callback && callback({ success: false });
+
+    const isFacultyOrHost = !!(member?.isFaculty || member?.isCreator);
+    const deleted = await store.deleteQAQuestion(roomCode, data.questionId, socket.id, isFacultyOrHost);
+    if (deleted) {
+      io.to(roomCode).emit('qa:question-deleted', { questionId: data.questionId });
+      if (typeof callback === 'function') callback({ success: true, questionId: data.questionId });
+    } else {
+      if (typeof callback === 'function') callback({ success: false, error: 'Cannot delete question' });
+    }
+  });
+
   // Post Answer to Question
   socket.on('qa:answer', async (data: { questionId: string; text: string }, callback) => {
     const roomCode = (socket as any).roomCode;
@@ -593,16 +609,16 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     if (typeof callback === 'function') callback({ success: true });
   });
 
-  // End room
+  // End room (Only Creator)
   socket.on('room:end', async (_, callback) => {
     const roomCode = (socket as any).roomCode;
     const member = (socket as any).memberData as Member;
 
-    if (!roomCode || (!member?.isFaculty && !member?.isCreator)) {
-      return callback && callback({ success: false, error: 'Unauthorized' });
+    if (!roomCode || !member?.isCreator) {
+      return callback && callback({ success: false, error: 'Only the room creator can end this room session.' });
     }
 
-    io.to(roomCode).emit('room:ended', { reason: 'The host has ended this room session.' });
+    io.to(roomCode).emit('room:ended', { reason: 'The room creator has ended this room session.' });
     await store.deleteRoom(roomCode);
 
     if (typeof callback === 'function') callback({ success: true });

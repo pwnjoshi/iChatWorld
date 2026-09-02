@@ -527,6 +527,30 @@ export class RedisStore implements IStore {
     return targetQ;
   }
 
+  async deleteQAQuestion(code: string, questionId: string, authorSocketId: string, isFacultyOrHost: boolean): Promise<boolean> {
+    const raw = await this.redis.lrange(this.qaKey(code), 0, -1);
+    let targetIdx = -1;
+
+    for (let i = 0; i < raw.length; i++) {
+      const q: QAQuestion = JSON.parse(raw[i]);
+      if (q.id === questionId) {
+        if (q.authorId === authorSocketId || isFacultyOrHost) {
+          targetIdx = i;
+        }
+        break;
+      }
+    }
+
+    if (targetIdx < 0) return false;
+
+    // Use a sentinel to remove
+    const sentinel = `__DELETE__${Date.now()}`;
+    await this.redis.lset(this.qaKey(code), targetIdx, sentinel);
+    await this.redis.lrem(this.qaKey(code), 1, sentinel);
+    await this.touchRoom(code);
+    return true;
+  }
+
   async upvoteQAQuestion(code: string, questionId: string, socketId: string): Promise<QAQuestion | null> {
     const raw = await this.redis.lrange(this.qaKey(code), 0, -1);
     let targetQ: QAQuestion | null = null;

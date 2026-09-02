@@ -626,7 +626,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       </div>
 
       {/* Clean Input Bar */}
-      <div className="p-2 sm:p-2.5 bg-white/95 dark:bg-black/95 border-t border-apple-border/70 dark:border-white/10 shrink-0 pb-safe">
+      <div className="p-2 sm:p-2.5 bg-white/95 dark:bg-black/95 border-t border-apple-border/70 dark:border-white/10 shrink-0 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
         {isRecordingVoice ? (
           <VoiceRecorder
             onSendAudio={onSendAudio}

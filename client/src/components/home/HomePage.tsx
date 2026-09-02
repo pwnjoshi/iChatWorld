@@ -141,20 +141,13 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             {/* Action Card */}
             <div className="bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl rounded-3xl p-4 sm:p-7 shadow-ios-card border border-apple-border/70 dark:border-white/10 space-y-4 max-w-md mx-auto lg:mx-0">
-              {/* ── Premium "Start a Room" Button ── */}
+              {/* ── Clean Apple-style "Start a Room" Button ── */}
               <button
                 onClick={() => setModalMode('create')}
-                className="w-full py-3.5 px-6 rounded-2xl font-bold text-body transition-all flex items-center justify-center gap-2 active:scale-[0.98] select-none
-                  text-white
-                  bg-gradient-to-b from-[#3a8ef9] to-[#1a6ee0]
-                  shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,_0_4px_16px_rgba(26,110,224,0.45),_0_1px_4px_rgba(0,0,0,0.25)]
-                  hover:shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,_0_6px_20px_rgba(26,110,224,0.55),_0_2px_6px_rgba(0,0,0,0.3)]
-                  hover:from-[#4a96ff] hover:to-[#2176e8]
-                  active:shadow-[0_0_0_0_rgba(255,255,255,0.1)_inset,_0_2px_8px_rgba(26,110,224,0.35)]
-                  active:from-[#1a6ee0] active:to-[#1560cb]"
+                className="w-full py-3.5 px-6 rounded-2xl font-bold text-body transition-all flex items-center justify-center gap-2 active:scale-[0.98] select-none text-white bg-apple-blue hover:bg-apple-blueHover shadow-sm hover:shadow-md"
               >
-                <Plus className="w-5 h-5 drop-shadow-sm" />
-                <span className="drop-shadow-sm">Start a New Room</span>
+                <Plus className="w-5 h-5" />
+                <span>Start a New Room</span>
               </button>
 
               {/* Symmetric Divider */}
@@ -177,18 +170,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                     maxLength={7}
                     className="min-w-0 flex-1 bg-transparent pl-2 pr-1 py-2 text-center text-body font-mono font-bold tracking-widest text-apple-textPrimary dark:text-white placeholder:text-apple-textSecondary/40 dark:placeholder:text-white/30 outline-none uppercase"
                   />
-                  {/* ── Premium "Join" Button ── */}
+                  {/* ── Clean Apple-style "Join" Button ── */}
                   <button
                     type="submit"
                     disabled={cleanRoomCode(codeInput).length !== 6}
-                    className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-footnote transition-all select-none
-                      text-white
-                      bg-gradient-to-b from-[#3a8ef9] to-[#1a6ee0]
-                      shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,_0_3px_10px_rgba(26,110,224,0.40)]
-                      hover:from-[#4a96ff] hover:to-[#2176e8]
-                      hover:shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,_0_4px_14px_rgba(26,110,224,0.55)]
-                      active:scale-95 active:from-[#1a6ee0] active:to-[#1560cb]
-                      disabled:opacity-30 disabled:shadow-none disabled:cursor-not-allowed"
+                    className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-footnote transition-all select-none text-white bg-apple-blue hover:bg-apple-blueHover shadow-sm active:scale-95 disabled:opacity-30 disabled:shadow-none disabled:cursor-not-allowed"
                   >
                     <span>Join</span>
                     <ArrowRight className="w-3.5 h-3.5" />

@@ -35,6 +35,7 @@ export const App: React.FC = () => {
     updateTimerState,
     askQAQuestion,
     editQAQuestion,
+    deleteQAQuestion,
     answerQAQuestion,
     upvoteQAQuestion,
     upvoteQAAnswer,
@@ -194,7 +195,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'dark bg-black text-white' : 'bg-apple-bg text-apple-textPrimary'} font-sans transition-colors duration-200`}>
+    <div className={`${room ? 'fixed inset-0 w-full h-[100dvh] overflow-hidden' : 'min-h-screen'} ${isDarkMode ? 'dark bg-black text-white' : 'bg-apple-bg text-apple-textPrimary'} font-sans transition-colors duration-200`}>
       <Toast message={error} onClose={clearError} type="error" />
 
       {!room ? (
@@ -235,6 +236,7 @@ export const App: React.FC = () => {
           onUpdateTimerState={updateTimerState}
           onAskQAQuestion={askQAQuestion}
           onEditQAQuestion={editQAQuestion}
+          onDeleteQAQuestion={deleteQAQuestion}
           onAnswerQAQuestion={answerQAQuestion}
           onUpvoteQAQuestion={upvoteQAQuestion}
           onUpvoteQAAnswer={upvoteQAAnswer}

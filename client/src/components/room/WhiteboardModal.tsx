@@ -1520,9 +1520,9 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   // Render Inner Studio Toolbar & Controls
   const renderStudioToolbar = () => (
     <>
-      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 p-2 bg-apple-secondaryBg dark:bg-white/5 rounded-2xl border border-apple-border/70 dark:border-white/10 shadow-2xs">
-        {/* Left: Tools Group (Select/Move, Pen, Highlighter, Erasers, Text, Hand) */}
-        <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+      <div className="shrink-0 flex items-center justify-between gap-1.5 p-1.5 bg-apple-secondaryBg dark:bg-white/5 rounded-2xl border border-apple-border/70 dark:border-white/10 shadow-2xs overflow-x-auto no-scrollbar touch-pan-x select-none">
+        {/* Left: Tools Group (Select/Move, Pen, Highlighter, Erasers, Text, Note, Hand) */}
+        <div className="flex items-center gap-0.5 sm:gap-1 bg-white dark:bg-[#1C1C1E] p-0.5 sm:p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm shrink-0">
           {/* 1. SELECT & MOVE TOOL */}
           <button
             type="button"
@@ -1531,7 +1531,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
               setIsPenMenuOpen(false);
               setIsEraserMenuOpen(false);
             }}
-            className={`p-2 rounded-lg transition-all flex items-center gap-1 ${
+            className={`p-1.5 sm:p-2 rounded-lg transition-all flex items-center gap-1 shrink-0 ${
               tool === 'select'
                 ? 'bg-apple-blue text-white shadow-sm font-semibold'
                 : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'

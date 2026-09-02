@@ -76,6 +76,7 @@ interface RoomViewProps {
   onUpdateTimerState: (state: ClassroomTimerState | null) => Promise<boolean>;
   onAskQAQuestion: (text: string, isAnonymous: boolean) => Promise<boolean>;
   onEditQAQuestion?: (questionId: string, text: string) => Promise<boolean>;
+  onDeleteQAQuestion?: (questionId: string) => Promise<boolean>;
   onAnswerQAQuestion?: (questionId: string, text: string) => Promise<boolean>;
   onUpvoteQAQuestion: (questionId: string) => Promise<boolean>;
   onUpvoteQAAnswer?: (questionId: string, answerId: string) => Promise<boolean>;
@@ -133,6 +134,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
   onUpdateTimerState,
   onAskQAQuestion,
   onEditQAQuestion,
+  onDeleteQAQuestion,
   onAnswerQAQuestion,
   onUpvoteQAQuestion,
   onUpvoteQAAnswer,
@@ -219,7 +221,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-apple-primaryBg dark:bg-black">
+    <div className="flex flex-col h-full h-[100dvh] overflow-hidden bg-apple-primaryBg dark:bg-black">
       {/* Header */}
       <RoomHeader
         roomCode={room.code}
@@ -446,67 +448,6 @@ export const RoomView: React.FC<RoomViewProps> = ({
           </div>
         </div>
 
-        {/* Mobile Studio Quick-Action Bar */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-apple-secondaryBg/40 dark:bg-white/5 border-b border-apple-border/40 dark:border-white/5 overflow-x-auto no-scrollbar touch-pan-x shrink-0 select-none">
-          <button
-            onClick={() => setIsWhiteboardOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white dark:bg-[#1C1C1E] hover:bg-blue-50 dark:hover:bg-blue-950/40 text-apple-textPrimary dark:text-white border border-apple-border/60 dark:border-white/10 text-[11px] font-bold shrink-0 shadow-2xs active:scale-95 transition-all"
-          >
-            <PenTool className="w-3.5 h-3.5 text-apple-blue" />
-            <span>Whiteboard</span>
-          </button>
-
-          <button
-            onClick={() => setIsQAModalOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white dark:bg-[#1C1C1E] hover:bg-purple-50 dark:hover:bg-purple-950/40 text-apple-textPrimary dark:text-white border border-apple-border/60 dark:border-white/10 text-[11px] font-bold shrink-0 shadow-2xs active:scale-95 transition-all"
-          >
-            <HelpCircle className="w-3.5 h-3.5 text-purple-500" />
-            <span>Q&A ({room.qaQuestions?.length || 0})</span>
-          </button>
-
-          <button
-            onClick={() => setIsPresenterModalOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white dark:bg-[#1C1C1E] hover:bg-amber-50 dark:hover:bg-amber-950/40 text-apple-textPrimary dark:text-white border border-apple-border/60 dark:border-white/10 text-[11px] font-bold shrink-0 shadow-2xs active:scale-95 transition-all"
-          >
-            <Presentation className="w-3.5 h-3.5 text-amber-500" />
-            <span>Slides</span>
-          </button>
-
-          <button
-            onClick={() => setIsTimerModalOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white dark:bg-[#1C1C1E] hover:bg-blue-50 dark:hover:bg-blue-950/40 text-apple-textPrimary dark:text-white border border-apple-border/60 dark:border-white/10 text-[11px] font-bold shrink-0 shadow-2xs active:scale-95 transition-all"
-          >
-            <Clock className="w-3.5 h-3.5 text-apple-blue" />
-            <span>Timer</span>
-          </button>
-
-          {isFacultyOrHost && (
-            <button
-              onClick={() => setIsPollModalOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white dark:bg-[#1C1C1E] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-apple-textPrimary dark:text-white border border-apple-border/60 dark:border-white/10 text-[11px] font-bold shrink-0 shadow-2xs active:scale-95 transition-all"
-            >
-              <BarChart2 className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Poll</span>
-            </button>
-          )}
-
-          <button
-            onClick={() => setIsExportNotesOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white dark:bg-[#1C1C1E] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-apple-textPrimary dark:text-white border border-apple-border/60 dark:border-white/10 text-[11px] font-bold shrink-0 shadow-2xs active:scale-95 transition-all"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Export</span>
-          </button>
-
-          <button
-            onClick={onStartScreenShare}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white dark:bg-[#1C1C1E] hover:bg-blue-50 dark:hover:bg-blue-950/40 text-apple-textPrimary dark:text-white border border-apple-border/60 dark:border-white/10 text-[11px] font-bold shrink-0 shadow-2xs active:scale-95 transition-all"
-          >
-            <Monitor className="w-3.5 h-3.5 text-apple-blue" />
-            <span>Screen</span>
-          </button>
-        </div>
-
         {/* Tab Content */}
         <div className="flex-1 min-h-0 overflow-hidden">
           {activeTab === 'chat' ? (
@@ -627,6 +568,7 @@ export const RoomView: React.FC<RoomViewProps> = ({
         currentSocketId={currentMember?.socketId}
         onAskQuestion={onAskQAQuestion}
         onEditQuestion={onEditQAQuestion}
+        onDeleteQuestion={onDeleteQAQuestion}
         onAnswerQuestion={onAnswerQAQuestion}
         onUpvoteQuestion={onUpvoteQAQuestion}
         onUpvoteAnswer={onUpvoteQAAnswer}

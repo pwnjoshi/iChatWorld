@@ -11,6 +11,7 @@ import {
   Send,
   MessageCircle,
   Edit3,
+  Trash2,
   Check,
   ChevronDown,
   ChevronUp
@@ -24,6 +25,7 @@ interface QAQueueModalProps {
   isFaculty: boolean;
   onAskQuestion: (text: string, isAnonymous: boolean) => Promise<boolean>;
   onEditQuestion?: (questionId: string, text: string) => Promise<boolean>;
+  onDeleteQuestion?: (questionId: string) => Promise<boolean>;
   onAnswerQuestion?: (questionId: string, text: string) => Promise<boolean>;
   onUpvoteQuestion: (questionId: string) => Promise<boolean>;
   onUpvoteAnswer?: (questionId: string, answerId: string) => Promise<boolean>;
@@ -38,6 +40,7 @@ export const QAQueueModal: React.FC<QAQueueModalProps> = ({
   isFaculty,
   onAskQuestion,
   onEditQuestion,
+  onDeleteQuestion,
   onAnswerQuestion,
   onUpvoteQuestion,
   onUpvoteAnswer,

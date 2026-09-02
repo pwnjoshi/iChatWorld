@@ -152,6 +152,16 @@ export function useSocket() {
       });
     });
 
+    socketInstance.on('qa:question-deleted', (data: { questionId: string }) => {
+      setRoom(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          qaQuestions: (prev.qaQuestions || []).filter(q => q.id !== data.questionId)
+        };
+      });
+    });
+
     // Presenter & Laser events
     socketInstance.on('room:presenter-updated', (presenterState: PresenterState | null) => {
       setRoom(prev => prev ? { ...prev, presenterState } : null);
@@ -490,6 +500,15 @@ export function useSocket() {
     });
   }, [socket]);
 
+  const deleteQAQuestion = useCallback((questionId: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (!socket) return resolve(false);
+      socket.emit('qa:delete', { questionId }, (response: any) => {
+        resolve(!!response?.success);
+      });
+    });
+  }, [socket]);
+
   const answerQAQuestion = useCallback((questionId: string, text: string): Promise<boolean> => {
     return new Promise((resolve) => {
       if (!socket) return resolve(false);
@@ -786,6 +805,7 @@ export function useSocket() {
     updateTimerState,
     askQAQuestion,
     editQAQuestion,
+    deleteQAQuestion,
     answerQAQuestion,
     upvoteQAQuestion,
     upvoteQAAnswer,

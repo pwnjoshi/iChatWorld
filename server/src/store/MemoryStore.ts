@@ -19,6 +19,14 @@ export class MemoryStore implements IStore {
   private rooms: Map<string, Room> = new Map();
   private timers: Map<string, NodeJS.Timeout> = new Map();
 
+  private normalize(code: string): string {
+    const clean = (code || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    if (clean.length === 6) {
+      return `${clean.substring(0, 3)}-${clean.substring(3, 6)}`;
+    }
+    return (code || '').trim().toUpperCase();
+  }
+
   private serialize(room: Room): SerializedRoom {
     const membersArray: Member[] = room.members instanceof Map 
       ? Array.from(room.members.values())
@@ -421,7 +429,7 @@ export class MemoryStore implements IStore {
   }
 
   async editQAQuestion(code: string, questionId: string, newText: string, editorId: string): Promise<QAQuestion | null> {
-    const room = this.rooms.get(code);
+    const room = this.rooms.get(this.normalize(code));
     if (!room || !room.qaQuestions) return null;
     const q = room.qaQuestions.find(item => item.id === questionId);
     if (!q || q.authorId !== editorId) return null;
@@ -430,6 +438,19 @@ export class MemoryStore implements IStore {
     q.isEdited = true;
     this.touchRoom(code);
     return q;
+  }
+
+  async deleteQAQuestion(code: string, questionId: string, authorSocketId: string, isFacultyOrHost: boolean): Promise<boolean> {
+    const room = this.rooms.get(this.normalize(code));
+    if (!room || !room.qaQuestions) return false;
+    const idx = room.qaQuestions.findIndex(item => item.id === questionId);
+    if (idx === -1) return false;
+    const q = room.qaQuestions[idx];
+    if (q.authorId !== authorSocketId && !isFacultyOrHost) return false;
+
+    room.qaQuestions.splice(idx, 1);
+    this.touchRoom(code);
+    return true;
   }
 
   async upvoteQAQuestion(code: string, questionId: string, socketId: string): Promise<QAQuestion | null> {
