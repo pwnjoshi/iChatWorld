@@ -165,7 +165,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   const [showRuler, setShowRuler] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // StarNote Floating Pen Box (Customizable dock)
+  // Floating Pen Box (Customizable dock)
   const [penBoxSlots, setPenBoxSlots] = useState<PenBoxSlot[]>(DEFAULT_PEN_BOX);
   const [activePenBoxId, setActivePenBoxId] = useState<string | null>('p3');
   const [isPenBoxExpanded, setIsPenBoxExpanded] = useState(true);
@@ -528,6 +528,40 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     }
   }, [localStrokes, selectedStrokeId, zoom, pan, canvasBg, showRuler, remoteCursors]);
 
+  // Dynamically size canvas buffer to match its container exactly (eliminates coordinate offset)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updateCanvasSize = () => {
+      const container = containerRef.current;
+      const canvas = canvasRef.current;
+      if (!container || !canvas) return;
+
+      const rect = container.getBoundingClientRect();
+      const w = Math.floor(rect.width);
+      const h = Math.floor(rect.height);
+      if (w === 0 || h === 0) return;
+
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      redrawCanvas();
+    };
+
+    updateCanvasSize();
+    const ro = new ResizeObserver(() => updateCanvasSize());
+    if (containerRef.current) {
+      ro.observe(containerRef.current);
+    }
+    window.addEventListener('resize', updateCanvasSize);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateCanvasSize);
+    };
+  }, [isOpen, redrawCanvas]);
+
   useEffect(() => {
     if (isOpen) {
       setTimeout(redrawCanvas, 50);
@@ -618,17 +652,17 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       ctx.lineWidth = stroke.size * 2.5;
     } else if (stroke.type === 'ballpoint') {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = baseAlpha;
+      ctx.globalAlpha = 0.95 * baseAlpha;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size;
     } else if (stroke.type === 'pencil') {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 0.75 * baseAlpha;
+      ctx.globalAlpha = 0.65 * baseAlpha;
       ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = Math.max(1, stroke.size * 0.75);
+      ctx.lineWidth = Math.max(1, stroke.size * 0.7);
     } else if (stroke.type === 'brush') {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = baseAlpha;
+      ctx.globalAlpha = 0.88 * baseAlpha;
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size * 1.5;
     } else if (stroke.type === 'fountain') {
@@ -638,9 +672,11 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       ctx.lineWidth = stroke.size;
     } else if (stroke.type === 'marker') {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 0.85 * baseAlpha;
+      ctx.globalAlpha = 0.6 * baseAlpha;
       ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.size * 1.3;
+      ctx.lineWidth = stroke.size * 1.5;
+      ctx.shadowColor = stroke.color;
+      ctx.shadowBlur = 3;
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = baseAlpha;
@@ -745,17 +781,27 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         if (stroke.type === 'eraser') {
           ctx.lineWidth = stroke.size * 2.5;
         } else if (stroke.type === 'ballpoint') {
-          ctx.lineWidth = stroke.size;
+          // Ballpoint: strictly uniform crisp line
+          ctx.lineWidth = Math.max(1, stroke.size);
         } else if (stroke.type === 'fountain') {
-          ctx.lineWidth = Math.max(1, stroke.size * (0.3 + pressure * 1.2 * pFactor));
+          // Fountain Pen: calligraphic angle-sensitive nib with expressive stroke taper
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const angle = Math.atan2(dy, dx);
+          const angleMod = 0.35 + 0.65 * Math.abs(Math.sin(angle - Math.PI / 4));
+          ctx.lineWidth = Math.max(1, stroke.size * (0.25 + pressure * 1.6 * angleMod * pFactor));
         } else if (stroke.type === 'pencil') {
-          ctx.lineWidth = Math.max(1, stroke.size * (0.6 + pressure * 0.5 * pFactor));
+          // Pencil: softer, thinner graphite sketch line
+          ctx.lineWidth = Math.max(1, stroke.size * (0.4 + pressure * 0.5 * pFactor));
         } else if (stroke.type === 'brush') {
-          ctx.lineWidth = Math.max(2, stroke.size * (0.3 + pressure * 1.8 * pFactor));
+          // Art Brush: dynamic wide responsive sweep
+          ctx.lineWidth = Math.max(2, stroke.size * (0.2 + pressure * 2.2 * pFactor));
         } else if (stroke.type === 'marker') {
-          ctx.lineWidth = stroke.size * 1.3;
+          // Marker: soft, wide, luminous
+          ctx.lineWidth = Math.max(2, stroke.size * 1.5);
         } else {
-          ctx.lineWidth = Math.max(1, stroke.size * (0.35 + pressure * 0.9 * pFactor));
+          // Standard Ink Pen: natural smooth ink line
+          ctx.lineWidth = Math.max(1, stroke.size * (0.5 + pressure * 0.8 * pFactor));
         }
 
         ctx.beginPath();
@@ -784,14 +830,8 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     const clientX = e.clientX - rect.left;
     const clientY = e.clientY - rect.top;
 
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const rawX = clientX * scaleX;
-    const rawY = clientY * scaleY;
-
-    const worldX = (rawX - pan.x) / zoom;
-    const worldY = (rawY - pan.y) / zoom;
+    const worldX = (clientX - pan.x) / zoom;
+    const worldY = (clientY - pan.y) / zoom;
 
     let computedPressure = 0.5;
 
@@ -1545,7 +1585,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             );
           })}
 
-          {/* StarNote Tool Customizer Toggle */}
+          {/* Tool Customizer Toggle */}
           <button
             type="button"
             onClick={() => setShowToolCustomizer(!showToolCustomizer)}
@@ -1554,7 +1594,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
                 ? 'bg-apple-blue text-white font-semibold'
                 : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
             }`}
-            title="Open StarNote Pen Studio Customizer"
+            title="Open Pen Studio Customizer"
           >
             <Sliders className="w-3.5 h-3.5" />
           </button>
@@ -1724,13 +1764,13 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         </div>
       </div>
 
-      {/* StarNote Pen Studio Popover Modal (As seen in Screenshot 2) */}
+      {/* Pen Studio Popover Modal */}
       {showToolCustomizer && (
         <div className="shrink-0 p-4 bg-white dark:bg-[#1C1C1E] rounded-2xl border border-apple-border/80 dark:border-white/15 shadow-2xl space-y-3.5 animate-scale-up max-w-xl">
           <div className="flex items-center justify-between border-b border-apple-border/40 dark:border-white/10 pb-2">
             <span className="font-bold text-footnote text-apple-textPrimary dark:text-white flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-apple-blue" />
-              <span>StarNote Pen Studio</span>
+              <span>Pen Studio</span>
             </span>
             <span className="text-caption font-mono text-apple-blue font-bold">
               {currentPenMeta.label}
@@ -1834,13 +1874,11 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     >
       <canvas
         ref={canvasRef}
-        width={1920}
-        height={1080}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className={`w-full h-full object-contain touch-none block ${
+        className={`w-full h-full block touch-none ${
           tool === 'pan' || isPanning
             ? 'cursor-grab active:cursor-grabbing'
             : tool === 'select'
@@ -1917,14 +1955,14 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         </div>
       )}
 
-      {/* Floating StarNote Multi-Pen Box Dock (Bottom Center / Side Tray) */}
+      {/* Floating Multi-Pen Box Dock (Bottom Center / Side Tray) */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 p-1.5 bg-black/80 dark:bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl select-none">
         {/* Toggle Dock Button */}
         <button
           type="button"
           onClick={() => setShowToolCustomizer(!showToolCustomizer)}
           className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-          title="Open StarNote Pen Studio"
+          title="Open Pen Studio"
         >
           <Sliders className="w-4 h-4 text-apple-blue" />
         </button>
@@ -1993,7 +2031,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-apple-green animate-pulse" />
             <span className="font-bold text-footnote tracking-wide text-white">
-              StarNote Collaborative Whiteboard Studio
+              Collaborative Whiteboard
             </span>
             <span className="text-caption text-white/50 hidden sm:inline">
               (Press Esc to exit)
@@ -2034,7 +2072,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="StarNote Whiteboard Studio"
+      title="Collaborative Whiteboard"
       maxWidth="max-w-6xl"
     >
       <div className="select-none flex flex-col h-[76vh] max-h-[750px] space-y-2.5 overflow-hidden">

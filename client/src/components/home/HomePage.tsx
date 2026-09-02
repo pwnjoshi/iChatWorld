@@ -135,7 +135,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 Disposable rooms for real-time collaboration.
               </h1>
               <p className="text-footnote sm:text-subhead text-apple-textSecondary dark:text-white/70 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                Instant encrypted workspaces with live chat, WebRTC file drops, StarNote whiteboard studio, and synchronized presentation decks. No history retained.
+                Instant encrypted workspaces with live chat, WebRTC file drops, collaborative whiteboard, and synchronized presentation decks. No history retained.
               </p>
             </div>
 
@@ -247,8 +247,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-apple-secondaryBg/70 dark:bg-white/5">
                   <PenTool className="w-4 h-4 text-apple-blue shrink-0" />
                   <div>
-                    <p className="font-bold text-apple-textPrimary dark:text-white leading-tight">StarNote Whiteboard Studio</p>
-                    <p className="text-caption text-apple-textSecondary dark:text-white/60">6-Pen dock, pressure curves, multi-erasers, and text notes.</p>
+                    <p className="font-bold text-apple-textPrimary dark:text-white leading-tight">Collaborative Whiteboard</p>
+                    <p className="text-caption text-apple-textSecondary dark:text-white/60">Multi-pen dock, pressure curves, multi-erasers, and text notes.</p>
                   </div>
                 </div>
 
@@ -287,7 +287,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="p-3 bg-white/70 dark:bg-white/5 backdrop-blur rounded-2xl border border-apple-border/60 dark:border-white/10 space-y-1">
                 <PenTool className="w-4 h-4 text-purple-500" />
                 <p className="text-caption font-bold text-apple-textPrimary dark:text-white">Whiteboard</p>
-                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">StarNote 6-pen studio</p>
+                <p className="text-[10px] text-apple-textSecondary dark:text-white/50">Multi-pen studio</p>
               </div>
 
               <div className="p-3 bg-white/70 dark:bg-white/5 backdrop-blur rounded-2xl border border-apple-border/60 dark:border-white/10 space-y-1">

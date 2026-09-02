@@ -47,7 +47,7 @@ export class AIService {
         if (userChat.length > 0) {
           return `**Session Discussion Summary**:\n\n` + userChat.map(m => `• ${m.content}`).join('\n') + `\n\n*All room discussions and whiteboard notes are ephemeral.*`;
         }
-        return `**Session Summary**:\n• Real-time collaborative room active.\n• StarNote whiteboard and P2P mesh ready for group collaboration.\n• All shared files and chat messages are ephemeral.`;
+        return `**Session Summary**:\n• Real-time collaborative room active.\n• Collaborative whiteboard and P2P mesh ready for group collaboration.\n• All shared files and chat messages are ephemeral.`;
       }
 
       if (cleanQ.includes('quiz')) {
@@ -55,7 +55,7 @@ export class AIService {
       }
 
       if (cleanQ.includes('feature') || cleanQ.includes('help')) {
-        return `**iChatWorld Key Capabilities**:\n\n• **StarNote Whiteboard**: 6-pen customizable dock with pressure curve & eraser suite.\n• **P2P Mesh Transfer**: Send large files directly peer-to-peer at full LAN/WAN speeds.\n• **Slide Presenter**: Live deck broadcasting with laser pointer & markup.\n• **Export Notes**: One-tap OTP verified email delivery for lecture notes & homework.`;
+        return `**iChatWorld Key Capabilities**:\n\n• **Collaborative Whiteboard**: Multi-pen customizable dock with pressure curve & eraser suite.\n• **P2P Mesh Transfer**: Send large files directly peer-to-peer at full LAN/WAN speeds.\n• **Slide Presenter**: Live deck broadcasting with laser pointer & markup.\n• **Export Notes**: One-tap OTP verified email delivery for lecture notes & homework.`;
       }
 
       // 4. Dynamic answer for custom questions

@@ -176,9 +176,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   const [showSearch, setShowSearch] = useState(false);
   const [activeReactionMenu, setActiveReactionMenu] = useState<string | null>(null);
 
-  // Edit state
+  // Edit & Copy state
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+
+  const handleCopyMessage = (msg: Message) => {
+    navigator.clipboard.writeText(msg.text);
+    setCopiedMessageId(msg.id);
+    setTimeout(() => setCopiedMessageId(null), 2000);
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -471,17 +478,36 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     )}
                   </div>
 
-                  {/* Actions Trigger (Mobile & Desktop) */}
-                  <div className="opacity-0 group-hover:opacity-100 sm:flex hidden items-center gap-0.5 transition-opacity mt-1">
+                  {/* ── Desktop Hover Quick-Action Floating Pill ── */}
+                  <div
+                    className={`absolute -top-3.5 z-20 hidden group-hover:flex items-center gap-0.5 px-1.5 py-0.5 bg-white/95 dark:bg-[#2C2C2E]/95 backdrop-blur-md rounded-full border border-apple-border/70 dark:border-white/15 shadow-sm transition-all animate-fade-in ${
+                      isOwn ? 'right-2' : 'left-8'
+                    }`}
+                  >
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setActiveReactionMenu(activeReactionMenu === msg.id ? null : msg.id);
                       }}
-                      className="p-1 text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10"
-                      title="React"
+                      className="p-1 rounded-full text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors"
+                      title="React with Emoji"
                     >
                       <Smile className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyMessage(msg);
+                      }}
+                      className="p-1 rounded-full text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors"
+                      title="Copy Message"
+                    >
+                      {copiedMessageId === msg.id ? (
+                        <Check className="w-3.5 h-3.5 text-apple-green" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
                     </button>
 
                     {isOwn && !msg.isAudio && (
@@ -490,8 +516,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                           e.stopPropagation();
                           handleStartEdit(msg);
                         }}
-                        className="p-1 text-apple-textSecondary hover:text-apple-blue rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10"
-                        title="Edit"
+                        className="p-1 rounded-full text-apple-textSecondary hover:text-apple-blue hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+                        title="Edit Message"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
@@ -503,43 +529,59 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                           e.stopPropagation();
                           handleDeleteMessage(msg.id);
                         }}
-                        className="p-1 text-apple-textSecondary hover:text-apple-red rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10"
-                        title="Delete"
+                        className="p-1 rounded-full text-apple-textSecondary hover:text-apple-red hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                        title="Delete Message"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
 
-                  {/* Floating WhatsApp/Instagram Style Reaction Popover */}
+                  {/* ── Integrated Floating Tapback & Actions Menu ── */}
                   {activeReactionMenu === msg.id && (
                     <div
-                      className={`absolute bottom-full mb-1 z-30 p-1 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-md rounded-full shadow-xl border border-apple-border/80 dark:border-white/15 flex items-center gap-1 animate-scale-up ${
-                        isOwn ? 'right-0' : 'left-8'
+                      onClick={(e) => e.stopPropagation()}
+                      className={`absolute -top-10 z-30 p-1 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl rounded-full shadow-xl border border-apple-border/80 dark:border-white/15 flex items-center gap-0.5 animate-scale-up ${
+                        isOwn ? 'right-0' : 'left-0 sm:left-8'
                       }`}
                     >
                       {TAPBACK_EMOJIS.map((emoji) => (
                         <button
                           key={emoji}
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={() => {
                             onReactToMessage(msg.id, emoji);
                             setActiveReactionMenu(null);
                           }}
-                          className="w-7 h-7 flex items-center justify-center hover:scale-125 transition-transform text-sm active:scale-95"
+                          className="w-7 h-7 flex items-center justify-center hover:scale-125 transition-transform text-[15px] active:scale-95 rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10"
                         >
                           {emoji}
                         </button>
                       ))}
 
-                      {/* Mobile extra actions */}
+                      <div className="w-[1px] h-4 bg-apple-border/60 dark:border-white/10 mx-0.5" />
+
+                      <button
+                        onClick={() => {
+                          handleCopyMessage(msg);
+                          setActiveReactionMenu(null);
+                        }}
+                        className="w-7 h-7 flex items-center justify-center text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 transition-colors"
+                        title="Copy"
+                      >
+                        {copiedMessageId === msg.id ? (
+                          <Check className="w-3.5 h-3.5 text-apple-green" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+
                       {isOwn && !msg.isAudio && (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={() => {
                             handleStartEdit(msg);
+                            setActiveReactionMenu(null);
                           }}
-                          className="w-7 h-7 flex items-center justify-center text-apple-textSecondary hover:text-apple-blue rounded-full hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-xs"
+                          className="w-7 h-7 flex items-center justify-center text-apple-textSecondary hover:text-apple-blue rounded-full hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
                           title="Edit"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -548,11 +590,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
                       {canModerateDelete && (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={() => {
                             handleDeleteMessage(msg.id);
+                            setActiveReactionMenu(null);
                           }}
-                          className="w-7 h-7 flex items-center justify-center text-apple-red hover:bg-red-50 dark:hover:bg-red-950/40 rounded-full text-xs"
+                          className="w-7 h-7 flex items-center justify-center text-apple-textSecondary hover:text-apple-red rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
                           title="Delete"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
