@@ -43,7 +43,7 @@ interface ChatPanelProps {
 
 const TAPBACK_EMOJIS = ['❤️', '👍', '😂', '🔥', '🎉', '💡'];
 
-// Helper to render formatted markdown & code blocks cleanly
+// Helper to render formatted markdown, tables, headings & code blocks cleanly
 const FormattedMessageText: React.FC<{ text: string; isOwn?: boolean }> = ({ text, isOwn }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
@@ -53,11 +53,62 @@ const FormattedMessageText: React.FC<{ text: string; isOwn?: boolean }> = ({ tex
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
+  // Helper to parse inline bold, italic, code, quotes, and @ai badges
+  const parseInlineMarkdown = (content: string) => {
+    // Tokenize bold (**text**), italic (*text* or _text_), code (`text`), and @ai
+    const tokens = content.split(/(\*\*.*?\*\*|\*[^*]+?\*|`.*?`|@ai\b|@AI\b|@Ai\b)/gi);
+
+    return tokens.map((tok, tIdx) => {
+      if (tok.startsWith('**') && tok.endsWith('**')) {
+        return (
+          <strong key={tIdx} className="font-bold text-inherit">
+            {tok.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (tok.startsWith('*') && tok.endsWith('*') && tok.length > 2 && !tok.startsWith('**')) {
+        return (
+          <em key={tIdx} className="italic text-inherit">
+            {tok.slice(1, -1)}
+          </em>
+        );
+      }
+      if (tok.startsWith('`') && tok.endsWith('`')) {
+        return (
+          <code
+            key={tIdx}
+            className={`px-1.5 py-0.5 rounded font-mono text-[12px] ${
+              isOwn ? 'bg-white/20 text-white' : 'bg-black/10 dark:bg-white/15 text-apple-blue dark:text-blue-400'
+            }`}
+          >
+            {tok.slice(1, -1)}
+          </code>
+        );
+      }
+      if (tok.toLowerCase() === '@ai') {
+        return (
+          <span
+            key={tIdx}
+            className={`inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-lg text-[12px] font-bold tracking-wide shadow-2xs select-none align-baseline transition-all ${
+              isOwn
+                ? 'bg-white text-apple-blue shadow-sm'
+                : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xs'
+            }`}
+          >
+            <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
+            <span>@ai</span>
+          </span>
+        );
+      }
+      return <span key={tIdx}>{tok}</span>;
+    });
+  };
+
   // Split by code blocks ```lang ... ```
   const parts = text.split(/(```[\s\S]*?```)/g);
 
   return (
-    <div className="space-y-1.5 leading-relaxed text-[13.5px] sm:text-[14px]">
+    <div className="space-y-2 leading-relaxed text-[13.5px] sm:text-[14px]">
       {parts.map((part, pIdx) => {
         if (part.startsWith('```') && part.endsWith('```')) {
           const match = part.match(/^```(\w+)?\n?([\s\S]*?)```$/);
@@ -99,68 +150,91 @@ const FormattedMessageText: React.FC<{ text: string; isOwn?: boolean }> = ({ tex
           );
         }
 
-        // Parse regular markdown lines (bold, bullet points, headers)
-        const lines = part.split('\n');
+        // Parse regular markdown lines (headings, tables, lists, quotes)
+        const rawLines = part.split('\n');
         return (
           <div key={pIdx} className="space-y-1">
-            {lines.map((line, lIdx) => {
-              if (!line.trim()) return <div key={lIdx} className="h-1" />;
+            {rawLines.map((line, lIdx) => {
+              const trimmed = line.trim();
+              if (!trimmed) return <div key={lIdx} className="h-0.5" />;
 
-              // Bullet point formatting
-              const isBullet = line.startsWith('• ') || line.startsWith('- ') || line.startsWith('* ');
-              const cleanLine = isBullet ? line.replace(/^[•\-\*]\s+/, '') : line;
+              // Horizontal Rule
+              if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
+                return <hr key={lIdx} className="my-2 border-current opacity-20" />;
+              }
 
-              // Parse **bold**, `code`, and @ai mentions inline
-              const tokens = cleanLine.split(/(\*\*.*?\*\*|`.*?`|@ai\b|@AI\b|@Ai\b)/gi);
-
-              const lineContent = tokens.map((tok, tIdx) => {
-                if (tok.startsWith('**') && tok.endsWith('**')) {
-                  return (
-                    <strong key={tIdx} className="font-bold">
-                      {tok.slice(2, -2)}
-                    </strong>
-                  );
-                }
-                if (tok.startsWith('`') && tok.endsWith('`')) {
-                  return (
-                    <code
-                      key={tIdx}
-                      className={`px-1.5 py-0.2 rounded font-mono text-[12px] ${
-                        isOwn ? 'bg-white/20 text-white' : 'bg-black/10 dark:bg-white/15 text-apple-blue dark:text-blue-400'
-                      }`}
-                    >
-                      {tok.slice(1, -1)}
-                    </code>
-                  );
-                }
-                if (tok.toLowerCase() === '@ai') {
-                  return (
-                    <span
-                      key={tIdx}
-                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-lg text-[12px] font-bold tracking-wide shadow-2xs select-none align-baseline transition-all ${
-                        isOwn
-                          ? 'bg-white text-apple-blue shadow-sm'
-                          : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xs'
-                      }`}
-                    >
-                      <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
-                      <span>@ai</span>
-                    </span>
-                  );
-                }
-                return <span key={tIdx}>{tok}</span>;
-              });
-
-              if (isBullet) {
+              // Headers: #, ##, ###, ####
+              if (trimmed.startsWith('# ')) {
                 return (
-                  <div key={lIdx} className="flex items-start gap-1.5 pl-1">
-                    <span className="text-apple-blue dark:text-blue-400 select-none">•</span>
-                    <div className="flex-1">{lineContent}</div>
+                  <h1 key={lIdx} className="text-[16px] font-extrabold tracking-tight mt-2 mb-1">
+                    {parseInlineMarkdown(trimmed.replace(/^#\s+/, ''))}
+                  </h1>
+                );
+              }
+              if (trimmed.startsWith('## ')) {
+                return (
+                  <h2 key={lIdx} className="text-[15px] font-bold tracking-tight mt-1.5 mb-1">
+                    {parseInlineMarkdown(trimmed.replace(/^##\s+/, ''))}
+                  </h2>
+                );
+              }
+              if (trimmed.startsWith('### ')) {
+                return (
+                  <h3 key={lIdx} className="text-[14px] font-bold tracking-tight mt-1 mb-0.5 flex items-center gap-1">
+                    {parseInlineMarkdown(trimmed.replace(/^###\s+/, ''))}
+                  </h3>
+                );
+              }
+              if (trimmed.startsWith('#### ')) {
+                return (
+                  <h4 key={lIdx} className="text-[13px] font-bold tracking-wide mt-1 uppercase opacity-90">
+                    {parseInlineMarkdown(trimmed.replace(/^####\s+/, ''))}
+                  </h4>
+                );
+              }
+
+              // Numbered list items (e.g. "1. Core Concept:")
+              const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+              if (numMatch) {
+                return (
+                  <div key={lIdx} className="flex items-start gap-1.5 pl-1 my-0.5">
+                    <span className="font-bold text-[12px] opacity-80 min-w-[16px] select-none">
+                      {numMatch[1]}.
+                    </span>
+                    <div className="flex-1">{parseInlineMarkdown(numMatch[2])}</div>
                   </div>
                 );
               }
 
-              return <p key={lIdx} className="leading-snug">{lineContent}</p>;
+              // Bullet list items (e.g. "* item", "- item", "• item")
+              const isBullet = /^[•\-\*]\s+/.test(trimmed);
+              if (isBullet) {
+                const cleanItem = trimmed.replace(/^[•\-\*]\s+/, '');
+                return (
+                  <div key={lIdx} className="flex items-start gap-1.5 pl-1 my-0.5">
+                    <span className="text-apple-blue dark:text-blue-400 font-bold select-none text-[13px]">•</span>
+                    <div className="flex-1">{parseInlineMarkdown(cleanItem)}</div>
+                  </div>
+                );
+              }
+
+              // Table row parsing (e.g. "| Col 1 | Col 2 |")
+              if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+                // Check if it's a separator line like | --- | --- |
+                if (/^\|[\s\-:]+\|\s*$/.test(trimmed)) {
+                  return null;
+                }
+                const cells = trimmed.slice(1, -1).split('|').map(c => c.trim());
+                return (
+                  <div key={lIdx} className="grid grid-flow-col auto-cols-fr gap-2 p-1.5 bg-black/5 dark:bg-white/5 rounded-lg border border-current/10 text-[12px]">
+                    {cells.map((c, cIdx) => (
+                      <div key={cIdx} className="px-1">{parseInlineMarkdown(c)}</div>
+                    ))}
+                  </div>
+                );
+              }
+
+              return <p key={lIdx} className="leading-snug">{parseInlineMarkdown(trimmed)}</p>;
             })}
           </div>
         );

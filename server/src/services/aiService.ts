@@ -163,11 +163,11 @@ export class AIService {
       }
     }
 
-    // ── 6. Intelligent Built-in Technical Reasoner (Zero-Key Fallback) ──
-    return this.generateSmartFallbackResponse(messages);
+    // ── 6. Intelligent Built-in Technical Reasoner & Live Knowledge (Zero-Key Fallback) ──
+    return await this.generateSmartFallbackResponse(messages);
   }
 
-  private generateSmartFallbackResponse(messages: { role: string; content: string }[]): string {
+  private async generateSmartFallbackResponse(messages: { role: string; content: string }[]): Promise<string> {
     const lastMsg = (messages[messages.length - 1]?.content || '').toLowerCase();
     const cleanQ = lastMsg.replace(/^[a-z0-9_\-\s]+:\s*/i, '').replace(/@ai/gi, '').trim();
 
@@ -297,18 +297,46 @@ export const Counter: React.FC = () => {
 \`\`\``;
     }
 
-    // 6. General Intelligent Assistant Response
-    return `### 💡 Analysis & Explanation for: *"${cleanQ}"*
+    // 6. Dynamic Live Knowledge Lookup (Wikipedia Global Encyclopedia)
+    try {
+      const cleanSearch = cleanQ
+        .replace(/^(tell|what is|what are|explain|who is|who was|define|describe|about|can you tell me about)\s+/i, '')
+        .replace(/[\?\!\.\,\;\:]+$/g, '')
+        .trim();
 
-Here is a structured breakdown:
+      if (cleanSearch.length > 1) {
+        const wikiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleanSearch)}`;
+        const res = await fetch(wikiUrl, {
+          headers: { 'User-Agent': 'iChatWorld/1.0 (info@ichatworld.xyz)' }
+        });
 
-1. **Core Concept**:
-   * Understanding this topic involves breaking down the fundamental principles, identifying the trade-offs, and choosing the optimal approach.
-2. **Implementation Best Practices**:
-   * Keep designs modular, maintain clean separation of concerns, and minimize unnecessary state mutations.
-   * Consider edge cases (empty inputs, network timeouts, boundary limits).
-3. **Key Takeaway**:
-   * Test iteratively in small increments. Feel free to ask for specific code examples, debugging assistance, or deeper architectural walkthroughs!`;
+        if (res.ok) {
+          const data: any = await res.json();
+          if (data.extract) {
+            let reply = `### 📖 ${data.title}\n\n`;
+            if (data.description) {
+              reply += `*${data.description}*\n\n`;
+            }
+            reply += `${data.extract}\n\n`;
+            return reply.trim();
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn('Live encyclopedia lookup fallback error:', err.message);
+    }
+
+    // 7. General Structured Technical Response
+    return `### 💡 Analysis for: *"${cleanQ}"*
+
+Here is a structured explanation:
+
+1. **Overview & Definition**:
+   * Understanding **${cleanQ}** starts with identifying its core principles, operational requirements, and practical real-world applications.
+2. **Key Characteristics**:
+   * Analyzes input conditions, handles edge cases, and maintains predictable behavior under variable loads.
+3. **Actionable Insights**:
+   * You can ask for specific code implementations, step-by-step algorithms, or architectural breakdowns!`;
   }
 
   async askAssistant(userPrompt: string, recentMessages: Message[]): Promise<string> {
