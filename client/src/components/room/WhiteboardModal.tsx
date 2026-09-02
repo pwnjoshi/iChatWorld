@@ -1131,6 +1131,8 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         initialStrokeSnapshotRef.current = JSON.parse(JSON.stringify(hitStroke));
       } else {
         setSelectedStrokeId(null);
+        setIsDraggingSelected(false);
+        initialStrokeSnapshotRef.current = null;
       }
       return;
     }
@@ -1296,12 +1298,25 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     }
 
     // Finished Dragging Selected Shape -> Sync with room
-    if (tool === 'select' && isDraggingSelected && selectedStrokeId) {
+    if (tool === 'select' && isDraggingSelected && selectedStrokeId && initialStrokeSnapshotRef.current) {
       setIsDraggingSelected(false);
-      const moved = localStrokes.find((s) => s.id === selectedStrokeId);
-      if (moved) {
-        onEmitStroke(moved);
-      }
+      const pt = getCanvasWorldCoords(e);
+      const dx = pt.x - dragStartRef.current.x;
+      const dy = pt.y - dragStartRef.current.y;
+      const initial = initialStrokeSnapshotRef.current;
+      const movedPoints = initial.points.map((p) => ({
+        x: p.x + dx,
+        y: p.y + dy,
+        pressure: p.pressure
+      }));
+      const movedStroke: WhiteboardStroke = {
+        ...initial,
+        points: movedPoints
+      };
+      setLocalStrokes((prev) =>
+        prev.map((s) => (s.id === selectedStrokeId ? movedStroke : s))
+      );
+      onEmitStroke(movedStroke);
       initialStrokeSnapshotRef.current = null;
       return;
     }
