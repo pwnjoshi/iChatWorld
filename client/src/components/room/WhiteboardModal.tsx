@@ -80,7 +80,8 @@ type ToolType =
   | 'star'
   | 'pan';
 
-type CanvasBgType = 'light' | 'dark' | 'grid' | 'dots' | 'lines';
+type CanvasTheme = 'light' | 'dark';
+type CanvasPattern = 'plain' | 'grid' | 'dots' | 'lines';
 type PressureMode = 'stylus' | 'speed' | 'fixed';
 
 interface PenBoxSlot {
@@ -161,7 +162,8 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   const [pressureSensitivity, setPressureSensitivity] = useState(60); // 0-100%
   const [pressureMode, setPressureMode] = useState<PressureMode>('stylus');
   const [customColor, setCustomColor] = useState('#007AFF');
-  const [canvasBg, setCanvasBg] = useState<CanvasBgType>('light');
+  const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>('light');
+  const [canvasPattern, setCanvasPattern] = useState<CanvasPattern>('plain');
   const [showRuler, setShowRuler] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -338,7 +340,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Render background
-    const isDark = canvasBg === 'dark';
+    const isDark = canvasTheme === 'dark';
     ctx.fillStyle = isDark ? '#121212' : '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -350,10 +352,10 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     const startY = -pan.y / zoom - 200;
     const endY = (canvas.height - pan.y) / zoom + 200;
 
-    // Background Patterns
-    if (canvasBg === 'grid') {
+    // Background Patterns (Works in BOTH Light and Dark themes)
+    if (canvasPattern === 'grid') {
       ctx.save();
-      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 122, 255, 0.08)';
+      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 122, 255, 0.10)';
       ctx.lineWidth = 1;
       const gridSize = 40;
 
@@ -370,9 +372,9 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         ctx.stroke();
       }
       ctx.restore();
-    } else if (canvasBg === 'dots') {
+    } else if (canvasPattern === 'dots') {
       ctx.save();
-      ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
+      ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.22)';
       const dotSize = 30;
       for (let x = startX - (startX % dotSize); x <= endX; x += dotSize) {
         for (let y = startY - (startY % dotSize); y <= endY; y += dotSize) {
@@ -382,9 +384,9 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         }
       }
       ctx.restore();
-    } else if (canvasBg === 'lines') {
+    } else if (canvasPattern === 'lines') {
       ctx.save();
-      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 122, 255, 0.12)';
+      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 122, 255, 0.14)';
       ctx.lineWidth = 1;
       const lineGap = 32;
       for (let y = startY - (startY % lineGap); y <= endY; y += lineGap) {
@@ -526,7 +528,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       }
       ctx.restore();
     }
-  }, [localStrokes, selectedStrokeId, zoom, pan, canvasBg, showRuler, remoteCursors]);
+  }, [localStrokes, selectedStrokeId, zoom, pan, canvasTheme, canvasPattern, showRuler, remoteCursors]);
 
   // Dynamically size canvas buffer to match its container exactly (eliminates coordinate offset)
   useEffect(() => {
@@ -1032,7 +1034,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         points: [startPoint]
       };
       ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
-      drawSmoothStroke(ctx, activeStroke, canvasBg === 'dark');
+      drawSmoothStroke(ctx, activeStroke, canvasTheme === 'dark');
     }
   };
 
@@ -1101,7 +1103,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           points: [currentPointsRef.current[0], pt]
         };
         ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
-        drawSmoothStroke(ctx, shapeStroke, canvasBg === 'dark');
+        drawSmoothStroke(ctx, shapeStroke, canvasTheme === 'dark');
       }
     } else {
       const canvas = canvasRef.current;
@@ -1116,7 +1118,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           points: currentPointsRef.current
         };
         ctx.setTransform(zoom, 0, 0, zoom, pan.x, pan.y);
-        drawSmoothStroke(ctx, activeStroke, canvasBg === 'dark');
+        drawSmoothStroke(ctx, activeStroke, canvasTheme === 'dark');
       }
     }
   };
@@ -1275,7 +1277,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     const tempCtx = tempCanvas.getContext('2d');
     if (!tempCtx) return;
 
-    tempCtx.fillStyle = canvasBg === 'dark' ? '#121212' : '#FFFFFF';
+    tempCtx.fillStyle = canvasTheme === 'dark' ? '#121212' : '#FFFFFF';
     tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
     tempCtx.drawImage(canvas, 0, 0);
 
@@ -1600,47 +1602,83 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           </button>
         </div>
 
-        {/* Paper Themes */}
-        <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
+        {/* 1. Theme Mode: Light / Dark */}
+        <div className="flex items-center gap-0.5 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
           <button
             type="button"
-            onClick={() => setCanvasBg('light')}
+            onClick={() => setCanvasTheme('light')}
             className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
-              canvasBg === 'light' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              canvasTheme === 'light'
+                ? 'bg-apple-blue text-white shadow-2xs'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
             }`}
-            title="Plain White Paper"
+            title="Light Theme Whiteboard"
           >
             <Sun className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"
-            onClick={() => setCanvasBg('dark')}
+            onClick={() => setCanvasTheme('dark')}
             className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
-              canvasBg === 'dark' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+              canvasTheme === 'dark'
+                ? 'bg-apple-blue text-white shadow-2xs'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
             }`}
-            title="Dark Obsidian Paper"
+            title="Dark Theme Whiteboard"
           >
             <Moon className="w-3.5 h-3.5" />
           </button>
+        </div>
+
+        {/* 2. Pattern Overlay: Blank / Grid / Dots / Lines */}
+        <div className="flex items-center gap-0.5 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
           <button
             type="button"
-            onClick={() => setCanvasBg('grid')}
-            className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
-              canvasBg === 'grid' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            onClick={() => setCanvasPattern('plain')}
+            className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all ${
+              canvasPattern === 'plain'
+                ? 'bg-apple-blue text-white shadow-2xs font-bold'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
             }`}
-            title="Math Grid Paper"
+            title="Plain Blank Canvas"
+          >
+            <span className="text-[11px]">Blank</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setCanvasPattern('grid')}
+            className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
+              canvasPattern === 'grid'
+                ? 'bg-apple-blue text-white shadow-2xs'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            }`}
+            title="Math Grid (Selectable in Light & Dark Mode)"
           >
             <Grid className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"
-            onClick={() => setCanvasBg('dots')}
-            className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
-              canvasBg === 'dots' ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            onClick={() => setCanvasPattern('dots')}
+            className={`px-2 py-1 rounded-lg text-caption font-bold transition-all ${
+              canvasPattern === 'dots'
+                ? 'bg-apple-blue text-white shadow-2xs'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
             }`}
-            title="Dot Graph Paper"
+            title="Dot Graph Paper (Selectable in Light & Dark Mode)"
           >
-            <span className="text-[10px] font-bold px-1">DOTS</span>
+            <span className="text-[10.5px]">DOTS</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setCanvasPattern('lines')}
+            className={`p-1.5 rounded-lg text-caption font-medium transition-all ${
+              canvasPattern === 'lines'
+                ? 'bg-apple-blue text-white shadow-2xs'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            }`}
+            title="Ruled Notebook Lines (Selectable in Light & Dark Mode)"
+          >
+            <Minus className="w-3.5 h-3.5" />
           </button>
         </div>
 
