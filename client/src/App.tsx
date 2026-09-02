@@ -176,16 +176,22 @@ export const App: React.FC = () => {
     if (room) {
       handleRemoveRoomFromHistory(room.code);
     }
+    setInitialCode('');
     leaveRoom();
-    window.history.replaceState(null, '', window.location.pathname);
+    try {
+      window.history.replaceState(null, '', window.location.pathname);
+    } catch {}
   };
 
   const handleEndRoom = async () => {
     if (room) {
       handleRemoveRoomFromHistory(room.code);
     }
+    setInitialCode('');
+    try {
+      window.history.replaceState(null, '', window.location.pathname);
+    } catch {}
     await endRoom();
-    window.history.replaceState(null, '', window.location.pathname);
     return true;
   };
 

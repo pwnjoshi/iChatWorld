@@ -191,6 +191,9 @@ export function useSocket() {
       setError(data.reason || 'This room session has ended.');
       setRoom(null);
       setCurrentMember(null);
+      try {
+        window.history.replaceState(null, '', window.location.pathname);
+      } catch {}
     });
 
     // Chat events
@@ -776,15 +779,15 @@ export function useSocket() {
 
   const endRoom = useCallback((): Promise<boolean> => {
     return new Promise((resolve) => {
-      if (!socket) return resolve(false);
+      if (!socket) {
+        setRoom(null);
+        setCurrentMember(null);
+        return resolve(false);
+      }
       socket.emit('room:end', {}, (response: any) => {
-        if (response?.success) {
-          setRoom(null);
-          setCurrentMember(null);
-          resolve(true);
-        } else {
-          resolve(false);
-        }
+        setRoom(null);
+        setCurrentMember(null);
+        resolve(!!response?.success);
       });
     });
   }, [socket]);
