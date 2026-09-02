@@ -37,6 +37,7 @@ import {
   MousePointer2,
   Scissors,
   Type,
+  StickyNote,
   Plus,
   X,
   Check
@@ -71,6 +72,7 @@ type ToolType =
   | EraserSubType
   | 'select'
   | 'text'
+  | 'note'
   | 'rect'
   | 'circle'
   | 'triangle'
@@ -100,6 +102,15 @@ const DEFAULT_PEN_BOX: PenBoxSlot[] = [
   { id: 'p4', type: 'pencil', color: '#34C759', size: 3, opacity: 85, label: '2.0' },
   { id: 'p5', type: 'brush', color: '#FF9500', size: 10, opacity: 95, label: '1.75' },
   { id: 'p6', type: 'ballpoint', color: '#1C1C1E', size: 2, opacity: 100, label: '0.6' }
+];
+
+const NOTE_COLORS = [
+  { id: 'yellow', name: 'Canary Yellow', bg: '#FEF08A', border: '#FACC15', text: '#713F12' },
+  { id: 'green', name: 'Mint Green', bg: '#BBF7D0', border: '#4ADE80', text: '#14532D' },
+  { id: 'blue', name: 'Sky Blue', bg: '#BAE6FD', border: '#38BDF8', text: '#0C4A6E' },
+  { id: 'purple', name: 'Lavender', bg: '#E9D5FF', border: '#C084FC', text: '#581C87' },
+  { id: 'pink', name: 'Coral Pink', bg: '#FECDD3', border: '#FB7185', text: '#881337' },
+  { id: 'orange', name: 'Peach', bg: '#FED7AA', border: '#FB923C', text: '#7C2D12' }
 ];
 
 const APPLE_PALETTE = [
@@ -177,6 +188,12 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   const [textInputString, setTextInputString] = useState('');
   const [textFontSize, setTextFontSize] = useState(24);
   const [isTextBold, setIsTextBold] = useState(true);
+
+  // Sticky Note Modal / Input State
+  const [noteInputPos, setNoteInputPos] = useState<WhiteboardPoint | null>(null);
+  const [noteTitle, setNoteTitle] = useState('Idea Note');
+  const [noteText, setNoteText] = useState('');
+  const [noteColor, setNoteColor] = useState(NOTE_COLORS[0].bg);
 
   // Menu Dropdowns
   const [isPenMenuOpen, setIsPenMenuOpen] = useState(false);
@@ -296,8 +313,12 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     });
   }, [localStrokes]);
 
-  // Calculate stroke bounding box
+  // Calculate accurate stroke bounding box for hit-testing & lasso selection
   const getStrokeBoundingBox = (stroke: WhiteboardStroke) => {
+    if (!stroke.points || stroke.points.length === 0) {
+      return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+    }
+
     if (stroke.type === 'image') {
       const p = stroke.points[0];
       return {
@@ -307,24 +328,85 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         maxY: p.y + (stroke.imageHeight || 200)
       };
     }
+
+    if (stroke.type === 'note') {
+      const p = stroke.points[0];
+      const w = stroke.noteWidth || 220;
+      const h = stroke.noteHeight || 180;
+      return {
+        minX: p.x - 4,
+        minY: p.y - 4,
+        maxX: p.x + w + 4,
+        maxY: p.y + h + 4
+      };
+    }
+
     if (stroke.type === 'text' && stroke.text) {
       const p = stroke.points[0];
       const fontSize = stroke.fontSize || 24;
-      const approxW = stroke.text.length * (fontSize * 0.6);
+      const approxW = stroke.text.length * (fontSize * 0.62);
       return {
-        minX: p.x - 4,
-        minY: p.y - fontSize,
-        maxX: p.x + approxW + 8,
-        maxY: p.y + 8
+        minX: p.x - 6,
+        minY: p.y - fontSize - 6,
+        maxX: p.x + approxW + 10,
+        maxY: p.y + 10
       };
     }
+
+    if (stroke.type === 'circle' && stroke.points.length >= 2) {
+      const start = stroke.points[0];
+      const end = stroke.points[stroke.points.length - 1];
+      const radius = Math.hypot(end.x - start.x, end.y - start.y);
+      return {
+        minX: start.x - radius - 8,
+        minY: start.y - radius - 8,
+        maxX: start.x + radius + 8,
+        maxY: start.y + radius + 8
+      };
+    }
+
+    if (stroke.type === 'star' && stroke.points.length >= 2) {
+      const start = stroke.points[0];
+      const end = stroke.points[stroke.points.length - 1];
+      const r = Math.hypot(end.x - start.x, end.y - start.y);
+      return {
+        minX: start.x - r - 8,
+        minY: start.y - r - 8,
+        maxX: start.x + r + 8,
+        maxY: start.y + r + 8
+      };
+    }
+
+    if (stroke.type === 'rect' && stroke.points.length >= 2) {
+      const start = stroke.points[0];
+      const end = stroke.points[stroke.points.length - 1];
+      return {
+        minX: Math.min(start.x, end.x) - 8,
+        minY: Math.min(start.y, end.y) - 8,
+        maxX: Math.max(start.x, end.x) + 8,
+        maxY: Math.max(start.y, end.y) + 8
+      };
+    }
+
+    if (['triangle', 'diamond', 'arrow', 'line'].includes(stroke.type) && stroke.points.length >= 2) {
+      const start = stroke.points[0];
+      const end = stroke.points[stroke.points.length - 1];
+      return {
+        minX: Math.min(start.x, end.x) - 12,
+        minY: Math.min(start.y, end.y) - 12,
+        maxX: Math.max(start.x, end.x) + 12,
+        maxY: Math.max(start.y, end.y) + 12
+      };
+    }
+
     const xs = stroke.points.map((p) => p.x);
     const ys = stroke.points.map((p) => p.y);
+    const pad = Math.max(10, stroke.size);
     return {
-      minX: Math.min(...xs) - 8,
-      minY: Math.min(...ys) - 8,
-      maxX: Math.max(...xs) + 8,
-      maxY: Math.max(...ys) + 8
+      minX: Math.min(...xs) - pad,
+      minY: Math.min(...ys) - pad,
+      maxX: Math.max(...xs) + pad,
+      maxY: Math.max(...ys) + pad
     };
   };
 
@@ -608,6 +690,76 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       if (img && img.complete) {
         ctx.drawImage(img, p.x, p.y, w, h);
       }
+      ctx.restore();
+      return;
+    }
+    // Handle Sticky Note Card
+    if (stroke.type === 'note') {
+      const p = points[0];
+      const w = stroke.noteWidth || 220;
+      const h = stroke.noteHeight || 180;
+      const bgColor = stroke.noteColor || '#FEF08A';
+      const title = stroke.noteTitle || 'Sticky Note';
+      const text = stroke.noteText || '';
+
+      // 1. Drop shadow
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+
+      // 2. Note card background
+      ctx.fillStyle = bgColor;
+      ctx.beginPath();
+      ctx.roundRect(p.x, p.y, w, h, 12);
+      ctx.fill();
+      ctx.restore();
+
+      // 3. Top header accent strip
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.beginPath();
+      ctx.roundRect(p.x, p.y, w, 28, [12, 12, 0, 0]);
+      ctx.fill();
+
+      // 4. Dog-ear folded corner at bottom right
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+      ctx.beginPath();
+      ctx.moveTo(p.x + w - 16, p.y + h);
+      ctx.lineTo(p.x + w, p.y + h - 16);
+      ctx.lineTo(p.x + w - 16, p.y + h - 16);
+      ctx.closePath();
+      ctx.fill();
+
+      // 5. Note Title
+      ctx.font = 'bold 13px -apple-system, system-ui, sans-serif';
+      ctx.fillStyle = '#1C1C1E';
+      ctx.fillText(title, p.x + 12, p.y + 19);
+
+      // 6. Note Body Text with automatic word-wrap
+      ctx.font = '500 12px -apple-system, system-ui, sans-serif';
+      ctx.fillStyle = '#2C2C2E';
+      const maxTextW = w - 24;
+      const words = text.split(/\s+/);
+      let line = '';
+      let lineY = p.y + 46;
+      for (const word of words) {
+        const testLine = line + (line ? ' ' : '') + word;
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxTextW && line !== '') {
+          ctx.fillText(line, p.x + 12, lineY);
+          line = word;
+          lineY += 16;
+          if (lineY > p.y + h - 20) break;
+        } else {
+          line = testLine;
+        }
+      }
+      if (line && lineY <= p.y + h - 20) {
+        ctx.fillText(line, p.x + 12, lineY);
+      }
+
+      ctx.restore();
       ctx.restore();
       return;
     }
@@ -952,6 +1104,14 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       return;
     }
 
+    // 1.5 STICKY NOTE TOOL: Spawn sticky note placement
+    if (tool === 'note') {
+      setNoteInputPos(startPoint);
+      setNoteTitle('Quick Note');
+      setNoteText('');
+      return;
+    }
+
     // 2. SELECT & MOVE TOOL: Find and drag shape/stroke
     if (tool === 'select') {
       const hitStroke = [...localStrokes].reverse().find((s) => {
@@ -1149,7 +1309,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     if (!isDrawing) return;
     setIsDrawing(false);
 
-    // Area Lasso Eraser Completion -> Delete all strokes enclosed
+    // Area Lasso Eraser Completion -> Delete all strokes enclosed or intersecting
     if (tool === 'area_eraser' && currentPointsRef.current.length >= 2) {
       const start = currentPointsRef.current[0];
       const end = currentPointsRef.current[currentPointsRef.current.length - 1];
@@ -1161,8 +1321,12 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       setLocalStrokes((prev) =>
         prev.filter((s) => {
           const box = getStrokeBoundingBox(s);
-          const isInside = box.minX >= minX && box.maxX <= maxX && box.minY >= minY && box.maxY <= maxY;
-          return !isInside;
+          const isIntersecting =
+            box.minX <= maxX &&
+            box.maxX >= minX &&
+            box.minY <= maxY &&
+            box.maxY >= minY;
+          return !isIntersecting;
         })
       );
       currentPointsRef.current = [];
@@ -1214,6 +1378,35 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     setSelectedStrokeId(textStroke.id);
     setTextInputPos(null);
     setTextInputString('');
+    setTool('select');
+  };
+
+  // Submit Sticky Note onto Canvas
+  const handleCommitNote = () => {
+    if (!noteInputPos || (!noteTitle.trim() && !noteText.trim())) {
+      setNoteInputPos(null);
+      return;
+    }
+    const noteStroke: WhiteboardStroke = {
+      id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      type: 'note',
+      color: '#1C1C1E',
+      size: 1,
+      opacity: 100,
+      points: [noteInputPos],
+      noteTitle: noteTitle.trim() || 'Sticky Note',
+      noteText: noteText.trim(),
+      noteColor: noteColor,
+      noteWidth: 220,
+      noteHeight: 180
+    };
+
+    setLocalStrokes((prev) => [...prev, noteStroke]);
+    onEmitStroke(noteStroke);
+    setSelectedStrokeId(noteStroke.id);
+    setNoteInputPos(null);
+    setNoteTitle('Quick Note');
+    setNoteText('');
     setTool('select');
   };
 
@@ -1437,9 +1630,30 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             className={`p-2 rounded-lg transition-all ${
               tool === 'text' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
             }`}
-            title="Text Note & Label (Click canvas to type)"
+            title="Text Label (Click canvas to type)"
           >
             <Type className="w-4 h-4" />
+          </button>
+
+          {/* 5.5 STICKY NOTE TOOL */}
+          <button
+            type="button"
+            onClick={() => {
+              setTool('note');
+              setSelectedStrokeId(null);
+              // Open note popover at center of view or ready to click
+              setNoteInputPos({ x: (320 - pan.x) / zoom, y: (200 - pan.y) / zoom });
+              setNoteTitle('Quick Note');
+              setNoteText('');
+            }}
+            className={`p-2 rounded-lg transition-all ${
+              tool === 'note' || noteInputPos !== null
+                ? 'bg-amber-400 text-amber-950 font-bold shadow-sm'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+            }`}
+            title="Add Sticky Note (Yellow, Green, Blue, Purple, Pink)"
+          >
+            <StickyNote className="w-4 h-4" />
           </button>
 
           {/* 6. PAN / HAND TOOL */}
@@ -1988,6 +2202,90 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
               className={`px-2 py-0.5 rounded font-bold ${isTextBold ? 'bg-apple-blue text-white' : 'bg-apple-secondaryBg text-apple-textSecondary'}`}
             >
               B
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Sticky Note Creator Popover */}
+      {noteInputPos && (
+        <div
+          style={{
+            position: 'absolute',
+            left: `${Math.max(10, Math.min(noteInputPos.x * zoom + pan.x, (containerRef.current?.clientWidth || 600) - 300))}px`,
+            top: `${Math.max(10, Math.min(noteInputPos.y * zoom + pan.y, (containerRef.current?.clientHeight || 400) - 250))}px`,
+            transform: 'translate(0, 0)'
+          }}
+          className="z-50 p-4 bg-white dark:bg-[#1C1C1E] rounded-2xl border border-apple-border shadow-2xl space-y-3 animate-scale-up w-72"
+        >
+          <div className="flex items-center justify-between pb-1 border-b border-apple-border/40 dark:border-white/10">
+            <span className="font-bold text-footnote text-apple-textPrimary dark:text-white flex items-center gap-1.5">
+              <StickyNote className="w-4 h-4 text-amber-500" />
+              <span>Add Sticky Note</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setNoteInputPos(null)}
+              className="p-1 rounded-lg hover:bg-apple-secondaryBg text-apple-textSecondary"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Note Color Swatches */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-apple-textSecondary">Color:</span>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              {NOTE_COLORS.map((nc) => (
+                <button
+                  key={nc.id}
+                  type="button"
+                  onClick={() => setNoteColor(nc.bg)}
+                  className={`w-6 h-6 rounded-full transition-all shrink-0 border ${
+                    noteColor === nc.bg ? 'ring-2 ring-apple-blue ring-offset-2 scale-110' : 'hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: nc.bg, borderColor: nc.border }}
+                  title={nc.name}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Title Input */}
+          <input
+            type="text"
+            value={noteTitle}
+            onChange={(e) => setNoteTitle(e.target.value)}
+            placeholder="Note Title (optional)"
+            className="w-full px-3 py-1.5 bg-apple-secondaryBg dark:bg-white/10 rounded-xl text-caption font-bold text-apple-textPrimary dark:text-white outline-none focus:ring-2 focus:ring-apple-blue"
+          />
+
+          {/* Body Textarea */}
+          <textarea
+            autoFocus
+            rows={3}
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            placeholder="Write your note, idea or task..."
+            className="w-full px-3 py-2 bg-apple-secondaryBg dark:bg-white/10 rounded-xl text-caption font-medium text-apple-textPrimary dark:text-white outline-none focus:ring-2 focus:ring-apple-blue resize-none"
+          />
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setNoteInputPos(null)}
+              className="px-3 py-1.5 rounded-xl text-caption font-semibold text-apple-textSecondary hover:bg-apple-secondaryBg"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleCommitNote}
+              className="px-3.5 py-1.5 rounded-xl bg-apple-blue hover:bg-apple-blueHover text-white font-bold text-caption shadow-sm transition-all flex items-center gap-1.5"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Place Note</span>
             </button>
           </div>
         </div>

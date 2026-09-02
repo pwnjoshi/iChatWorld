@@ -79,7 +79,7 @@ export interface WhiteboardPoint {
 
 export interface WhiteboardStroke {
   id: string;
-  type: 'pen' | 'fountain' | 'pencil' | 'brush' | 'ballpoint' | 'marker' | 'highlighter' | 'eraser' | 'rect' | 'circle' | 'line' | 'arrow' | 'triangle' | 'diamond' | 'star' | 'image' | 'text';
+  type: 'pen' | 'fountain' | 'pencil' | 'brush' | 'ballpoint' | 'marker' | 'highlighter' | 'eraser' | 'rect' | 'circle' | 'line' | 'arrow' | 'triangle' | 'diamond' | 'star' | 'image' | 'text' | 'note';
   color: string;
   size: number;
   opacity?: number;
@@ -91,6 +91,11 @@ export interface WhiteboardStroke {
   text?: string;
   fontSize?: number;
   fontStyle?: string;
+  noteTitle?: string;
+  noteText?: string;
+  noteColor?: string;
+  noteWidth?: number;
+  noteHeight?: number;
 }
 
 export interface QAAnswer {
