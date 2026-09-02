@@ -27,6 +27,11 @@ export class MemoryStore implements IStore {
     return (code || '').trim().toUpperCase();
   }
 
+  private getInternalRoom(code: string): Room | null {
+    const norm = this.normalize(code);
+    return this.rooms.get(norm) || this.rooms.get(code) || null;
+  }
+
   private serialize(room: Room): SerializedRoom {
     const membersArray: Member[] = room.members instanceof Map 
       ? Array.from(room.members.values())
@@ -52,23 +57,25 @@ export class MemoryStore implements IStore {
   }
 
   private resetInactivityTimer(code: string) {
-    const existing = this.timers.get(code);
+    const norm = this.normalize(code);
+    const existing = this.timers.get(norm) || this.timers.get(code);
     if (existing) clearTimeout(existing);
 
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(norm);
     if (room && room.expiresAt === Number.MAX_SAFE_INTEGER) {
       // Unlimited room - kept alive until host closes
       return;
     }
 
     const timer = setTimeout(() => {
-      this.deleteRoom(code);
+      this.deleteRoom(norm);
     }, CONFIG.ROOM_INACTIVITY_TTL_SEC * 1000);
 
-    this.timers.set(code, timer);
+    this.timers.set(norm, timer);
   }
 
   async createRoom(code: string, creator: Member, facultyPassphraseHash?: string, lifespanHours?: number, creatorSecret?: string): Promise<SerializedRoom> {
+    const norm = this.normalize(code);
     const now = Date.now();
     const isUnlimited = lifespanHours === 0;
     const durationHours = (lifespanHours && [1, 3, 6, 12, 24, 48].includes(lifespanHours)) ? lifespanHours : isUnlimited ? 0 : 24;
@@ -78,7 +85,7 @@ export class MemoryStore implements IStore {
     members.set(creator.socketId, creator);
 
     const room: Room = {
-      code,
+      code: norm,
       createdAt: now,
       expiresAt,
       facultyPassphraseHash,
@@ -93,7 +100,7 @@ export class MemoryStore implements IStore {
           senderName: 'System',
           isFaculty: false,
           isSystem: true,
-          text: `Room ${code} created. Messages and files will be permanently erased when the session ends.`,
+          text: `Room ${norm} created. Messages and files will be permanently erased when the session ends.`,
           timestamp: now
         }
       ],
@@ -106,29 +113,31 @@ export class MemoryStore implements IStore {
       presenterState: null
     };
 
-    this.rooms.set(code, room);
-    this.resetInactivityTimer(code);
+    this.rooms.set(norm, room);
+    this.resetInactivityTimer(norm);
     return this.serialize(room);
   }
 
   async getRoom(code: string): Promise<SerializedRoom | null> {
-    const room = this.rooms.get(code);
+    const norm = this.normalize(code);
+    const room = this.getInternalRoom(norm);
     if (!room) return null;
     if (Date.now() > room.expiresAt) {
-      await this.deleteRoom(code);
+      await this.deleteRoom(norm);
       return null;
     }
     return this.serialize(room);
   }
 
   async touchRoom(code: string): Promise<void> {
-    if (this.rooms.has(code)) {
-      this.resetInactivityTimer(code);
+    const norm = this.normalize(code);
+    if (this.rooms.has(norm) || this.rooms.has(code)) {
+      this.resetInactivityTimer(norm);
     }
   }
 
   async addMember(code: string, member: Member): Promise<SerializedRoom | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return null;
 
     if (room.members instanceof Map) {
@@ -156,7 +165,7 @@ export class MemoryStore implements IStore {
   }
 
   async removeMember(code: string, socketId: string): Promise<{ room: SerializedRoom | null; removedMember: Member | null }> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return { room: null, removedMember: null };
 
     let removedMember: Member | null = null;
@@ -193,7 +202,7 @@ export class MemoryStore implements IStore {
   }
 
   async addMessage(code: string, message: Message): Promise<Message> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) throw new Error('Room not found');
 
     room.messages.push(message);
@@ -206,7 +215,7 @@ export class MemoryStore implements IStore {
   }
 
   async editMessage(code: string, messageId: string, newText: string, editorId: string): Promise<Message | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return null;
 
     const message = room.messages.find(m => m.id === messageId);
@@ -223,7 +232,7 @@ export class MemoryStore implements IStore {
   }
 
   async deleteMessage(code: string, messageId: string, deleterId: string, isFacultyOrHost: boolean): Promise<Message | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return null;
 
     const message = room.messages.find(m => m.id === messageId);
@@ -245,7 +254,7 @@ export class MemoryStore implements IStore {
   }
 
   async addReaction(code: string, messageId: string, emoji: string, user: { socketId: string; displayName: string }): Promise<Message | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return null;
 
     const message = room.messages.find(m => m.id === messageId);
@@ -281,7 +290,7 @@ export class MemoryStore implements IStore {
   }
 
   async addFile(code: string, file: FileMetadata): Promise<FileMetadata> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) throw new Error('Room not found');
 
     room.files.push(file);
@@ -290,7 +299,7 @@ export class MemoryStore implements IStore {
   }
 
   async deleteFile(code: string, fileId: string): Promise<boolean> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return false;
 
     const initialLength = room.files.length;
@@ -300,7 +309,7 @@ export class MemoryStore implements IStore {
   }
 
   async setChatMuted(code: string, muted: boolean): Promise<boolean> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return false;
 
     room.chatMuted = muted;
@@ -309,7 +318,7 @@ export class MemoryStore implements IStore {
   }
 
   async setPinnedAnnouncement(code: string, announcement: Message | null): Promise<Message | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return null;
 
     room.pinnedAnnouncement = announcement;
@@ -318,7 +327,7 @@ export class MemoryStore implements IStore {
   }
 
   async raiseHand(code: string, hand: HandRaise): Promise<HandRaise[]> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return [];
 
     if (!room.handsRaised) room.handsRaised = [];
@@ -331,7 +340,7 @@ export class MemoryStore implements IStore {
   }
 
   async lowerHand(code: string, socketId: string): Promise<HandRaise[]> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room || !room.handsRaised) return [];
 
     room.handsRaised = room.handsRaised.filter(h => h.socketId !== socketId);
@@ -340,14 +349,14 @@ export class MemoryStore implements IStore {
   }
 
   async lowerAllHands(code: string): Promise<void> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return;
     room.handsRaised = [];
     this.touchRoom(code);
   }
 
   async createPoll(code: string, poll: Poll): Promise<Poll> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) throw new Error('Room not found');
 
     room.activePoll = poll;
@@ -356,7 +365,7 @@ export class MemoryStore implements IStore {
   }
 
   async votePoll(code: string, pollId: string, optionId: string, socketId: string): Promise<Poll | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room || !room.activePoll || room.activePoll.id !== pollId || !room.activePoll.isOpen) {
       return null;
     }
@@ -377,7 +386,7 @@ export class MemoryStore implements IStore {
   }
 
   async closePoll(code: string, pollId: string): Promise<Poll | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room || !room.activePoll || room.activePoll.id !== pollId) {
       return null;
     }
@@ -388,7 +397,7 @@ export class MemoryStore implements IStore {
   }
 
   async deletePoll(code: string, pollId: string): Promise<boolean> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room || !room.activePoll || room.activePoll.id !== pollId) {
       return false;
     }
@@ -399,7 +408,7 @@ export class MemoryStore implements IStore {
   }
 
   async addWhiteboardStroke(code: string, stroke: WhiteboardStroke): Promise<void> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return;
     if (!room.whiteboardStrokes) room.whiteboardStrokes = [];
     const idx = room.whiteboardStrokes.findIndex(s => s.id === stroke.id);
@@ -412,14 +421,14 @@ export class MemoryStore implements IStore {
   }
 
   async clearWhiteboard(code: string): Promise<void> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return;
     room.whiteboardStrokes = [];
     this.touchRoom(code);
   }
 
   async addQAQuestion(code: string, question: QAQuestion): Promise<QAQuestion> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) throw new Error('Room not found');
     if (!room.qaQuestions) room.qaQuestions = [];
     if (!question.answers) question.answers = [];
@@ -454,7 +463,7 @@ export class MemoryStore implements IStore {
   }
 
   async upvoteQAQuestion(code: string, questionId: string, socketId: string): Promise<QAQuestion | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room || !room.qaQuestions) return null;
     const q = room.qaQuestions.find(item => item.id === questionId);
     if (!q) return null;
@@ -471,7 +480,7 @@ export class MemoryStore implements IStore {
   }
 
   async toggleAnswerQAQuestion(code: string, questionId: string): Promise<QAQuestion | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room || !room.qaQuestions) return null;
     const q = room.qaQuestions.find(item => item.id === questionId);
     if (!q) return null;
@@ -482,7 +491,7 @@ export class MemoryStore implements IStore {
   }
 
   async addQAAnswer(code: string, questionId: string, answer: QAAnswer): Promise<QAQuestion | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room || !room.qaQuestions) return null;
     const q = room.qaQuestions.find(item => item.id === questionId);
     if (!q) return null;
@@ -496,7 +505,7 @@ export class MemoryStore implements IStore {
   }
 
   async upvoteQAAnswer(code: string, questionId: string, answerId: string, socketId: string): Promise<QAQuestion | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room || !room.qaQuestions) return null;
     const q = room.qaQuestions.find(item => item.id === questionId);
     if (!q || !q.answers) return null;
@@ -516,7 +525,7 @@ export class MemoryStore implements IStore {
   }
 
   async setTimerState(code: string, timerState: ClassroomTimerState | null): Promise<ClassroomTimerState | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return null;
     room.timerState = timerState;
     this.touchRoom(code);
@@ -524,7 +533,7 @@ export class MemoryStore implements IStore {
   }
 
   async setPresenterState(code: string, presenterState: PresenterState | null): Promise<PresenterState | null> {
-    const room = this.rooms.get(code);
+    const room = this.getInternalRoom(code);
     if (!room) return null;
     room.presenterState = presenterState;
     this.touchRoom(code);
@@ -532,15 +541,20 @@ export class MemoryStore implements IStore {
   }
 
   async deleteRoom(code: string): Promise<boolean> {
-    const timer = this.timers.get(code);
+    const norm = this.normalize(code);
+    const timer = this.timers.get(norm) || this.timers.get(code);
     if (timer) {
       clearTimeout(timer);
+      this.timers.delete(norm);
       this.timers.delete(code);
     }
-    return this.rooms.delete(code);
+    const res1 = this.rooms.delete(norm);
+    const res2 = this.rooms.delete(code);
+    return res1 || res2;
   }
 
   async isRoomActive(code: string): Promise<boolean> {
-    return this.rooms.has(code);
+    const norm = this.normalize(code);
+    return this.rooms.has(norm) || this.rooms.has(code);
   }
 }

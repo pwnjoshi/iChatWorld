@@ -89,7 +89,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
         joinedAt: Date.now()
       };
 
-      const updatedRoom = await store.addMember(code, member);
+      const updatedRoom = await store.addMember(existingRoom.code, member);
       if (!updatedRoom) {
         if (typeof callback === 'function') {
           return callback({ success: false, error: 'Failed to join room' });
@@ -97,11 +97,11 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
         return;
       }
 
-      socket.join(code);
-      (socket as any).roomCode = code;
+      socket.join(existingRoom.code);
+      (socket as any).roomCode = existingRoom.code;
       (socket as any).memberData = member;
 
-      socket.to(code).emit('room:member-joined', {
+      socket.to(existingRoom.code).emit('room:member-joined', {
         member,
         room: updatedRoom
       });

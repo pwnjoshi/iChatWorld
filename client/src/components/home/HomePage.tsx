@@ -68,7 +68,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     if (modalMode === 'create') {
       await onCreateRoom(displayName, isFaculty, passphrase, lifespanHours);
     } else if (modalMode === 'join') {
-      await onJoinRoom(cleanRoomCode(codeInput), displayName, isFaculty, passphrase);
+      await onJoinRoom(formatRoomCode(codeInput), displayName, isFaculty, passphrase);
     }
     setModalMode(null);
   };

@@ -38,7 +38,7 @@ export const RoomSwitcherModal: React.FC<RoomSwitcherModalProps> = ({
       return;
     }
     setJoinError('');
-    onJoinNewRoom(clean);
+    onJoinNewRoom(formatRoomCode(newCodeInput));
     setNewCodeInput('');
     onClose();
   };
