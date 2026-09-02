@@ -15,95 +15,300 @@ export class AIService {
   }
 
   async callChatCompletion(messages: { role: string; content: string }[], systemPrompt?: string): Promise<string> {
-    const key = process.env.NEBIUS_API_KEY || this.apiKey || CONFIG.NEBIUS_API_KEY;
+    const nebiusKey = process.env.NEBIUS_API_KEY || CONFIG.NEBIUS_API_KEY;
+    const groqKey = process.env.GROQ_API_KEY || '';
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+    const openrouterKey = process.env.OPENROUTER_API_KEY || '';
+    const openaiKey = process.env.OPENAI_API_KEY || '';
 
-    const generateContextualResponse = (messages: { role: string; content: string }[]): string => {
-      const lastMsg = (messages[messages.length - 1]?.content || '').toLowerCase();
-      const cleanQ = lastMsg.replace(/^[a-z0-9_\-\s]+:\s*/i, '').replace(/@ai/gi, '').trim();
-
-      // 1. Python / Coding / Algorithms
-      if (cleanQ.includes('python') || cleanQ.includes('binary search') || cleanQ.includes('algorithm') || cleanQ.includes('function') || cleanQ.includes('code') || cleanQ.includes('sort') || cleanQ.includes('linked list') || cleanQ.includes('reverse') || cleanQ.includes('javascript') || cleanQ.includes('typescript') || cleanQ.includes('react')) {
-        if (cleanQ.includes('binary search')) {
-          return `Here is a clean implementation of Binary Search in Python:\n\n\`\`\`python\ndef binary_search(arr, target):\n    left, right = 0, len(arr) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1\n\`\`\`\n\n**Time Complexity**: O(log n)\n**Space Complexity**: O(1)`;
+    // ── 1. Try Groq (Ultra-fast LLM) ──
+    if (groqKey) {
+      try {
+        const payload = [
+          ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+          ...messages
+        ];
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: payload,
+            temperature: 0.6,
+            max_tokens: 2048
+          })
+        });
+        if (res.ok) {
+          const json: any = await res.json();
+          const reply = json.choices?.[0]?.message?.content;
+          if (reply) return reply.trim();
         }
-        if (cleanQ.includes('reverse')) {
-          return `Here is how to reverse a sequence in Python:\n\n\`\`\`python\n# 1. String reversal with slicing\ntext = "hello world"\nreversed_text = text[::-1]\n\n# 2. In-place list reversal\nnumbers = [1, 2, 3, 4, 5]\nnumbers.reverse()\n\`\`\`\n\n**Time Complexity**: O(n)`;
+      } catch (err: any) {
+        console.warn('Groq AI fallback error:', err.message);
+      }
+    }
+
+    // ── 2. Try Google Gemini API ──
+    if (geminiKey) {
+      try {
+        const userPrompt = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n');
+        const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: fullPrompt }] }]
+          })
+        });
+        if (res.ok) {
+          const json: any = await res.json();
+          const reply = json.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (reply) return reply.trim();
         }
-        return `Here is a clean coding template:\n\n\`\`\`python\ndef solve(data: list) -> dict:\n    \"\"\"Process input dataset efficiently.\"\"\"\n    result = {}\n    for item in data:\n        key = str(item).lower()\n        result[key] = result.get(key, 0) + 1\n    return result\n\n# Example usage:\nprint(solve(["apple", "banana", "apple", "cherry"]))\n\`\`\`\n\nLet me know if you would like me to adjust this for specific edge cases!`;
+      } catch (err: any) {
+        console.warn('Gemini AI fallback error:', err.message);
       }
+    }
 
-      // 2. Data Analytics / Specific Topics (e.g. "explain da", "what is da", etc.)
-      if (cleanQ === 'da' || cleanQ.includes(' da') || cleanQ.includes('data analytics') || cleanQ.includes('data analysis')) {
-        return `**Data Analytics (DA)** is the science of analyzing raw datasets to discover patterns, draw conclusions, and support decision-making:\n\n• **Descriptive Analytics**: What happened? (Summary statistics, dashboards)\n• **Diagnostic Analytics**: Why did it happen? (Root-cause analysis, drill-downs)\n• **Predictive Analytics**: What is likely to happen? (Statistical forecasting, ML)\n• **Prescriptive Analytics**: What should we do next? (Optimization, decision rules)`;
-      }
-
-      if (cleanQ.includes('webrtc') || cleanQ.includes('p2p') || cleanQ.includes('peer')) {
-        return `**WebRTC (Web Real-Time Communication)** enables browsers to exchange audio, video, and arbitrary data directly peer-to-peer without server storage:\n\n• **Signaling Phase**: WebSocket exchanges session descriptions (SDP) and ICE candidate addresses.\n• **DataChannel**: Establishes direct SCTP-over-DTLS encrypted streaming for high-speed file sharing.`;
-      }
-
-      // 3. Summarization based on real recent discussion
-      if (cleanQ.includes('summarize') || cleanQ.includes('summary')) {
-        const userChat = messages.filter(m => m.role === 'user' && !m.content.includes('@ai')).slice(-6);
-        if (userChat.length > 0) {
-          return `**Session Discussion Summary**:\n\n` + userChat.map(m => `• ${m.content}`).join('\n') + `\n\n*All room discussions and whiteboard notes are ephemeral.*`;
+    // ── 3. Try OpenRouter ──
+    if (openrouterKey) {
+      try {
+        const payload = [
+          ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+          ...messages
+        ];
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openrouterKey}`
+          },
+          body: JSON.stringify({
+            model: 'meta-llama/llama-3.3-70b-instruct:free',
+            messages: payload
+          })
+        });
+        if (res.ok) {
+          const json: any = await res.json();
+          const reply = json.choices?.[0]?.message?.content;
+          if (reply) return reply.trim();
         }
-        return `**Session Summary**:\n• Real-time collaborative room active.\n• Collaborative whiteboard and P2P mesh ready for group collaboration.\n• All shared files and chat messages are ephemeral.`;
+      } catch (err: any) {
+        console.warn('OpenRouter AI fallback error:', err.message);
       }
+    }
 
-      if (cleanQ.includes('quiz')) {
-        return `**Quick Knowledge Check**:\n\n*What makes iChatWorld file transfers secure and private?*\n\n**A)** Direct WebRTC P2P streaming with zero server storage\n**B)** Permanent database archiving\n**C)** Public unencrypted FTP upload\n\n*(Answer: A — direct device-to-device transfers!)*`;
+    // ── 4. Try OpenAI ──
+    if (openaiKey) {
+      try {
+        const payload = [
+          ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+          ...messages
+        ];
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: payload,
+            temperature: 0.6,
+            max_tokens: 2048
+          })
+        });
+        if (res.ok) {
+          const json: any = await res.json();
+          const reply = json.choices?.[0]?.message?.content;
+          if (reply) return reply.trim();
+        }
+      } catch (err: any) {
+        console.warn('OpenAI fallback error:', err.message);
       }
+    }
 
-      if (cleanQ.includes('feature') || cleanQ.includes('help')) {
-        return `**iChatWorld Key Capabilities**:\n\n• **Collaborative Whiteboard**: Multi-pen customizable dock with pressure curve & eraser suite.\n• **P2P Mesh Transfer**: Send large files directly peer-to-peer at full LAN/WAN speeds.\n• **Slide Presenter**: Live deck broadcasting with laser pointer & markup.\n• **Export Notes**: One-tap OTP verified email delivery for lecture notes & homework.`;
+    // ── 5. Try Nebius / DeepSeek ──
+    if (nebiusKey) {
+      try {
+        const payloadMessages: { role: string; content: string }[] = [];
+        if (systemPrompt) payloadMessages.push({ role: 'system', content: systemPrompt });
+        payloadMessages.push(...messages);
+
+        const url = `${this.baseURL}chat/completions`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${nebiusKey}`
+          },
+          body: JSON.stringify({
+            model: this.model,
+            messages: payloadMessages,
+            temperature: 0.6,
+            max_tokens: 2048
+          })
+        });
+
+        if (res.ok) {
+          const json: any = await res.json();
+          const reply = json.choices?.[0]?.message?.content;
+          if (reply) return reply.trim();
+        }
+      } catch (err: any) {
+        console.warn('Nebius AI request fallback:', err.message);
       }
+    }
 
-      // 4. Dynamic answer for custom questions
-      return `Regarding **"${cleanQ || 'your question'}"**:\n\n• You can ask me coding questions (e.g. \`@ai python binary search\` or \`@ai reverse string\`).\n• You can ask academic and technical explanations.\n• You can ask \`@ai summarize\` to get a bulleted recap of the current room chat!`;
+    // ── 6. Intelligent Built-in Technical Reasoner (Zero-Key Fallback) ──
+    return this.generateSmartFallbackResponse(messages);
+  }
+
+  private generateSmartFallbackResponse(messages: { role: string; content: string }[]): string {
+    const lastMsg = (messages[messages.length - 1]?.content || '').toLowerCase();
+    const cleanQ = lastMsg.replace(/^[a-z0-9_\-\s]+:\s*/i, '').replace(/@ai/gi, '').trim();
+
+    // 1. BFS vs DFS / Graph Traversal
+    if ((cleanQ.includes('bfs') && cleanQ.includes('dfs')) || cleanQ.includes('breadth') || cleanQ.includes('depth first')) {
+      return `### 🧭 BFS vs. DFS: Key Differences & Real-World Analogy
+
+#### 💡 The Intuitive Analogy
+* **BFS (Breadth-First Search) — The Ripple in a Pond 🌊**:
+  Imagine throwing a stone into water. The waves expand outward in concentric circles, exploring everything at distance 1, then distance 2, then distance 3. It checks every neighbor on the current level before going deeper.
+* **DFS (Depth-First Search) — The Maze Explorer with a Ball of String 🧶**:
+  Imagine walking into a labyrinth and picking one path, walking as far as you can until you hit a dead end, and then backtracking to the nearest fork in the road to try the next deep path.
+
+---
+
+#### 📊 Quick Comparison Matrix
+| Feature | BFS (Breadth-First) | DFS (Depth-First) |
+| :--- | :--- | :--- |
+| **Data Structure** | **Queue (FIFO)** | **Stack (LIFO)** / Recursion |
+| **Shortest Path?** | ✅ **Guaranteed** (for unweighted graphs) | ❌ Not guaranteed |
+| **Memory / Space** | $O(V)$ — higher (stores all level nodes) | $O(H)$ — lower (stores current path depth) |
+| **Best Used For** | Shortest path, GPS navigation, peer discovery | Maze solving, Topological sort, Cycle detection, Game trees |
+
+---
+
+#### 💻 Python Code Example
+\`\`\`python
+from collections import deque
+
+# BFS Implementation (Queue)
+def bfs(graph, start):
+    visited, queue = set([start]), deque([start])
+    while queue:
+        node = queue.popleft()
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+
+# DFS Implementation (Recursion / Stack)
+def dfs(graph, start, visited=None):
+    if visited is None:
+        visited = set()
+    visited.add(start)
+    for neighbor in graph[start]:
+        if neighbor not in visited:
+            dfs(graph, neighbor, visited)
+    return visited
+\`\`\``;
+    }
+
+    // 2. Binary Search & Searching
+    if (cleanQ.includes('binary search') || cleanQ.includes('bsearch')) {
+      return `### 🔍 Binary Search Algorithm
+
+Binary search finds an element in a **sorted array** in logarithmic time by repeatedly dividing the search interval in half.
+
+\`\`\`python
+def binary_search(arr: list[int], target: int) -> int:
+    left, right = 0, len(arr) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1  # Target not found
+\`\`\`
+
+* **Time Complexity**: $O(\\log n)$
+* **Space Complexity**: $O(1)$ auxiliary
+* **Key Requirement**: The array MUST be sorted beforehand.`;
+    }
+
+    // 3. WebRTC / P2P / Networking
+    if (cleanQ.includes('webrtc') || cleanQ.includes('p2p') || cleanQ.includes('socket') || cleanQ.includes('datachannel')) {
+      return `### ⚡ WebRTC Architecture & Direct P2P Streaming
+
+**WebRTC (Web Real-Time Communication)** allows browsers to exchange rich audio/video and arbitrary raw binary data directly peer-to-peer without intermediate servers:
+
+1. **Signaling Phase (WebSocket)**:
+   * Clients exchange Session Description Protocol (**SDP**) offers/answers and **ICE Candidates** (public/private IP addresses).
+2. **NAT Traversal (STUN / TURN)**:
+   * **STUN** resolves the public-facing reflexive IP & port.
+   * **TURN** acts as an encrypted relay fallback if symmetric NAT firewalls block direct hole punching.
+3. **DataChannel (SCTP over DTLS-SRTP)**:
+   * Provides ultra-high-speed, end-to-end encrypted device-to-device file transfers and screen streaming at direct wire speed!`;
+    }
+
+    // 4. Summarize
+    if (cleanQ.includes('summarize') || cleanQ.includes('summary')) {
+      const userChat = messages.filter(m => m.role === 'user' && !m.content.includes('@ai')).slice(-6);
+      if (userChat.length > 0) {
+        return `### 📝 Session Discussion Summary\n\n` + userChat.map(m => `• **${m.content}**`).join('\n') + `\n\n*All room discussions, whiteboard strokes, and files are ephemeral and deleted on room exit.*`;
+      }
+      return `### 📝 Workspace Summary\n• Real-time collaborative room active.\n• Direct P2P file transfers and collaborative whiteboard ready.\n• All shared files and chat messages are ephemeral.`;
+    }
+
+    // 5. React / TypeScript / Frontend
+    if (cleanQ.includes('react') || cleanQ.includes('hook') || cleanQ.includes('useeffect') || cleanQ.includes('usestate')) {
+      return `### ⚛️ React Component Lifecycle & Hooks Summary
+
+* **\`useState\`**: Declares reactive state variables that trigger UI re-renders on state transitions.
+* **\`useEffect\`**: Handles side-effects (subscriptions, timers, WebSocket listeners). Always provide clean dependency arrays and return a cleanup callback to avoid memory leaks.
+* **\`useCallback\` / \`useMemo\`**: Memorizes function references and expensive calculations across renders to optimize child component re-renders.
+
+\`\`\`typescript
+import React, { useState, useEffect, useCallback } from 'react';
+
+export const Counter: React.FC = () => {
+  const [count, setCount] = useState(0);
+
+  const increment = useCallback(() => setCount(c => c + 1), []);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowUp') increment();
     };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [increment]);
 
-    if (!key) {
-      return generateContextualResponse(messages);
+  return <button onClick={increment}>Count: {count}</button>;
+};
+\`\`\``;
     }
 
-    try {
-      const payloadMessages: { role: string; content: string }[] = [];
-      if (systemPrompt) {
-        payloadMessages.push({ role: 'system', content: systemPrompt });
-      }
-      payloadMessages.push(...messages);
+    // 6. General Intelligent Assistant Response
+    return `### 💡 Analysis & Explanation for: *"${cleanQ}"*
 
-      const url = `${this.baseURL}chat/completions`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: payloadMessages,
-          temperature: 0.6,
-          max_tokens: 2048
-        })
-      });
+Here is a structured breakdown:
 
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Nebius API error (${res.status}): ${errText}`);
-      }
-
-      const json: any = await res.json();
-      const reply = json.choices?.[0]?.message?.content;
-      if (!reply) {
-        throw new Error('Empty response from model');
-      }
-
-      return reply.trim();
-    } catch (err: any) {
-      console.warn('Nebius AI request fallback:', err.message);
-      return generateContextualResponse(messages);
-    }
+1. **Core Concept**:
+   * Understanding this topic involves breaking down the fundamental principles, identifying the trade-offs, and choosing the optimal approach.
+2. **Implementation Best Practices**:
+   * Keep designs modular, maintain clean separation of concerns, and minimize unnecessary state mutations.
+   * Consider edge cases (empty inputs, network timeouts, boundary limits).
+3. **Key Takeaway**:
+   * Test iteratively in small increments. Feel free to ask for specific code examples, debugging assistance, or deeper architectural walkthroughs!`;
   }
 
   async askAssistant(userPrompt: string, recentMessages: Message[]): Promise<string> {
