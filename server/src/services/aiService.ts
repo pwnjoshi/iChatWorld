@@ -297,15 +297,30 @@ export const Counter: React.FC = () => {
 \`\`\``;
     }
 
-    // 6. Dynamic Live Knowledge Lookup (Wikipedia Global Encyclopedia)
+    // 6. Dynamic Live Knowledge Lookup (Wikipedia Global OpenSearch & Summary API)
     try {
       const cleanSearch = cleanQ
-        .replace(/^(tell|what is|what are|explain|who is|who was|define|describe|about|can you tell me about)\s+/i, '')
+        .replace(/^(can you )?(please )?(tell|tell me|what is|what are|explain|who is|who was|define|describe|about|can you tell me about)\s+(about\s+)?/i, '')
         .replace(/[\?\!\.\,\;\:]+$/g, '')
         .trim();
 
       if (cleanSearch.length > 1) {
-        const wikiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleanSearch)}`;
+        // Step 1: OpenSearch for closest matching title
+        let targetTitle = cleanSearch;
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&format=json&limit=1&search=${encodeURIComponent(cleanSearch)}`;
+        const searchRes = await fetch(searchUrl, {
+          headers: { 'User-Agent': 'iChatWorld/1.0 (info@ichatworld.xyz)' }
+        });
+
+        if (searchRes.ok) {
+          const searchData: any = await searchRes.json();
+          if (searchData[1] && searchData[1][0]) {
+            targetTitle = searchData[1][0];
+          }
+        }
+
+        // Step 2: Fetch encyclopedic extract
+        const wikiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(targetTitle)}`;
         const res = await fetch(wikiUrl, {
           headers: { 'User-Agent': 'iChatWorld/1.0 (info@ichatworld.xyz)' }
         });

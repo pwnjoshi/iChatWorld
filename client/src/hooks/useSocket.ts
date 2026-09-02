@@ -570,11 +570,23 @@ export function useSocket() {
 
   // Screen Share Actions
   const startScreenShare = useCallback(async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      alert('Screen sharing is not supported by this browser on your device. Please use Chrome on Android or Safari on iOS 13+ with screen permissions enabled.');
+      return;
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { cursor: 'always' } as any,
-        audio: true
-      });
+      // Check if mobile / tablet — mobile browsers crash if audio: true is requested in getDisplayMedia
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+      
+      const displayMediaOptions: DisplayMediaStreamOptions = {
+        video: {
+          cursor: 'always'
+        } as any,
+        audio: !isMobile // Do not request audio on mobile to avoid browser rejection
+      };
+
+      const stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
       setScreenStream(stream);
       setScreenPresenterName(currentMember?.displayName || 'You');
 
@@ -588,11 +600,17 @@ export function useSocket() {
         }
       }
 
-      stream.getVideoTracks()[0].onended = () => {
-        stopScreenShare();
-      };
-    } catch (e) {
-      console.error('Screen sharing cancelled or failed:', e);
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.onended = () => {
+          stopScreenShare();
+        };
+      }
+    } catch (e: any) {
+      console.error('Screen sharing error:', e);
+      if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') {
+        alert('Screen sharing failed: ' + (e.message || e.name || 'Permission denied'));
+      }
     }
   }, [socket, currentMember, room]);
 
