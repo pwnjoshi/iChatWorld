@@ -478,12 +478,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     )}
                   </div>
 
-                  {/* ── Desktop Hover Quick-Action Floating Pill ── */}
-                  <div
-                    className={`absolute -top-3.5 z-20 hidden group-hover:flex items-center gap-0.5 px-1.5 py-0.5 bg-white/95 dark:bg-[#2C2C2E]/95 backdrop-blur-md rounded-full border border-apple-border/70 dark:border-white/15 shadow-sm transition-all animate-fade-in ${
-                      isOwn ? 'right-2' : 'left-8'
-                    }`}
-                  >
+                  {/* ── Desktop Hover Quick-Action Floating Pill (Hidden on mobile and when tapback menu is active) ── */}
+                  {activeReactionMenu !== msg.id && (
+                    <div
+                      className={`absolute -top-3.5 z-20 hidden md:group-hover:flex items-center gap-0.5 px-1.5 py-0.5 bg-white/95 dark:bg-[#2C2C2E]/95 backdrop-blur-md rounded-full border border-apple-border/70 dark:border-white/15 shadow-sm transition-all animate-fade-in ${
+                        isOwn ? 'right-2' : 'left-8'
+                      }`}
+                    >
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -536,6 +537,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                       </button>
                     )}
                   </div>
+                )}
 
                   {/* ── Integrated Floating Tapback & Actions Menu ── */}
                   {activeReactionMenu === msg.id && (
