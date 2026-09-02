@@ -18,7 +18,9 @@ import {
   CheckCheck,
   Ban,
   Copy,
-  Terminal
+  Terminal,
+  Sparkles,
+  Bot
 } from 'lucide-react';
 
 interface ChatPanelProps {
@@ -108,8 +110,8 @@ const FormattedMessageText: React.FC<{ text: string; isOwn?: boolean }> = ({ tex
               const isBullet = line.startsWith('• ') || line.startsWith('- ') || line.startsWith('* ');
               const cleanLine = isBullet ? line.replace(/^[•\-\*]\s+/, '') : line;
 
-              // Parse **bold** and `code` inline
-              const tokens = cleanLine.split(/(\*\*.*?\*\*|`.*?`)/g);
+              // Parse **bold**, `code`, and @ai mentions inline
+              const tokens = cleanLine.split(/(\*\*.*?\*\*|`.*?`|@ai\b|@AI\b|@Ai\b)/gi);
 
               const lineContent = tokens.map((tok, tIdx) => {
                 if (tok.startsWith('**') && tok.endsWith('**')) {
@@ -129,6 +131,21 @@ const FormattedMessageText: React.FC<{ text: string; isOwn?: boolean }> = ({ tex
                     >
                       {tok.slice(1, -1)}
                     </code>
+                  );
+                }
+                if (tok.toLowerCase() === '@ai') {
+                  return (
+                    <span
+                      key={tIdx}
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-lg text-[12px] font-bold tracking-wide shadow-2xs select-none align-baseline transition-all ${
+                        isOwn
+                          ? 'bg-white text-apple-blue shadow-sm'
+                          : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xs'
+                      }`}
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
+                      <span>@ai</span>
+                    </span>
                   );
                 }
                 return <span key={tIdx}>{tok}</span>;
@@ -640,34 +657,66 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             <span>Chat is muted by faculty</span>
           </div>
         ) : (
-          <form onSubmit={handleSend} className="flex items-center gap-1.5 sm:gap-2">
-            <div className="flex items-center gap-1.5 flex-1 min-w-0 bg-apple-secondaryBg dark:bg-white/10 rounded-full px-3.5 py-0.5 border border-apple-border/60 dark:border-white/10 focus-within:ring-2 focus-within:ring-apple-blue transition-all">
-              <input
-                type="text"
-                value={inputText}
-                onChange={handleInputChange}
-                placeholder={chatMuted ? "Post as faculty..." : "Type a message or @ai..."}
-                maxLength={500}
-                className="flex-1 bg-transparent py-1.5 text-[14px] text-apple-textPrimary dark:text-white placeholder:text-apple-textSecondary/50 dark:placeholder:text-white/30 outline-none min-w-0"
-              />
+          <form onSubmit={handleSend} className="space-y-1.5">
+            {/* Quick @ai suggestion popup when typing '@' */}
+            {/@\w*$/i.test(inputText) && !/@ai\b/i.test(inputText) && (
+              <div className="flex items-center gap-1.5 animate-scale-up pl-1">
+                <button
+                  type="button"
+                  onClick={() => setInputText((prev) => prev.replace(/@\w*$/, '@ai '))}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white text-caption font-bold shadow-md hover:scale-105 active:scale-95 transition-all"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                  <span>@ai — Ask AI Assistant</span>
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className={`flex items-center gap-1.5 flex-1 min-w-0 rounded-full px-3.5 py-0.5 border transition-all ${
+                /@ai\b/i.test(inputText)
+                  ? 'bg-blue-50/80 dark:bg-blue-950/30 border-blue-500/60 ring-2 ring-blue-500/20'
+                  : 'bg-apple-secondaryBg dark:bg-white/10 border-apple-border/60 dark:border-white/10 focus-within:ring-2 focus-within:ring-apple-blue'
+              }`}>
+                {/@ai\b/i.test(inputText) && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[11px] font-bold shadow-2xs shrink-0 select-none animate-scale-up">
+                    <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
+                    <span>AI Calling</span>
+                  </span>
+                )}
+
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={handleInputChange}
+                  placeholder={chatMuted ? "Post as faculty..." : "Type a message or @ai to ask..."}
+                  maxLength={500}
+                  className="flex-1 bg-transparent py-1.5 text-[14px] text-apple-textPrimary dark:text-white placeholder:text-apple-textSecondary/50 dark:placeholder:text-white/30 outline-none min-w-0"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setIsRecordingVoice(true)}
+                  title="Record voice note"
+                  className="p-1 rounded-full text-apple-textSecondary hover:text-apple-blue transition-colors shrink-0"
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+              </div>
 
               <button
-                type="button"
-                onClick={() => setIsRecordingVoice(true)}
-                title="Record voice note"
-                className="p-1 rounded-full text-apple-textSecondary hover:text-apple-blue transition-colors shrink-0"
+                type="submit"
+                disabled={!inputText.trim() || isSending}
+                className={`p-2 rounded-full disabled:opacity-30 text-white transition-all shadow-sm shrink-0 active:scale-95 flex items-center justify-center ${
+                  /@ai\b/i.test(inputText)
+                    ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-blue-500/30 shadow-md'
+                    : 'bg-apple-blue hover:bg-apple-blueHover'
+                }`}
+                title={/@ai\b/i.test(inputText) ? "Ask AI Assistant" : "Send message"}
               >
-                <Mic className="w-4 h-4" />
+                {/@ai\b/i.test(inputText) ? <Sparkles className="w-3.5 h-3.5 text-amber-300" /> : <Send className="w-3.5 h-3.5" />}
               </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={!inputText.trim() || isSending}
-              className="p-2 rounded-full bg-apple-blue hover:bg-apple-blueHover disabled:opacity-30 text-white transition-all shadow-sm shrink-0 active:scale-95 flex items-center justify-center"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </button>
           </form>
         )}
       </div>
