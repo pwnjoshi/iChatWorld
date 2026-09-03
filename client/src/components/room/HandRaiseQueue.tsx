@@ -49,7 +49,7 @@ export const HandRaiseModal: React.FC<HandRaiseModalProps> = ({
         {handsRaised.length === 0 ? (
           <div className="text-center py-6 text-apple-textSecondary space-y-1">
             <p className="text-footnote font-medium text-apple-textPrimary">No hands raised</p>
-            <p className="text-caption">Students who raise their hands will appear here in chronological order.</p>
+            <p className="text-caption">Participants who raise their hand will appear here in chronological order.</p>
           </div>
         ) : (
           <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -77,7 +77,7 @@ export const HandRaiseModal: React.FC<HandRaiseModalProps> = ({
                   <button
                     onClick={() => onLowerHand(hand.socketId)}
                     className="p-2 rounded-full bg-white hover:bg-apple-green hover:text-white text-apple-green border border-apple-border shadow-sm transition-colors text-caption font-medium flex items-center gap-1 shrink-0"
-                    title="Acknowledge student"
+                    title="Acknowledge participant"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>Acknowledge</span>

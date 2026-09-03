@@ -107,8 +107,8 @@ export const FacultySlideOver: React.FC<FacultySlideOverProps> = ({
                   </h4>
                   <p className="text-caption text-apple-textSecondary">
                     {chatMuted
-                      ? 'Students are in read-only mode (file sharing remains enabled).'
-                      : 'All students can send chat messages.'}
+                      ? 'Participants are in read-only mode (file sharing remains active).'
+                      : 'All members can send chat messages.'}
                   </p>
                 </div>
               </div>
@@ -122,7 +122,7 @@ export const FacultySlideOver: React.FC<FacultySlideOverProps> = ({
                   : 'bg-apple-red text-white hover:bg-red-600'
               }`}
             >
-              {chatMuted ? 'Unmute Student Chat' : 'Mute Student Chat'}
+              {chatMuted ? 'Unmute Room Chat' : 'Mute Room Chat'}
             </button>
           </div>
 
@@ -133,7 +133,7 @@ export const FacultySlideOver: React.FC<FacultySlideOverProps> = ({
               <h4 className="text-subhead font-semibold">Broadcast File to Room</h4>
             </div>
             <p className="text-caption text-amber-900/80">
-              Push syllabus, assignment, or slide decks directly to the top of all students' screens.
+              Pin important documents, media, or slides directly to the top of everyone's screen.
             </p>
 
             <input
@@ -162,7 +162,7 @@ export const FacultySlideOver: React.FC<FacultySlideOverProps> = ({
                 type="text"
                 value={announcementText}
                 onChange={(e) => setAnnouncementText(e.target.value)}
-                placeholder="e.g. Please open Chapter 4 PDF..."
+                placeholder="e.g. Please review the shared document..."
                 className="w-full px-3.5 py-2 bg-white rounded-ios-input text-footnote text-apple-textPrimary border border-apple-border outline-none focus:ring-2 focus:ring-apple-blue/70"
               />
               <div className="flex gap-2">

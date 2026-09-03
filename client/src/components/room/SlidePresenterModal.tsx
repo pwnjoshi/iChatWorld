@@ -498,7 +498,7 @@ export const SlidePresenterModal: React.FC<SlidePresenterModalProps> = ({
               <Sparkles className="w-8 h-8 mx-auto opacity-40 text-apple-blue" />
               <p className="text-subhead font-medium text-white">No slide deck loaded</p>
               <p className="text-caption text-white/50">
-                {isFaculty ? 'Upload slide images above to broadcast to students.' : 'Waiting for instructor to load presentation...'}
+                {isFaculty ? 'Upload slide images above to broadcast to room members.' : 'Waiting for presenter to load presentation...'}
               </p>
             </div>
           )}
