@@ -1028,6 +1028,28 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    // Auto-close any open tool popover menus on canvas interaction
+    setIsPenMenuOpen(false);
+    setIsEraserMenuOpen(false);
+    setIsShapeMenuOpen(false);
+    setIsCanvasSettingsOpen(false);
+    setShowToolCustomizer(false);
+
+    lastPointTimeRef.current = Date.now();
+    const startPoint = getCanvasWorldCoords(e);
+
+    // 1. TEXT TOOL: Commit existing text if any, then spawn text input at clicked position
+    if (tool === 'text') {
+      if (textInputPos && textInputString.trim()) {
+        handleCommitText();
+      }
+      setTextInputPos(startPoint);
+      setTextInputString('');
+      return;
+    }
+
+    // Capture pointer only for drawing, panning, selecting (NOT text input)
     canvas.setPointerCapture(e.pointerId);
 
     // Pan canvas with middle click, spacebar or 'pan' tool
@@ -1037,18 +1059,8 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       return;
     }
 
-    lastPointTimeRef.current = Date.now();
-    const startPoint = getCanvasWorldCoords(e);
-
     // Broadcast cursor position
     onEmitCursor?.(startPoint.x, startPoint.y, true);
-
-    // 1. TEXT TOOL: Spawn in-place canvas text placement
-    if (tool === 'text') {
-      setTextInputPos(startPoint);
-      setTextInputString('');
-      return;
-    }
 
     // 2. SELECT & MOVE TOOL: Find and drag shape/stroke
     if (tool === 'select') {
@@ -1427,10 +1439,8 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   const ActiveEraserIcon = currentEraserMeta.icon;
 
   // Render Inner Studio Toolbar & Controls
-  // Render Clean Top Utility Bar (Background Theme, Undo/Redo, Zoom, Share, Export, Clear)
   const renderStudioToolbar = () => (
-    <>
-      <div className="shrink-0 flex items-center justify-between gap-2 p-1.5 bg-apple-secondaryBg/90 dark:bg-white/5 rounded-2xl border border-apple-border/70 dark:border-white/10 shadow-2xs select-none">
+    <div className="shrink-0 flex items-center justify-between gap-2 p-1.5 bg-apple-secondaryBg/90 dark:bg-white/5 rounded-2xl border border-apple-border/70 dark:border-white/10 shadow-2xs select-none">
       {/* Left: History & Alignment (Undo, Redo, Ruler) */}
       <div className="flex items-center gap-0.5 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-xs shrink-0">
         <button
@@ -1683,39 +1693,59 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         </button>
       </div>
     </div>
+  );
 
-      {/* Pen Studio Popover Modal */}
+  // Render Canvas Component
+  const renderCanvasViewport = () => (
+    <div
+      ref={containerRef}
+      className="relative flex-1 min-h-0 w-full bg-white dark:bg-black rounded-2xl overflow-hidden border border-apple-border/80 dark:border-white/10 shadow-inner flex items-center justify-center"
+    >
+      {/* Floating Pen Studio Popover Modal */}
       {showToolCustomizer && (
-        <div className="shrink-0 p-4 bg-white dark:bg-[#1C1C1E] rounded-2xl border border-apple-border/80 dark:border-white/15 shadow-2xl space-y-3.5 animate-scale-up max-w-xl">
+        <div className="absolute top-4 left-4 z-50 p-4 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-2xl border border-apple-border/80 dark:border-white/15 shadow-2xl space-y-3.5 animate-scale-up max-w-sm">
           <div className="flex items-center justify-between border-b border-apple-border/40 dark:border-white/10 pb-2">
             <span className="font-bold text-footnote text-apple-textPrimary dark:text-white flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-apple-blue" />
               <span>Pen Studio</span>
             </span>
-            <span className="text-caption font-mono text-apple-blue font-bold">
-              {currentPenMeta.label}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-caption font-mono text-apple-blue font-bold">
+                {currentPenMeta.label}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowToolCustomizer(false)}
+                className="p-1 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors"
+                title="Close Pen Studio"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           {/* Visual 3D Nib Selector Row */}
-          <div className="grid grid-cols-6 gap-2">
+          <div className="grid grid-cols-6 gap-1.5">
             {PEN_TOOLS.map((p) => {
               const Icon = p.icon;
-              const isSelected = activePenType === p.id;
+              const isSelected = activePenType === p.id && isCurrentToolPen;
               return (
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => handleSelectPenSubtool(p.id)}
-                  className={`p-2.5 rounded-xl flex flex-col items-center gap-1.5 transition-all border ${
+                  onClick={() => {
+                    handleSelectPenSubtool(p.id);
+                    setShowToolCustomizer(false);
+                  }}
+                  className={`p-2 rounded-xl flex flex-col items-center gap-1 transition-all border ${
                     isSelected
                       ? 'bg-apple-blue/10 border-apple-blue text-apple-blue shadow-2xs font-bold'
                       : 'bg-apple-secondaryBg dark:bg-white/5 border-transparent text-apple-textSecondary hover:text-apple-textPrimary'
                   }`}
                   title={p.desc}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-[10px] leading-none text-center truncate w-full">{p.label.split(' ')[0]}</span>
+                  <Icon className="w-4 h-4" />
+                  <span className="text-[9px] leading-none text-center truncate w-full">{p.label.split(' ')[0]}</span>
                 </button>
               );
             })}
@@ -1723,7 +1753,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
 
           {/* 1. Pressure Sensitivity Slider */}
           <div className="flex items-center justify-between gap-3 text-caption font-semibold">
-            <span className="text-apple-textSecondary dark:text-white/70 w-32">Pressure Sensitivity:</span>
+            <span className="text-apple-textSecondary dark:text-white/70 w-28">Pressure:</span>
             <input
               type="range"
               min="0"
@@ -1732,12 +1762,12 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
               onChange={(e) => setPressureSensitivity(parseInt(e.target.value, 10))}
               className="flex-1 accent-apple-blue cursor-pointer"
             />
-            <span className="w-10 font-mono text-right text-apple-textPrimary dark:text-white">{pressureSensitivity}%</span>
+            <span className="w-8 font-mono text-right text-apple-textPrimary dark:text-white">{pressureSensitivity}%</span>
           </div>
 
           {/* 2. Thickness Slider */}
           <div className="flex items-center justify-between gap-3 text-caption font-semibold">
-            <span className="text-apple-textSecondary dark:text-white/70 w-32">Stroke Thickness:</span>
+            <span className="text-apple-textSecondary dark:text-white/70 w-28">Thickness:</span>
             <input
               type="range"
               min="1"
@@ -1750,20 +1780,20 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
               }}
               className="flex-1 accent-apple-blue cursor-pointer"
             />
-            <span className="w-10 font-mono text-right text-apple-textPrimary dark:text-white">{tool === 'highlighter' ? highlighterSize : size}px</span>
+            <span className="w-8 font-mono text-right text-apple-textPrimary dark:text-white">{tool === 'highlighter' ? highlighterSize : size}px</span>
           </div>
 
           {/* 3. Quick Color Swatches Row */}
           <div className="flex items-center justify-between gap-2 pt-1 border-t border-apple-border/40 dark:border-white/10">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-              {APPLE_PALETTE.map((c) => {
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              {APPLE_PALETTE.slice(0, 6).map((c) => {
                 const isSelected = color.toLowerCase() === c.hex.toLowerCase();
                 return (
                   <button
                     key={c.hex}
                     type="button"
                     onClick={() => setColor(c.hex)}
-                    className={`w-6 h-6 rounded-full transition-all shrink-0 flex items-center justify-center ${
+                    className={`w-5 h-5 rounded-full transition-all shrink-0 flex items-center justify-center ${
                       isSelected ? 'ring-2 ring-apple-blue ring-offset-2 scale-110' : 'hover:scale-105'
                     }`}
                     style={{ backgroundColor: c.hex }}
@@ -1775,23 +1805,15 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             <button
               type="button"
               onClick={handleAddCurrentToPenBox}
-              className="px-3.5 py-1.5 rounded-xl bg-apple-blue hover:bg-apple-blueHover text-white font-bold text-caption shadow-sm transition-all shrink-0 flex items-center gap-1"
+              className="px-2.5 py-1 rounded-xl bg-apple-blue hover:bg-apple-blueHover text-white font-semibold text-caption shadow-xs transition-all shrink-0 flex items-center gap-1"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add to Pen Box</span>
+              <Plus className="w-3 h-3" />
+              <span>Save Nib</span>
             </button>
           </div>
         </div>
       )}
-    </>
-  );
 
-  // Render Canvas Component
-  const renderCanvasViewport = () => (
-    <div
-      ref={containerRef}
-      className="relative flex-1 min-h-0 w-full bg-white dark:bg-black rounded-2xl overflow-hidden border border-apple-border/80 dark:border-white/10 shadow-inner flex items-center justify-center"
-    >
       <canvas
         ref={canvasRef}
         onPointerDown={handlePointerDown}
@@ -1813,7 +1835,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         }`}
       />
 
-      {/* Direct MS Paint / Figma-Style In-Canvas Text Editor */}
+      {/* Direct In-Canvas Text Editor */}
       {textInputPos && (
         <div
           style={{
@@ -1822,19 +1844,21 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             top: `${textInputPos.y * zoom + pan.y}px`,
             zIndex: 60
           }}
-          className="animate-scale-up select-none flex flex-col items-start gap-1"
+          className="animate-scale-up select-none flex flex-col items-start gap-1.5 p-2 bg-white/98 dark:bg-[#1C1C1E]/98 backdrop-blur-xl rounded-2xl border-2 border-apple-blue shadow-2xl min-w-[220px]"
         >
-          {/* Mini Formatting Toolbar (Size, Bold, Done) */}
-          <div className="flex items-center gap-1.5 p-1 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-md rounded-xl border border-apple-border/80 dark:border-white/20 shadow-xl text-caption">
+          {/* Mini Formatting Toolbar (Size, Bold, Done, Cancel) */}
+          <div className="flex items-center justify-between gap-1.5 w-full pb-1.5 border-b border-apple-border/50 dark:border-white/10">
             <div className="flex items-center gap-0.5">
-              {[14, 20, 28, 40].map((s) => (
+              {[16, 24, 36, 48].map((s) => (
                 <button
                   key={s}
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => setTextFontSize(s)}
-                  className={`px-1.5 py-0.5 rounded-md font-mono text-[11px] font-semibold transition-all ${
-                    textFontSize === s ? 'bg-apple-blue text-white shadow-2xs' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+                  className={`px-1.5 py-0.5 rounded-md font-mono text-[11px] font-bold transition-all ${
+                    textFontSize === s
+                      ? 'bg-apple-blue text-white shadow-2xs'
+                      : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
                   }`}
                 >
                   {s}
@@ -1842,55 +1866,52 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
               ))}
             </div>
 
-            <div className="w-px h-3.5 bg-apple-border dark:bg-white/10" />
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setIsTextBold(!isTextBold)}
+                className={`w-6 h-6 rounded-lg font-bold text-[12px] flex items-center justify-center transition-all ${
+                  isTextBold ? 'bg-apple-blue text-white shadow-2xs' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+                }`}
+                title="Toggle Bold"
+              >
+                B
+              </button>
 
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setIsTextBold(!isTextBold)}
-              className={`w-6 h-6 rounded-lg font-bold text-[12px] flex items-center justify-center transition-all ${
-                isTextBold ? 'bg-apple-blue text-white shadow-2xs' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-              }`}
-              title="Toggle Bold"
-            >
-              B
-            </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleCommitText}
+                className="px-2 py-0.5 rounded-lg bg-apple-blue hover:bg-apple-blueHover text-white text-caption font-semibold flex items-center gap-1 shadow-2xs"
+                title="Place Text (Enter)"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Done</span>
+              </button>
 
-            <div className="w-px h-3.5 bg-apple-border dark:bg-white/10" />
-
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={handleCommitText}
-              className="p-1 rounded-lg bg-apple-blue text-white hover:bg-apple-blueHover transition-colors shadow-2xs"
-              title="Commit Text (Enter)"
-            >
-              <Check className="w-3.5 h-3.5" />
-            </button>
-
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setTextInputPos(null)}
-              className="p-1 rounded-lg hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary transition-colors"
-              title="Cancel (Esc)"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setTextInputPos(null)}
+                className="p-1 rounded-lg hover:bg-apple-secondaryBg dark:hover:bg-white/10 text-apple-textSecondary hover:text-apple-red transition-colors"
+                title="Cancel"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
-          {/* Inline Canvas Text Input (MS Paint style) */}
+          {/* Canvas Text Input Area */}
           <textarea
             autoFocus
-            rows={1}
+            rows={2}
             value={textInputString}
             onChange={(e) => {
               setTextInputString(e.target.value);
-              // Auto-expand height
               e.target.style.height = 'auto';
               e.target.style.height = `${e.target.scrollHeight}px`;
             }}
-            onBlur={handleCommitText}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -1903,19 +1924,19 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             placeholder="Type text here..."
             style={{
               color: color,
-              fontSize: `${Math.max(12, textFontSize * zoom)}px`,
+              fontSize: `${Math.max(14, textFontSize * zoom)}px`,
               fontWeight: isTextBold ? 'bold' : 'normal',
-              lineHeight: 1.25,
-              minWidth: '140px',
+              lineHeight: 1.3,
+              minWidth: '200px',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
             }}
-            className="bg-transparent border-2 border-dashed border-apple-blue dark:border-blue-400/80 rounded-md p-1.5 outline-none resize-none shadow-sm"
+            className="w-full bg-apple-secondaryBg/60 dark:bg-white/10 rounded-xl p-2 text-apple-textPrimary dark:text-white outline-none resize-none border border-apple-border/60 dark:border-white/10 focus:ring-1 focus:ring-apple-blue"
           />
         </div>
       )}
 
       {/* Unified Apple Freeform-Style Floating Studio Dock */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 sm:gap-1.5 p-1.5 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-2xl border border-apple-border/80 dark:border-white/20 shadow-2xl select-none max-w-[95vw] overflow-x-auto no-scrollbar">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 sm:gap-1.5 p-1.5 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-2xl border border-apple-border/80 dark:border-white/20 shadow-2xl select-none max-w-[95vw] overflow-visible">
         {/* 1. Core Drawing Tools */}
         <div className="flex items-center gap-0.5 sm:gap-1">
           {/* Select Tool */}
@@ -1954,9 +1975,9 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             </button>
 
             {isPenMenuOpen && (
-              <div className="absolute left-0 bottom-full mb-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-56 space-y-1 animate-scale-up">
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-56 space-y-1 animate-scale-up">
                 <div className="px-2 py-1 border-b border-apple-border/40 dark:border-white/10 text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
-                  Pen Nib Styles
+                  Pen Styles
                 </div>
                 {PEN_TOOLS.map((p) => {
                   const Icon = p.icon;
@@ -2020,7 +2041,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             </button>
 
             {isEraserMenuOpen && (
-              <div className="absolute left-0 bottom-full mb-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-56 space-y-1 animate-scale-up">
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-56 space-y-1 animate-scale-up">
                 <div className="px-2 py-1 border-b border-apple-border/40 dark:border-white/10 text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
                   Eraser Modes
                 </div>
@@ -2053,7 +2074,11 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           <div className="relative">
             <button
               type="button"
-              onClick={() => setIsShapeMenuOpen(!isShapeMenuOpen)}
+              onClick={() => {
+                setIsShapeMenuOpen(!isShapeMenuOpen);
+                setIsPenMenuOpen(false);
+                setIsEraserMenuOpen(false);
+              }}
               className={`p-2 rounded-xl transition-all flex items-center gap-1 ${
                 ['rect', 'circle', 'triangle', 'diamond', 'star', 'arrow', 'line'].includes(tool)
                   ? 'bg-apple-blue text-white shadow-xs font-semibold'
@@ -2066,7 +2091,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             </button>
 
             {isShapeMenuOpen && (
-              <div className="absolute left-0 bottom-full mb-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-44 grid grid-cols-2 gap-1 animate-scale-up">
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-48 grid grid-cols-2 gap-1 animate-scale-up">
                 <button
                   type="button"
                   onClick={() => {

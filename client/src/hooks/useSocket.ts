@@ -460,7 +460,17 @@ export function useSocket() {
   // Whiteboard Actions
   const emitWhiteboardStroke = useCallback((stroke: WhiteboardStroke) => {
     if (socket && room) {
-      setRoom(prev => prev ? { ...prev, whiteboardStrokes: [...(prev.whiteboardStrokes || []), stroke] } : null);
+      setRoom(prev => {
+        if (!prev) return null;
+        const currentStrokes = prev.whiteboardStrokes || [];
+        const idx = currentStrokes.findIndex(s => s.id === stroke.id);
+        if (idx !== -1) {
+          const updated = [...currentStrokes];
+          updated[idx] = stroke;
+          return { ...prev, whiteboardStrokes: updated };
+        }
+        return { ...prev, whiteboardStrokes: [...currentStrokes, stroke] };
+      });
       socket.emit('whiteboard:stroke', stroke);
     }
   }, [socket, room]);

@@ -488,7 +488,22 @@ export class RedisStore implements IStore {
   }
 
   async addWhiteboardStroke(code: string, stroke: WhiteboardStroke): Promise<void> {
-    await this.redis.rpush(this.whiteboardKey(code), JSON.stringify(stroke));
+    const raw = await this.redis.lrange(this.whiteboardKey(code), 0, -1);
+    let foundIdx = -1;
+    for (let i = 0; i < raw.length; i++) {
+      try {
+        const s: WhiteboardStroke = JSON.parse(raw[i]);
+        if (s.id === stroke.id) {
+          foundIdx = i;
+          break;
+        }
+      } catch {}
+    }
+    if (foundIdx !== -1) {
+      await this.redis.lset(this.whiteboardKey(code), foundIdx, JSON.stringify(stroke));
+    } else {
+      await this.redis.rpush(this.whiteboardKey(code), JSON.stringify(stroke));
+    }
     await this.touchRoom(code);
   }
 
