@@ -1427,522 +1427,262 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   const ActiveEraserIcon = currentEraserMeta.icon;
 
   // Render Inner Studio Toolbar & Controls
+  // Render Clean Top Utility Bar (Background Theme, Undo/Redo, Zoom, Share, Export, Clear)
   const renderStudioToolbar = () => (
     <>
-      <div className="shrink-0 flex items-center justify-between gap-1.5 p-1.5 bg-apple-secondaryBg dark:bg-white/5 rounded-2xl border border-apple-border/70 dark:border-white/10 shadow-2xs overflow-x-auto no-scrollbar touch-pan-x select-none">
-        {/* Left: Tools Group (Select/Move, Pen, Highlighter, Erasers, Text, Note, Hand) */}
-        <div className="flex items-center gap-0.5 sm:gap-1 bg-white dark:bg-[#1C1C1E] p-0.5 sm:p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm shrink-0">
-          {/* 1. SELECT & MOVE TOOL */}
-          <button
-            type="button"
-            onClick={() => {
-              setTool('select');
-              setIsPenMenuOpen(false);
-              setIsEraserMenuOpen(false);
-            }}
-            className={`p-1.5 sm:p-2 rounded-lg transition-all flex items-center gap-1 shrink-0 ${
-              tool === 'select'
-                ? 'bg-apple-blue text-white shadow-sm font-semibold'
-                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Select & Move Shape (Click & drag any drawn shape/stroke)"
-          >
-            <MousePointer2 className="w-4 h-4" />
-          </button>
-
-          {/* 2. PEN TOOLS DROPDOWN */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={handleMainPenButtonClick}
-              className={`p-2 rounded-lg transition-all flex items-center gap-1.5 ${
-                isCurrentToolPen
-                  ? 'bg-apple-blue text-white shadow-sm'
-                  : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-              }`}
-              title={`Current Pen: ${currentPenMeta.label} (Click to open studio customizer)`}
-            >
-              <ActivePenIcon className="w-4 h-4" />
-              <ChevronDown className="w-3 h-3 opacity-80" />
-            </button>
-          </div>
-
-          {/* 3. HIGHLIGHTER */}
-          <button
-            type="button"
-            onClick={() => {
-              setTool('highlighter');
-              setSelectedStrokeId(null);
-            }}
-            className={`p-2 rounded-lg transition-all ${
-              tool === 'highlighter' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Neon Highlighter (Clean Ribbon)"
-          >
-            <Highlighter className="w-4 h-4" />
-          </button>
-
-          {/* 4. MULTI-ERASER SUITE DROPDOWN */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={handleMainEraserButtonClick}
-              className={`p-2 rounded-lg transition-all flex items-center gap-1.5 ${
-                isCurrentToolEraser
-                  ? 'bg-apple-blue text-white shadow-sm'
-                  : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-              }`}
-              title={`Current Eraser: ${currentEraserMeta.label} (Click to open menu)`}
-            >
-              <ActiveEraserIcon className="w-4 h-4" />
-              <ChevronDown className="w-3 h-3 opacity-80" />
-            </button>
-
-            {/* Eraser Suite Dropdown Menu */}
-            {isEraserMenuOpen && (
-              <div className="absolute left-0 top-full mt-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-64 space-y-1 animate-scale-up">
-                <div className="px-2 py-1 border-b border-apple-border/40 dark:border-white/10 flex items-center justify-between">
-                  <span className="text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
-                    Eraser Suite
-                  </span>
-                  <span className="text-[10px] font-mono text-apple-blue font-semibold">
-                    {eraserSize}px
-                  </span>
-                </div>
-
-                <div className="space-y-1 pt-1">
-                  {ERASER_TOOLS.map((e) => {
-                    const Icon = e.icon;
-                    const isSelected = activeEraserType === e.id && isCurrentToolEraser;
-                    return (
-                      <button
-                        key={e.id}
-                        type="button"
-                        onClick={() => handleSelectEraserSubtool(e.id)}
-                        className={`w-full flex items-start gap-2.5 p-2 rounded-xl text-left transition-all ${
-                          isSelected
-                            ? 'bg-apple-blue text-white font-semibold shadow-2xs'
-                            : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                        }`}
-                      >
-                        <div className={`p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-white/20' : 'bg-apple-secondaryBg dark:bg-white/5'}`}>
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <div className="space-y-0.5 overflow-hidden">
-                          <div className="text-footnote font-semibold flex items-center gap-1.5">
-                            <span>{e.label}</span>
-                          </div>
-                          <p className={`text-[11px] leading-tight line-clamp-1 ${isSelected ? 'text-white/80' : 'text-apple-textSecondary dark:text-white/50'}`}>
-                            {e.desc}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 5. TEXT / ANNOTATION TOOL */}
-          <button
-            type="button"
-            onClick={() => {
-              setTool('text');
-              setSelectedStrokeId(null);
-            }}
-            className={`p-2 rounded-lg transition-all ${
-              tool === 'text' ? 'bg-apple-blue text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Text Tool (Click canvas to type directly)"
-          >
-            <Type className="w-4 h-4" />
-          </button>
-
-          {/* 6. PAN / HAND TOOL */}
-          <button
-            type="button"
-            onClick={() => {
-              setTool('pan');
-              setSelectedStrokeId(null);
-            }}
-            className={`p-2 rounded-lg transition-all ${
-              tool === 'pan' ? 'bg-amber-500 text-white shadow-sm' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Pan / Hand Tool (Drag canvas view)"
-          >
-            <Hand className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Shapes Menu Group */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setIsShapeMenuOpen(!isShapeMenuOpen)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-[#1C1C1E] border border-apple-border/60 dark:border-white/10 shadow-sm text-footnote font-semibold transition-all ${
-              ['rect', 'circle', 'triangle', 'diamond', 'star', 'arrow', 'line'].includes(tool)
-                ? 'text-apple-blue border-apple-blue dark:border-apple-blue'
-                : 'text-apple-textPrimary dark:text-white'
-            }`}
-          >
-            <Square className="w-4 h-4" />
-            <span>Shapes</span>
-            <ChevronDown className="w-3 h-3 opacity-60" />
-          </button>
-
-          {isShapeMenuOpen && (
-            <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-[#1C1C1E] border border-apple-border/70 dark:border-white/10 rounded-2xl shadow-xl p-2 z-40 w-44 grid grid-cols-2 gap-1 animate-scale-up">
-              <button
-                onClick={() => {
-                  setTool('rect');
-                  setIsShapeMenuOpen(false);
-                  setSelectedStrokeId(null);
-                }}
-                className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
-                  tool === 'rect' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                }`}
-              >
-                <Square className="w-3.5 h-3.5" />
-                <span>Rectangle</span>
-              </button>
-              <button
-                onClick={() => {
-                  setTool('circle');
-                  setIsShapeMenuOpen(false);
-                  setSelectedStrokeId(null);
-                }}
-                className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
-                  tool === 'circle' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                }`}
-              >
-                <Circle className="w-3.5 h-3.5" />
-                <span>Circle</span>
-              </button>
-              <button
-                onClick={() => {
-                  setTool('triangle');
-                  setIsShapeMenuOpen(false);
-                  setSelectedStrokeId(null);
-                }}
-                className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
-                  tool === 'triangle' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                }`}
-              >
-                <Triangle className="w-3.5 h-3.5" />
-                <span>Triangle</span>
-              </button>
-              <button
-                onClick={() => {
-                  setTool('diamond');
-                  setIsShapeMenuOpen(false);
-                  setSelectedStrokeId(null);
-                }}
-                className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
-                  tool === 'diamond' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>Diamond</span>
-              </button>
-              <button
-                onClick={() => {
-                  setTool('arrow');
-                  setIsShapeMenuOpen(false);
-                  setSelectedStrokeId(null);
-                }}
-                className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
-                  tool === 'arrow' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                }`}
-              >
-                <ArrowRight className="w-3.5 h-3.5" />
-                <span>Arrow</span>
-              </button>
-              <button
-                onClick={() => {
-                  setTool('line');
-                  setIsShapeMenuOpen(false);
-                  setSelectedStrokeId(null);
-                }}
-                className={`flex items-center gap-2 p-2 rounded-xl text-caption font-semibold ${
-                  tool === 'line' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
-                }`}
-              >
-                <Minus className="w-3.5 h-3.5" />
-                <span>Line</span>
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Quick Size Presets & Customizer Toggle */}
-        <div className="flex items-center gap-1 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-          {(tool === 'highlighter' ? HIGHLIGHTER_PRESETS : isCurrentToolEraser ? ERASER_PRESETS : PEN_PRESETS).map((pSize) => {
-            const isActive = (tool === 'highlighter' ? highlighterSize : isCurrentToolEraser ? eraserSize : size) === pSize;
-            return (
-              <button
-                key={pSize}
-                type="button"
-                onClick={() => {
-                  if (tool === 'highlighter') {
-                    setHighlighterSize(pSize);
-                  } else if (isCurrentToolEraser) {
-                    setEraserSize(pSize);
-                  } else {
-                    setSize(pSize);
-                  }
-                }}
-                className={`px-2 py-1 rounded-lg text-caption font-semibold transition-all flex items-center gap-1 ${
-                  isActive
-                    ? 'bg-apple-secondaryBg dark:bg-white/20 text-apple-blue dark:text-white font-bold'
-                    : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-                }`}
-                title={`Stroke size ${pSize}px`}
-              >
-                <span>{pSize}px</span>
-              </button>
-            );
-          })}
-
-          {/* Tool Customizer Toggle */}
-          <button
-            type="button"
-            onClick={() => setShowToolCustomizer(!showToolCustomizer)}
-            className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${
-              showToolCustomizer
-                ? 'bg-apple-blue text-white font-semibold'
-                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Open Pen Studio Customizer"
-          >
-            <Sliders className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* 1. Theme & Canvas Pattern Popover Dropdown (Consolidated to eliminate crowding) */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setIsCanvasSettingsOpen(!isCanvasSettingsOpen)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#1C1C1E] border border-apple-border/60 dark:border-white/10 shadow-sm text-caption font-semibold transition-all ${
-              isCanvasSettingsOpen ? 'border-apple-blue text-apple-blue' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Canvas Theme & Grid Settings"
-          >
-            {canvasTheme === 'dark' ? <Moon className="w-3.5 h-3.5 text-blue-400" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
-            <span className="capitalize">{canvasTheme} • {canvasPattern}</span>
-            <ChevronDown className="w-3 h-3 opacity-60" />
-          </button>
-
-          {isCanvasSettingsOpen && (
-            <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-xl p-2.5 z-50 w-52 space-y-2 animate-scale-up">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50 block mb-1">
-                  Theme Mode
-                </span>
-                <div className="grid grid-cols-2 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCanvasTheme('light');
-                      setIsCanvasSettingsOpen(false);
-                    }}
-                    className={`flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-caption font-semibold transition-all ${
-                      canvasTheme === 'light' ? 'bg-apple-blue text-white shadow-xs' : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
-                    }`}
-                  >
-                    <Sun className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Light</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCanvasTheme('dark');
-                      setIsCanvasSettingsOpen(false);
-                    }}
-                    className={`flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-caption font-semibold transition-all ${
-                      canvasTheme === 'dark' ? 'bg-apple-blue text-white shadow-xs' : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
-                    }`}
-                  >
-                    <Moon className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Dark</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="border-t border-apple-border/40 dark:border-white/10 pt-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50 block mb-1">
-                  Grid Background
-                </span>
-                <div className="grid grid-cols-2 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCanvasPattern('plain');
-                      setIsCanvasSettingsOpen(false);
-                    }}
-                    className={`py-1.5 px-2 rounded-xl text-caption font-semibold transition-all ${
-                      canvasPattern === 'plain' ? 'bg-apple-blue text-white shadow-xs' : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
-                    }`}
-                  >
-                    Blank
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCanvasPattern('grid');
-                      setIsCanvasSettingsOpen(false);
-                    }}
-                    className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl text-caption font-semibold transition-all ${
-                      canvasPattern === 'grid' ? 'bg-apple-blue text-white shadow-xs' : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
-                    }`}
-                  >
-                    <Grid className="w-3 h-3" />
-                    <span>Grid</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCanvasPattern('dots');
-                      setIsCanvasSettingsOpen(false);
-                    }}
-                    className={`py-1.5 px-2 rounded-xl text-caption font-semibold transition-all ${
-                      canvasPattern === 'dots' ? 'bg-apple-blue text-white shadow-xs' : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
-                    }`}
-                  >
-                    Dots
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCanvasPattern('lines');
-                      setIsCanvasSettingsOpen(false);
-                    }}
-                    className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl text-caption font-semibold transition-all ${
-                      canvasPattern === 'lines' ? 'bg-apple-blue text-white shadow-xs' : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
-                    }`}
-                  >
-                    <Minus className="w-3 h-3" />
-                    <span>Lines</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Undo / Redo / Ruler Controls */}
-        <div className="flex items-center gap-0.5 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-          <button
-            type="button"
-            onClick={handleUndo}
-            disabled={localStrokes.length === 0}
-            className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white disabled:opacity-30 transition-colors"
-            title="Undo (Ctrl+Z)"
-          >
-            <Undo2 className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleRedo}
-            disabled={redoStack.length === 0}
-            className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white disabled:opacity-30 transition-colors"
-            title="Redo (Ctrl+Y)"
-          >
-            <Redo2 className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowRuler(!showRuler)}
-            className={`p-1.5 rounded-lg transition-colors ${
-              showRuler ? 'bg-apple-blue text-white' : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-            }`}
-            title="Toggle Ruler"
-          >
-            <Ruler className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Canvas Navigation & Actions */}
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => imageInputRef.current?.click()}
-            className="p-1.5 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-            title="Insert Image / Diagram"
-          >
-            <ImageIcon className="w-3.5 h-3.5" />
-          </button>
-
-          {/* Pan & Zoom Navigation */}
-          <div className="flex items-center gap-0.5 bg-white dark:bg-[#1C1C1E] p-0.5 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-sm">
-            <button
-              type="button"
-              onClick={handleZoomOut}
-              className="p-1 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
-              title="Zoom Out"
-            >
-              <ZoomOut className="w-3 h-3" />
-            </button>
-            <button
-              type="button"
-              onClick={handleResetView}
-              className="px-1.5 py-0.5 rounded-lg text-[11px] font-mono font-semibold text-apple-textSecondary hover:text-apple-blue"
-              title="Reset View"
-            >
-              {Math.round(zoom * 100)}%
-            </button>
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              className="p-1 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white"
-              title="Zoom In"
-            >
-              <ZoomIn className="w-3 h-3" />
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleExportPNG}
-            className="p-1.5 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-            title="Save PNG"
-          >
-            <Download className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleBroadcastSnapshot}
-            className="p-1.5 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-blue transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-            title="Share to Room Files"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className={`p-1.5 rounded-xl transition-colors border shadow-sm ${
-              isFullscreen
-                ? 'bg-apple-blue text-white border-apple-blue'
-                : 'bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white border-apple-border/60 dark:border-white/10'
-            }`}
-            title={isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
-          >
-            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setConfirmClearOpen(true)}
-            className="p-1.5 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-red-50 dark:hover:bg-red-950 text-apple-red transition-colors border border-apple-border/60 dark:border-white/10 shadow-sm"
-            title="Clear Canvas"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
+      <div className="shrink-0 flex items-center justify-between gap-2 p-1.5 bg-apple-secondaryBg/90 dark:bg-white/5 rounded-2xl border border-apple-border/70 dark:border-white/10 shadow-2xs select-none">
+      {/* Left: History & Alignment (Undo, Redo, Ruler) */}
+      <div className="flex items-center gap-0.5 bg-white dark:bg-[#1C1C1E] p-1 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-xs shrink-0">
+        <button
+          type="button"
+          onClick={handleUndo}
+          disabled={localStrokes.length === 0}
+          className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white disabled:opacity-30 transition-colors"
+          title="Undo (Ctrl+Z)"
+        >
+          <Undo2 className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={handleRedo}
+          disabled={redoStack.length === 0}
+          className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white disabled:opacity-30 transition-colors"
+          title="Redo (Ctrl+Y)"
+        >
+          <Redo2 className="w-4 h-4" />
+        </button>
+        <div className="w-px h-3.5 bg-apple-border/60 dark:bg-white/10 mx-0.5" />
+        <button
+          type="button"
+          onClick={() => setShowRuler(!showRuler)}
+          className={`p-1.5 rounded-lg transition-colors ${
+            showRuler
+              ? 'bg-apple-blue text-white shadow-2xs'
+              : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
+          }`}
+          title="Toggle Precision Ruler"
+        >
+          <Ruler className="w-4 h-4" />
+        </button>
       </div>
+
+      {/* Center: Canvas Theme & Background Pattern Dropdown */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsCanvasSettingsOpen(!isCanvasSettingsOpen)}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-[#1C1C1E] border shadow-xs text-xs font-semibold transition-all whitespace-nowrap ${
+            isCanvasSettingsOpen
+              ? 'border-apple-blue text-apple-blue ring-2 ring-apple-blue/20'
+              : 'border-apple-border/70 dark:border-white/10 text-apple-textPrimary dark:text-white hover:border-apple-blue/50'
+          }`}
+          title="Canvas Background & Theme Settings"
+        >
+          {canvasTheme === 'dark' ? (
+            <Moon className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+          ) : (
+            <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          )}
+          <span className="capitalize whitespace-nowrap font-medium">
+            {canvasTheme} &bull; {canvasPattern}
+          </span>
+          <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
+        </button>
+
+        {isCanvasSettingsOpen && (
+          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-3 z-50 w-56 space-y-3 animate-scale-up">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50 block mb-1.5">
+                Color Mode
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCanvasTheme('light');
+                    setIsCanvasSettingsOpen(false);
+                  }}
+                  className={`flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-caption font-semibold transition-all ${
+                    canvasTheme === 'light'
+                      ? 'bg-apple-blue text-white shadow-xs'
+                      : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
+                  }`}
+                >
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Light</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCanvasTheme('dark');
+                    setIsCanvasSettingsOpen(false);
+                  }}
+                  className={`flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-caption font-semibold transition-all ${
+                    canvasTheme === 'dark'
+                      ? 'bg-apple-blue text-white shadow-xs'
+                      : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
+                  }`}
+                >
+                  <Moon className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Dark</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="border-t border-apple-border/40 dark:border-white/10 pt-2.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50 block mb-1.5">
+                Grid Pattern
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCanvasPattern('plain');
+                    setIsCanvasSettingsOpen(false);
+                  }}
+                  className={`py-1.5 px-2 rounded-xl text-caption font-semibold transition-all text-center ${
+                    canvasPattern === 'plain'
+                      ? 'bg-apple-blue text-white shadow-xs'
+                      : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
+                  }`}
+                >
+                  Plain
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCanvasPattern('grid');
+                    setIsCanvasSettingsOpen(false);
+                  }}
+                  className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl text-caption font-semibold transition-all ${
+                    canvasPattern === 'grid'
+                      ? 'bg-apple-blue text-white shadow-xs'
+                      : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
+                  }`}
+                >
+                  <Grid className="w-3 h-3" />
+                  <span>Grid</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCanvasPattern('dots');
+                    setIsCanvasSettingsOpen(false);
+                  }}
+                  className={`py-1.5 px-2 rounded-xl text-caption font-semibold transition-all text-center ${
+                    canvasPattern === 'dots'
+                      ? 'bg-apple-blue text-white shadow-xs'
+                      : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
+                  }`}
+                >
+                  Dots
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCanvasPattern('lines');
+                    setIsCanvasSettingsOpen(false);
+                  }}
+                  className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl text-caption font-semibold transition-all ${
+                    canvasPattern === 'lines'
+                      ? 'bg-apple-blue text-white shadow-xs'
+                      : 'bg-apple-secondaryBg dark:bg-white/5 text-apple-textPrimary dark:text-white hover:bg-apple-tertiaryBg'
+                  }`}
+                >
+                  <Minus className="w-3 h-3" />
+                  <span>Lines</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Right: Zoom & Canvas Actions */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        {/* Zoom Controls */}
+        <div className="flex items-center gap-0.5 bg-white dark:bg-[#1C1C1E] p-0.5 rounded-xl border border-apple-border/60 dark:border-white/10 shadow-xs">
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors"
+            title="Zoom Out"
+          >
+            <ZoomOut className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleResetView}
+            className="px-2 py-0.5 rounded-lg text-caption font-mono font-semibold text-apple-textSecondary hover:text-apple-blue transition-colors"
+            title="Reset Zoom & Pan"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            className="p-1.5 rounded-lg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors"
+            title="Zoom In"
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Insert Image */}
+        <button
+          type="button"
+          onClick={() => imageInputRef.current?.click()}
+          className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-xs"
+          title="Insert Image / Diagram"
+        >
+          <ImageIcon className="w-4 h-4" />
+        </button>
+
+        {/* Broadcast to Room Files */}
+        <button
+          type="button"
+          onClick={handleBroadcastSnapshot}
+          className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-blue transition-colors border border-apple-border/60 dark:border-white/10 shadow-xs"
+          title="Share Snapshot to Room Files"
+        >
+          <Share2 className="w-4 h-4" />
+        </button>
+
+        {/* Export PNG */}
+        <button
+          type="button"
+          onClick={handleExportPNG}
+          className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white transition-colors border border-apple-border/60 dark:border-white/10 shadow-xs"
+          title="Save as PNG"
+        >
+          <Download className="w-4 h-4" />
+        </button>
+
+        {/* Full Screen Toggle */}
+        <button
+          type="button"
+          onClick={() => setIsFullscreen(!isFullscreen)}
+          className={`p-2 rounded-xl transition-colors border shadow-xs ${
+            isFullscreen
+              ? 'bg-apple-blue text-white border-apple-blue'
+              : 'bg-white dark:bg-[#1C1C1E] hover:bg-apple-secondaryBg text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white border border-apple-border/60 dark:border-white/10'
+          }`}
+          title={isFullscreen ? 'Exit Full Screen' : 'Full Screen Mode'}
+        >
+          {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+        </button>
+
+        {/* Clear Canvas */}
+        <button
+          type="button"
+          onClick={() => setConfirmClearOpen(true)}
+          className="p-2 rounded-xl bg-white dark:bg-[#1C1C1E] hover:bg-red-50 dark:hover:bg-red-950/50 text-apple-red transition-colors border border-apple-border/60 dark:border-white/10 shadow-xs"
+          title="Clear Entire Canvas"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
 
       {/* Pen Studio Popover Modal */}
       {showToolCustomizer && (
@@ -2174,59 +1914,373 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
         </div>
       )}
 
-      {/* Floating Multi-Pen Box Dock (Bottom Center / Side Tray) */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 p-1.5 bg-black/80 dark:bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl select-none">
-        {/* Toggle Dock Button */}
+      {/* Unified Apple Freeform-Style Floating Studio Dock */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 sm:gap-1.5 p-1.5 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-2xl border border-apple-border/80 dark:border-white/20 shadow-2xl select-none max-w-[95vw] overflow-x-auto no-scrollbar">
+        {/* 1. Core Drawing Tools */}
+        <div className="flex items-center gap-0.5 sm:gap-1">
+          {/* Select Tool */}
+          <button
+            type="button"
+            onClick={() => {
+              setTool('select');
+              setIsPenMenuOpen(false);
+              setIsEraserMenuOpen(false);
+              setIsShapeMenuOpen(false);
+            }}
+            className={`p-2 rounded-xl transition-all ${
+              tool === 'select'
+                ? 'bg-apple-blue text-white shadow-xs font-semibold'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+            }`}
+            title="Select & Move Shape"
+          >
+            <MousePointer2 className="w-4 h-4" />
+          </button>
+
+          {/* Pen Tool with Nib Subtype Menu */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleMainPenButtonClick}
+              className={`p-2 rounded-xl transition-all flex items-center gap-1 ${
+                isCurrentToolPen
+                  ? 'bg-apple-blue text-white shadow-xs'
+                  : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+              }`}
+              title={`Pen: ${currentPenMeta.label}`}
+            >
+              <ActivePenIcon className="w-4 h-4" />
+              <ChevronDown className="w-2.5 h-2.5 opacity-70" />
+            </button>
+
+            {isPenMenuOpen && (
+              <div className="absolute left-0 bottom-full mb-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-56 space-y-1 animate-scale-up">
+                <div className="px-2 py-1 border-b border-apple-border/40 dark:border-white/10 text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
+                  Pen Nib Styles
+                </div>
+                {PEN_TOOLS.map((p) => {
+                  const Icon = p.icon;
+                  const isSelected = activePenType === p.id && isCurrentToolPen;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleSelectPenSubtool(p.id)}
+                      className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition-all ${
+                        isSelected
+                          ? 'bg-apple-blue text-white font-semibold shadow-2xs'
+                          : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <div className="overflow-hidden">
+                        <div className="text-footnote font-semibold">{p.label}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Highlighter */}
+          <button
+            type="button"
+            onClick={() => {
+              setTool('highlighter');
+              setSelectedStrokeId(null);
+              setIsPenMenuOpen(false);
+              setIsEraserMenuOpen(false);
+              setIsShapeMenuOpen(false);
+            }}
+            className={`p-2 rounded-xl transition-all ${
+              tool === 'highlighter'
+                ? 'bg-apple-blue text-white shadow-xs'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+            }`}
+            title="Neon Highlighter"
+          >
+            <Highlighter className="w-4 h-4" />
+          </button>
+
+          {/* Multi-Eraser Suite */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleMainEraserButtonClick}
+              className={`p-2 rounded-xl transition-all flex items-center gap-1 ${
+                isCurrentToolEraser
+                  ? 'bg-apple-blue text-white shadow-xs'
+                  : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+              }`}
+              title={`Eraser: ${currentEraserMeta.label}`}
+            >
+              <ActiveEraserIcon className="w-4 h-4" />
+              <ChevronDown className="w-2.5 h-2.5 opacity-70" />
+            </button>
+
+            {isEraserMenuOpen && (
+              <div className="absolute left-0 bottom-full mb-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-56 space-y-1 animate-scale-up">
+                <div className="px-2 py-1 border-b border-apple-border/40 dark:border-white/10 text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
+                  Eraser Modes
+                </div>
+                {ERASER_TOOLS.map((e) => {
+                  const Icon = e.icon;
+                  const isSelected = activeEraserType === e.id && isCurrentToolEraser;
+                  return (
+                    <button
+                      key={e.id}
+                      type="button"
+                      onClick={() => handleSelectEraserSubtool(e.id)}
+                      className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition-all ${
+                        isSelected
+                          ? 'bg-apple-blue text-white font-semibold shadow-2xs'
+                          : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <div className="overflow-hidden">
+                        <div className="text-footnote font-semibold">{e.label}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Shapes Menu */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsShapeMenuOpen(!isShapeMenuOpen)}
+              className={`p-2 rounded-xl transition-all flex items-center gap-1 ${
+                ['rect', 'circle', 'triangle', 'diamond', 'star', 'arrow', 'line'].includes(tool)
+                  ? 'bg-apple-blue text-white shadow-xs font-semibold'
+                  : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+              }`}
+              title="Geometric Shapes"
+            >
+              <Square className="w-4 h-4" />
+              <ChevronDown className="w-2.5 h-2.5 opacity-70" />
+            </button>
+
+            {isShapeMenuOpen && (
+              <div className="absolute left-0 bottom-full mb-2 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-44 grid grid-cols-2 gap-1 animate-scale-up">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTool('rect');
+                    setIsShapeMenuOpen(false);
+                    setSelectedStrokeId(null);
+                  }}
+                  className={`flex items-center gap-1.5 p-2 rounded-xl text-caption font-semibold ${
+                    tool === 'rect' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                  }`}
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  <span>Rect</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTool('circle');
+                    setIsShapeMenuOpen(false);
+                    setSelectedStrokeId(null);
+                  }}
+                  className={`flex items-center gap-1.5 p-2 rounded-xl text-caption font-semibold ${
+                    tool === 'circle' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                  }`}
+                >
+                  <Circle className="w-3.5 h-3.5" />
+                  <span>Circle</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTool('triangle');
+                    setIsShapeMenuOpen(false);
+                    setSelectedStrokeId(null);
+                  }}
+                  className={`flex items-center gap-1.5 p-2 rounded-xl text-caption font-semibold ${
+                    tool === 'triangle' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                  }`}
+                >
+                  <Triangle className="w-3.5 h-3.5" />
+                  <span>Triangle</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTool('diamond');
+                    setIsShapeMenuOpen(false);
+                    setSelectedStrokeId(null);
+                  }}
+                  className={`flex items-center gap-1.5 p-2 rounded-xl text-caption font-semibold ${
+                    tool === 'diamond' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Diamond</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTool('arrow');
+                    setIsShapeMenuOpen(false);
+                    setSelectedStrokeId(null);
+                  }}
+                  className={`flex items-center gap-1.5 p-2 rounded-xl text-caption font-semibold ${
+                    tool === 'arrow' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                  }`}
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Arrow</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTool('line');
+                    setIsShapeMenuOpen(false);
+                    setSelectedStrokeId(null);
+                  }}
+                  className={`flex items-center gap-1.5 p-2 rounded-xl text-caption font-semibold ${
+                    tool === 'line' ? 'bg-apple-blue text-white' : 'text-apple-textPrimary dark:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                  }`}
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                  <span>Line</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Text Tool */}
+          <button
+            type="button"
+            onClick={() => {
+              setTool('text');
+              setSelectedStrokeId(null);
+              setIsPenMenuOpen(false);
+              setIsEraserMenuOpen(false);
+              setIsShapeMenuOpen(false);
+            }}
+            className={`p-2 rounded-xl transition-all ${
+              tool === 'text'
+                ? 'bg-apple-blue text-white shadow-xs'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+            }`}
+            title="Text Tool (Click canvas to type)"
+          >
+            <Type className="w-4 h-4" />
+          </button>
+
+          {/* Pan Tool */}
+          <button
+            type="button"
+            onClick={() => {
+              setTool('pan');
+              setSelectedStrokeId(null);
+              setIsPenMenuOpen(false);
+              setIsEraserMenuOpen(false);
+              setIsShapeMenuOpen(false);
+            }}
+            className={`p-2 rounded-xl transition-all ${
+              tool === 'pan'
+                ? 'bg-amber-500 text-white shadow-xs'
+                : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+            }`}
+            title="Pan / Hand Tool (Drag canvas view)"
+          >
+            <Hand className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="h-6 w-px bg-apple-border/80 dark:bg-white/15 mx-1 shrink-0" />
+
+        {/* 2. Curated Quick Colors */}
+        <div className="flex items-center gap-1.5">
+          {[
+            { hex: '#1C1C1E', name: 'Black' },
+            { hex: '#007AFF', name: 'Blue' },
+            { hex: '#34C759', name: 'Green' },
+            { hex: '#FF9500', name: 'Orange' },
+            { hex: '#FF3B30', name: 'Red' },
+            { hex: '#AF52DE', name: 'Purple' }
+          ].map((c) => {
+            const isSelected = color.toLowerCase() === c.hex.toLowerCase();
+            return (
+              <button
+                key={c.hex}
+                type="button"
+                onClick={() => setColor(c.hex)}
+                className={`w-5 h-5 rounded-full transition-all shrink-0 relative ${
+                  isSelected ? 'ring-2 ring-apple-blue ring-offset-2 dark:ring-offset-[#1C1C1E] scale-110' : 'hover:scale-110'
+                }`}
+                style={{ backgroundColor: c.hex }}
+                title={c.name}
+              />
+            );
+          })}
+
+          {/* Native Color Picker */}
+          <label className="relative w-5 h-5 rounded-full bg-gradient-to-tr from-rose-500 via-amber-400 to-blue-500 cursor-pointer flex items-center justify-center hover:scale-110 transition-transform shadow-xs shrink-0" title="Custom Color">
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+            />
+          </label>
+        </div>
+
+        <div className="h-6 w-px bg-apple-border/80 dark:bg-white/15 mx-1 shrink-0" />
+
+        {/* 3. Quick Size Buttons */}
+        <div className="flex items-center gap-1">
+          {[
+            { label: 'S', size: 2 },
+            { label: 'M', size: 6 },
+            { label: 'L', size: 14 }
+          ].map((s) => {
+            const currentSize = tool === 'highlighter' ? highlighterSize : isCurrentToolEraser ? eraserSize : size;
+            const isSelected = Math.abs(currentSize - s.size) <= 2;
+            return (
+              <button
+                key={s.label}
+                type="button"
+                onClick={() => {
+                  if (tool === 'highlighter') setHighlighterSize(s.size * 3);
+                  else if (isCurrentToolEraser) setEraserSize(s.size * 3);
+                  else setSize(s.size);
+                }}
+                className={`px-2 py-1 rounded-lg text-caption font-bold transition-all ${
+                  isSelected
+                    ? 'bg-apple-blue text-white shadow-2xs'
+                    : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
+                }`}
+                title={`Stroke size: ${s.size}px`}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="h-6 w-px bg-apple-border/80 dark:bg-white/15 mx-1 shrink-0" />
+
+        {/* 4. Pen Studio Customizer Toggle */}
         <button
           type="button"
           onClick={() => setShowToolCustomizer(!showToolCustomizer)}
-          className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-          title="Open Pen Studio"
-        >
-          <Sliders className="w-4 h-4 text-apple-blue" />
-        </button>
-
-        <div className="h-6 w-px bg-white/20 mx-0.5" />
-
-        {/* 6 Quick Switch Pen Slots */}
-        {penBoxSlots.map((slot) => {
-          const isSlotActive = activePenBoxId === slot.id && isCurrentToolPen;
-          return (
-            <button
-              key={slot.id}
-              type="button"
-              onClick={() => handleSelectPenBoxSlot(slot)}
-              className={`relative px-2.5 py-1.5 rounded-xl transition-all flex flex-col items-center gap-0.5 ${
-                isSlotActive
-                  ? 'bg-white/25 scale-110 shadow-lg ring-1 ring-white/50'
-                  : 'hover:bg-white/10 opacity-75 hover:opacity-100'
-              }`}
-              title={`${slot.type} (${slot.size}px)`}
-            >
-              {/* Miniature 3D Nib Indicator */}
-              <div
-                className="w-3.5 h-3.5 rounded-full border border-white/40 shadow-sm"
-                style={{ backgroundColor: slot.color }}
-              />
-              <span className="text-[9px] font-mono font-bold text-white leading-none">
-                {slot.label}
-              </span>
-            </button>
-          );
-        })}
-
-        <div className="h-6 w-px bg-white/20 mx-0.5" />
-
-        {/* 1-Tap Eraser Quick Toggle */}
-        <button
-          type="button"
-          onClick={handleMainEraserButtonClick}
-          className={`p-2 rounded-xl transition-colors ${
-            isCurrentToolEraser ? 'bg-apple-blue text-white' : 'bg-white/10 hover:bg-white/20 text-white'
+          className={`p-2 rounded-xl transition-all ${
+            showToolCustomizer
+              ? 'bg-apple-blue text-white shadow-xs'
+              : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white hover:bg-apple-secondaryBg dark:hover:bg-white/10'
           }`}
-          title="Switch to Eraser"
+          title="Open Pen Studio & Advanced Sliders"
         >
-          <Eraser className="w-4 h-4" />
+          <Sliders className="w-4 h-4" />
         </button>
       </div>
     </div>
