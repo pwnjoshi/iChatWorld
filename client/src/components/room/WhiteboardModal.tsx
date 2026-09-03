@@ -24,7 +24,6 @@ import {
   Maximize2,
   Minimize2,
   Image as ImageIcon,
-  Ruler,
   ChevronDown,
   ArrowRight,
   Triangle,
@@ -166,7 +165,6 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   const [customColor, setCustomColor] = useState('#007AFF');
   const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>('light');
   const [canvasPattern, setCanvasPattern] = useState<CanvasPattern>('plain');
-  const [showRuler, setShowRuler] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Floating Pen Box (Customizable dock)
@@ -573,41 +571,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       });
     }
 
-    // Optional Ruler & Coordinate Scale Overlay
-    if (showRuler) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.save();
-      ctx.fillStyle = isDark ? 'rgba(28, 28, 30, 0.85)' : 'rgba(242, 242, 247, 0.85)';
-      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
-      ctx.font = '10px -apple-system, system-ui, sans-serif';
-      ctx.fillStyle = isDark ? '#AEAEB2' : '#8E8E93';
-
-      // Top Horizontal Ruler
-      ctx.fillRect(0, 0, canvas.width, 18);
-      ctx.strokeRect(0, 0, canvas.width, 18);
-      for (let x = 0; x < canvas.width; x += 50) {
-        const worldX = Math.round((x - pan.x) / zoom);
-        ctx.beginPath();
-        ctx.moveTo(x, 10);
-        ctx.lineTo(x, 18);
-        ctx.stroke();
-        ctx.fillText(`${worldX}`, x + 2, 14);
-      }
-
-      // Left Vertical Ruler
-      ctx.fillRect(0, 0, 24, canvas.height);
-      ctx.strokeRect(0, 0, 24, canvas.height);
-      for (let y = 0; y < canvas.height; y += 50) {
-        const worldY = Math.round((y - pan.y) / zoom);
-        ctx.beginPath();
-        ctx.moveTo(16, y);
-        ctx.lineTo(24, y);
-        ctx.stroke();
-        ctx.fillText(`${worldY}`, 2, y + 10);
-      }
-      ctx.restore();
-    }
-  }, [localStrokes, selectedStrokeId, zoom, pan, canvasTheme, canvasPattern, showRuler, remoteCursors]);
+  }, [localStrokes, selectedStrokeId, zoom, pan, canvasTheme, canvasPattern, remoteCursors]);
 
   // Dynamically size canvas buffer to match its container exactly (eliminates coordinate offset)
   useEffect(() => {
@@ -1470,19 +1434,6 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           title="Redo (Ctrl+Y)"
         >
           <Redo2 className="w-4 h-4" />
-        </button>
-        <div className="w-px h-3.5 bg-apple-border/60 dark:bg-white/10 mx-0.5" />
-        <button
-          type="button"
-          onClick={() => setShowRuler(!showRuler)}
-          className={`p-1.5 rounded-lg transition-colors ${
-            showRuler
-              ? 'bg-apple-blue text-white shadow-2xs'
-              : 'text-apple-textSecondary hover:text-apple-textPrimary dark:hover:text-white'
-          }`}
-          title="Toggle Precision Ruler"
-        >
-          <Ruler className="w-4 h-4" />
         </button>
       </div>
 
