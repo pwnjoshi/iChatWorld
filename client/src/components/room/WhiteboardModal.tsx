@@ -232,19 +232,29 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
     setSelectedStrokeId(null);
   };
 
-  const handleMainPenButtonClick = () => {
+  const handleMainPenButtonClick = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setSelectedStrokeId(null);
+    setIsEraserMenuOpen(false);
+    setIsShapeMenuOpen(false);
+    setShowToolCustomizer(false);
     if (!isCurrentToolPen) {
       setTool(activePenType);
+      setIsPenMenuOpen(true);
     } else {
-      setShowToolCustomizer((prev) => !prev);
+      setIsPenMenuOpen((prev) => !prev);
     }
   };
 
-  const handleMainEraserButtonClick = () => {
+  const handleMainEraserButtonClick = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setSelectedStrokeId(null);
+    setIsPenMenuOpen(false);
+    setIsShapeMenuOpen(false);
+    setShowToolCustomizer(false);
     if (!isCurrentToolEraser) {
       setTool(activeEraserType);
+      setIsEraserMenuOpen(true);
     } else {
       setIsEraserMenuOpen((prev) => !prev);
     }
@@ -1936,7 +1946,10 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
       )}
 
       {/* Unified Apple Freeform-Style Floating Studio Dock */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 sm:gap-1.5 p-1.5 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-2xl border border-apple-border/80 dark:border-white/20 shadow-2xl select-none max-w-[95vw] overflow-visible">
+      <div
+        onPointerDown={(e) => e.stopPropagation()}
+        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 sm:gap-1.5 p-1.5 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-2xl border border-apple-border/80 dark:border-white/20 shadow-2xl select-none max-w-[95vw] overflow-visible"
+      >
         {/* 1. Core Drawing Tools */}
         <div className="flex items-center gap-0.5 sm:gap-1">
           {/* Select Tool */}
@@ -1975,7 +1988,10 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             </button>
 
             {isPenMenuOpen && (
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-56 space-y-1 animate-scale-up">
+              <div
+                onPointerDown={(e) => e.stopPropagation()}
+                className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-56 space-y-1 animate-scale-up"
+              >
                 <div className="px-2 py-1 border-b border-apple-border/40 dark:border-white/10 text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
                   Pen Styles
                 </div>
@@ -2041,7 +2057,10 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             </button>
 
             {isEraserMenuOpen && (
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-56 space-y-1 animate-scale-up">
+              <div
+                onPointerDown={(e) => e.stopPropagation()}
+                className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-56 space-y-1 animate-scale-up"
+              >
                 <div className="px-2 py-1 border-b border-apple-border/40 dark:border-white/10 text-caption font-bold uppercase tracking-wider text-apple-textSecondary dark:text-white/50">
                   Eraser Modes
                 </div>
@@ -2074,7 +2093,8 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           <div className="relative">
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setIsShapeMenuOpen(!isShapeMenuOpen);
                 setIsPenMenuOpen(false);
                 setIsEraserMenuOpen(false);
@@ -2091,7 +2111,10 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
             </button>
 
             {isShapeMenuOpen && (
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-48 grid grid-cols-2 gap-1 animate-scale-up">
+              <div
+                onPointerDown={(e) => e.stopPropagation()}
+                className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 bg-white dark:bg-[#1C1C1E] border border-apple-border/80 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 w-48 grid grid-cols-2 gap-1 animate-scale-up"
+              >
                 <button
                   type="button"
                   onClick={() => {
